@@ -1,10 +1,12 @@
-;;; jde-wiz.el
-;; $Revision: 1.91 $
+;; jde-wiz.el - generate Java code by interactive input and Java reflection
+;; $Id$
+
 ;; Author: Paul Kinnucan <paulk@mathworks.com>
-;; Maintainer: Paul Kinnucan
+;; Maintainer: Paul Landes <landes <at> mailc dt net>
 ;; Keywords: java, tools
 
 ;; Copyright (C) 1997, 1998, 2000, 2001, 2002, 2003, 2004 Paul Kinnucan.
+;; Copyright (C) 2009 by Paul Landes
 
 ;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -91,15 +93,15 @@ extends clause is updated"
   (interactive
    "sEnter interface: ")
   (let (keyword
-        (interface
+	(interface
 	 (jde-wiz-get-unqualified-name interface-name)))
     (if extends
-        (setq keyword "extends")
+	(setq keyword "extends")
       (setq keyword "implements"))
     (save-excursion
       (let* ((class-re "class[ \t]+\\([a-zA-z]+[a-zA-Z0-9._]*\\).*[ \n]*")
 	     (open-brace-pos
-	      (scan-lists (point) -1 1))
+	      (ignore-errors (scan-lists (point) -1 1)))
 	     (class-name-end-pos
 	      (when open-brace-pos
 		(goto-char open-brace-pos)
@@ -118,23 +120,45 @@ extends clause is updated"
 	  (when class-name-end-pos
 	    (goto-char (- open-brace-pos 1))
 	    (if (looking-at " {")
- 		(delete-char 1)  ;; if we don't delete, we end up with 2 spaces
- 	      (forward-char))
+		(delete-char 1)  ;; if we don't delete, we end up with 2 spaces
+	      (forward-char))
 	    (insert (concat " " keyword " " interface " "))))))))
+
+(defun jde-dollar-name (name) 
+  "Convert pkg[.Outer].Inner[$Inner] to pkg[.Outer]$Inner[$Inner]"
+  ;; change last '.' to '$'
+  (replace-in-string name "[.]\\([^.]+$\\)" "$\\1"))  
+
+(defun jde-jeval-classname (fmt interface-name &optional eval-return)
+  "Try jde-jeval on the command derived from (format FMT INTERFACE-NAME),
+if that fails (as it will when INTERFACE-NAME is an inner-class name),
+then try after replacing INTERFACE-NAME with (jde-dollar-name INTERFACE-NAME).
+
+If EVAL-RETURN is t, then return (jde-jeval ... t), else return (read (jde-jeval ...))"
+  (flet ((jeval (name) (if eval-return
+			   (jde-jeval (format fmt name) t)
+			 (read (jde-jeval (format fmt name))))))
+    (let ((code (jeval interface-name)) dollar-name)
+      (if (and code (eq (car code) 'error)
+	       (setq dollar-name (jde-dollar-name interface-name))
+	       ;; recurse as long as '.'s are changing:
+	       (not (string-equal dollar-name interface-name)))
+	  (jde-jeval-classname fmt dollar-name eval-return) ; try again with dollar-name
+	code)
+      )
+    ))
 
 (defun jde-wiz-generate-interface (interface-name)
   "*Generate a skeleton implementation of a specified interface."
   (let* ((code
-	  (read
-	   (jde-jeval
-	    (concat
-	     "jde.wizards.InterfaceFactory.makeInterfaceExpression(\""
-	     interface-name "\", true);")))))
-    (if  code
+	  (jde-jeval-classname 
+	   "jde.wizards.InterfaceFactory.makeInterfaceExpression(\"%s\",true);"
+	   interface-name)))
+    (if code
       (let ((required-imports
 	     (jde-jeval-r
 		"jde.wizards.InterfaceFactory.getImportedClasses();")))
-	  (eval code)
+	  (eval code)			;error may be thrown if bad intf name
 	  (if required-imports
 	      (jde-import-insert-imports-into-buffer required-imports t))
 	  (jde-wiz-update-implements-clause interface-name)))))
@@ -209,12 +233,9 @@ and fire every method of all listeners registered. It creates a data structure
 to store the listeners too."
   (condition-case err
       (let* ((pos (point))
-	     (code
-	      (read
-	       (jde-jeval
-		(concat
-		 "jde.wizards.EventSourceFactory.makeEventSourceSupportExpression(\""
-		 event-listener-interface-name "\", true);")))))
+	     (code (jde-jeval-classname
+		    "jde.wizards.EventSourceFactory.makeEventSourceSupportExpression(\"%s\", true);"
+		    event-listener-interface-name)))
 	(if code
 	    (let ((required-imports
 		   (jde-jeval-r
@@ -222,7 +243,7 @@ to store the listeners too."
 	      (message "%s" "evaluating")
 	      (eval code)
 	      (message "%s" "eval done")
-              (jde-wiz-indent pos)
+	      (jde-wiz-indent pos)
 	      (if required-imports
 		  (jde-import-insert-imports-into-buffer required-imports t)
 		(message "%s" "no imports"))
@@ -337,12 +358,12 @@ NOTE: this command works only if the overriding class
 
   (condition-case err
       (let* ((super-class (jde-parse-get-super-class-at-point))
-             (qualified-super-class
-              (jde-parse-get-qualified-name super-class t))
-             (classinfo
-              (jde-complete-get-classinfo qualified-super-class jde-complete-protected))
-             pair pos class-name qualified-class-name method-name)
-        (setq pair
+	     (qualified-super-class
+	      (jde-parse-get-qualified-name super-class t))
+	     (classinfo
+	      (jde-complete-get-classinfo qualified-super-class jde-complete-protected))
+	     pair pos class-name qualified-class-name method-name)
+	(setq pair
 	      (assoc
 	       (completing-read "Method to overwrite: " classinfo nil t)
 	       classinfo))
@@ -350,26 +371,25 @@ NOTE: this command works only if the overriding class
 	(if (not pair)
 	    (error "No method specified for completion."))
 
-        (setq pos (string-match " : " (car pair)))
-        (setq method-name
-              (if pos
-                  (substring (car pair) 0 pos)
-                (cdr pair)))
+	(setq pos (string-match " : " (car pair)))
+	(setq method-name
+	      (if pos
+		  (substring (car pair) 0 pos)
+		(cdr pair)))
 
-        (setq class-name
-         (jde-parse-get-super-class-at-point))
-        (setq qualified-class-name
-         (jde-parse-get-qualified-name class-name t))
-        (setq pos (string-match "(" method-name))
+	(setq class-name
+	 (jde-parse-get-super-class-at-point))
+	(setq qualified-class-name
+	 (jde-parse-get-qualified-name class-name t))
+	(setq pos (string-match "(" method-name))
 
 	(if qualified-super-class
-	    (let ((signatures
-		   (jde-jeval
-		    (concat
-		     "jde.wizards.MethodOverrideFactory.getCandidateSignatures(\""
-		     qualified-class-name "\",\"" (substring method-name 0 pos) "\");") t)))
-              (jde-wiz-override-method-internal method-name
-                                                signatures))
+	    (let* ((fmt (concat
+			 "jde.wizards.MethodOverrideFactory.getCandidateSignatures"
+			 "(\"%s\",\"" (substring method-name 0 pos) "\");"))
+		   (signatures (jde-jeval-classname fmt qualified-class-name t)))
+	      (jde-wiz-override-method-internal method-name
+						signatures))
 	  (error "Cannot find parent class %s" super-class)))
     (error
      (message "%s" (error-message-string err)))))
@@ -377,17 +397,17 @@ NOTE: this command works only if the overriding class
 
 (defun jde-wiz-override-method-internal (selected-method methods)
   (let* ((selected-method-args (jde-wiz-number-of-arguments selected-method))
-         (pos (point))
-         (variant 0) skeleton required-imports
-         (index 0))
+	 (pos (point))
+	 (variant 0) skeleton required-imports
+	 (index 0))
     (while methods
       (if (jde-wiz-check-signatures selected-method (car methods))
-          (progn
-            (setq variant index)
-            (setq methods nil))
-        (progn
-          (setq index (+ 1 index))
-          (setq methods (cdr methods)))))
+	  (progn
+	    (setq variant index)
+	    (setq methods nil))
+	(progn
+	  (setq index (+ 1 index))
+	  (setq methods (cdr methods)))))
 
     (jde-jeval-r
      (concat
@@ -444,16 +464,16 @@ subsequent method(s) or invocations of `jde-wiz-gen-method'."
   "Returns the number of arguments in this signature"
   (let (pos (number-of-arguments 0))
     (if (string-match "()" signature)
-        number-of-arguments
+	number-of-arguments
       (if (not (string-match "," signature))
-          (setq number-of-arguments (+ 1 number-of-arguments))
-        (progn
-          (setq number-of-arguments 1)
-          (while (string-match "," signature)
-            (setq pos (string-match "," signature))
-            (setq number-of-arguments (+ 1 number-of-arguments))
-            (setq signature (substring signature (+ pos 1)))))))
-          number-of-arguments))
+	  (setq number-of-arguments (+ 1 number-of-arguments))
+	(progn
+	  (setq number-of-arguments 1)
+	  (while (string-match "," signature)
+	    (setq pos (string-match "," signature))
+	    (setq number-of-arguments (+ 1 number-of-arguments))
+	    (setq signature (substring signature (+ pos 1)))))))
+	  number-of-arguments))
 
 (defun jde-wiz-indent (pos)
   "Indents the just inserted region without moving
@@ -475,8 +495,8 @@ the cursor"
 	  (jde-parse-select-qualified-class-name class)))
     (if fq-class-name
 	(bsh-eval
-         (oref 'jde-bsh the-bsh)
-         (format "browseClass(\"%s\");" fq-class-name)))))
+	 (oref 'jde-bsh the-bsh)
+	 (format "browseClass(\"%s\");" fq-class-name)))))
 
 (defun jde-wiz-delegate (delegee)
   "*Generate methods for the class in the current source buffer
@@ -502,31 +522,28 @@ function's documentation for more information."
    "sDelegee name: ")
   (condition-case err
       (let* ((pos (point))
-             (start nil)
-             (class-name
+	     (start nil)
+	     (class-name
 	      (or (jde-parse-get-qualified-name
 		   (car (jde-parse-declared-type-of delegee)) t)
 		  (read-string (concat "Enter fully qualified class name of "
 				       delegee ": "))))
-	     (code
-	      (read
-	       (jde-jeval
-		(concat
-		 "jde.wizards.DelegateFactory.makeDelegatorMethods(\""
-		 delegee "\", \"" class-name "\", true);")))))
+             (fmt (concat "jde.wizards.DelegateFactory.makeDelegatorMethods(\""
+			  delegee "\", \"%s\", true);"))
+	     (code (jde-jeval-classname fmt class-name)))
 	(if code
 	    (let ((required-imports
 		   (jde-jeval-r
 		    "jde.wizards.DelegateFactory.getImportedClasses();")))
-              (font-lock-mode -1)
-              (setq start (point))
+	      (font-lock-mode -1)
+	      (setq start (point))
 	      (eval code)
-              ;;indenting the new code
-              (jde-wiz-indent pos)
+	      ;;indenting the new code
+	      (jde-wiz-indent pos)
 	      (if required-imports
 		  (jde-import-insert-imports-into-buffer required-imports t))
-              (font-lock-mode)
-              )))
+	      (font-lock-mode)
+	      )))
     (error
      (message "%s" (error-message-string err)))))
 
@@ -537,12 +554,9 @@ function's documentation for more information."
 (defun jde-wiz-generate-abstract-class (class-name)
   "*Generate a skeleton implementation of a specified abstract class."
   (condition-case err
-      (let* ((code
-	      (read
-	       (jde-jeval
-		(concat
-		 "jde.wizards.AbstractClassFactory.makeAbstractClassExpression(\""
-		 class-name "\", true);")))))
+      (let* ((code (jde-jeval-classname
+		    "jde.wizards.AbstractClassFactory.makeAbstractClassExpression(\"%s\", true);"
+		    class-name)))
 	(if code
 	    (let ((required-imports
 		   (jde-jeval-r
@@ -563,7 +577,7 @@ set, otherwise the CLASSPATH environment variable."
       (let ((names
 	     (jde-jeval-r
 	      (format "jde.util.JdeUtilities.getQualifiedName(\"%s\");"
-                      class-name ))))
+		      class-name ))))
 	(if names
 	    (if (> (length names) 1)
 		(jde-wiz-generate-abstract-class
@@ -571,7 +585,7 @@ set, otherwise the CLASSPATH environment variable."
 				    "class name dialog"))
 	      (jde-wiz-generate-abstract-class (car names)))
 	  (message "Cannot find abstract class %s on the current classpath."
-                   class-name)))
+		   class-name)))
     (message "%s" (error-message-string err))))
 
 (defun jde-wiz-extend-abstract-class (class-name)
@@ -613,10 +627,10 @@ public String get(String argName)"
 
 (defcustom jde-wiz-get-javadoc-template
   (list "/**"
-        "* Gets the value of %n"
-        "*"
-        "* @return the value of %n"
-        "*/")
+	"* Gets the value of %n"
+	"*"
+	"* @return the value of %n"
+	"*/")
   "Template used by `jde-wiz-get-set-method' to add the javadoc
 to a get method. The %n are replaced by the variable name and
 %t by the variable."
@@ -625,10 +639,10 @@ to a get method. The %n are replaced by the variable name and
 
 (defcustom jde-wiz-set-javadoc-template
   (list "/**"
-        "* Sets the value of %n"
-        "*"
-        "* @param %p Value to assign to this.%n"
-        "*/")
+	"* Sets the value of %n"
+	"*"
+	"* @param %p Value to assign to this.%n"
+	"*/")
   "Template used by `jde-wiz-get-set-method' to add the javadoc to a
 set method. The %n are replaced by the variable name, %t by the variable
 type and %p for the argument name. In most cases %n and %p are the same
@@ -660,10 +674,10 @@ It will take everything after the first capitalize letter. A nil value will use
 the variable name as it is defined in the buffer."
   :group 'jde-wiz
   :type '(cons (string :tag "Enter either the prefix or postfix")
-               (radio-button-choice (const "Prefix")
-                                    (const "Postfix")
-                                    (const "Everything after the first upcase letter")
-                                    (const nil))))
+	       (radio-button-choice (const "Prefix")
+				    (const "Postfix")
+				    (const "Everything after the first upcase letter")
+				    (const nil))))
 
 (defcustom jde-wiz-get-set-methods-include (list "Both")
   "Use this variable to set what methods `jde-wiz-get-set-methods' will
@@ -671,8 +685,8 @@ insert in the buffer. The options are get methods only, set methods only,
  and both."
   :group 'jde-wiz
   :type '(list (radio-button-choice (const "Get only")
-                                    (const "Set only")
-                                    (const "Both"))))
+				    (const "Set only")
+				    (const "Both"))))
 
 (defcustom jde-wiz-get-set-static-members t
   "If on (nonnil), `jde-wiz-get-set-methods' generates getter/setter methods for
@@ -686,10 +700,10 @@ get and set methods are going to be inserted by
 `jde-wiz-get-set-methods'"
   :group 'jde-wiz
   :type '(list (radio-button-choice
-                (const "Get followed by set for each field")
-                (const "Set followed by get for each field")
-                (const "All get methods followed by all set methods")
-                (const "All set methods followed by all get methods"))))
+		(const "Get followed by set for each field")
+		(const "Set followed by get for each field")
+		(const "All get methods followed by all set methods")
+		(const "All set methods followed by all get methods"))))
 
 (defun jde-wiz-downcase-initials (obj)
   "It downcase the first letter of obj"
@@ -699,15 +713,15 @@ get and set methods are going to be inserted by
   "Recurse through all the tokens in `tokens' looking for
 the tokens of `class-name', returns nil if no token are found"
   (let ((parts (jde-wiz-get-class-parts-helper class-name tokens))
-        temp-parts inner-classes)
+	temp-parts inner-classes)
     (if (not parts)
-        (while tokens
-          (setq temp-parts (semantic-token-type-parts (car tokens)))
-          (setq inner-classes (semantic-find-nonterminal-by-token 'type temp-parts))
-          (setq parts (jde-wiz-get-class-parts class-name inner-classes))
-          (if parts
-              (setq tokens nil)
-            (setq tokens (cdr tokens)))))
+	(while tokens
+	  (setq temp-parts (semantic-tag-type-members (car tokens)))
+	  (setq inner-classes (semantic-find-nonterminal-by-token 'type temp-parts))
+	  (setq parts (jde-wiz-get-class-parts class-name inner-classes))
+	  (if parts
+	      (setq tokens nil)
+	    (setq tokens (cdr tokens)))))
     parts))
 
 (defun jde-wiz-get-class-parts-helper (class-name tokens)
@@ -717,10 +731,10 @@ return otherwise"
   (let (parts current-class)
     (while tokens
       (setq current-class (car tokens))
-      (if (string= class-name (semantic-token-name current-class))
-          (progn
-            (setq parts (semantic-token-type-parts current-class))
-            (setq tokens nil)))
+      (if (string= class-name (semantic-tag-name current-class))
+	  (progn
+	    (setq parts (semantic-tag-type-members current-class))
+	    (setq tokens nil)))
       (setq tokens (cdr tokens)))
     parts))
 
@@ -760,7 +774,7 @@ defined in the current buffer."
 	 (class (jde-parse-get-class-at-point));;class name
 	 (classes (split-string class "\\."))
 	 (class-name (nth (- (length classes) 1) classes))
-	 (tokens (semantic-bovinate-toplevel t));;buffer tokens
+	 (tokens (semantic-fetch-tags));;buffer tokens
 	 (type (semantic-find-nonterminal-by-token 'type tokens));;class tokens
 	 (parts (jde-wiz-get-class-parts class-name type))
 	 (variables (semantic-find-nonterminal-by-token 'variable parts));;declared variables
@@ -785,10 +799,10 @@ defined in the current buffer."
 
     (while non-public-variables
       (setq var (car non-public-variables))
-      (setq name (semantic-token-name var));;variable name
-      (setq type (semantic-token-type var));;variable type i.e. boolean
-      (setq staticp (member "static" (semantic-token-variable-modifiers var)));;is it static
-      (setq finalp  (member "final" (semantic-token-variable-modifiers var)));;is it final
+      (setq name (semantic-tag-name var));;variable name
+      (setq type (semantic-tag-type var));;variable type i.e. boolean
+      (setq staticp (member "static" (semantic-tag-modifiers var)));;is it static
+      (setq finalp  (member "final" (semantic-tag-modifiers var)));;is it final
 
       (setq
        report
@@ -798,124 +812,124 @@ defined in the current buffer."
 	 "%-60.60s"
 	 (concat
 	  type " " name " "
-	  (and (semantic-token-variable-modifiers var)
+	  (and (semantic-tag-modifiers var)
 	       ;; only if some modifiers are present
 	       ;; print them
-	       (format "%s" (semantic-token-variable-modifiers var)))))))
+	       (format "%s" (semantic-tag-modifiers var)))))))
 
       (setq report (concat report "\t"))
 
       ;;order in which the methods should be inserted
       (cond ((string= "Get followed by set for each field" order)
-             ;;get method followed by its set method
-             ;;getting the get method if it does not exist in the buffer
-             (if (not (jde-wiz-get-member-p name set-get-functions))
-                 (if (and (or bothp get-onlyp)
+	     ;;get method followed by its set method
+	     ;;getting the get method if it does not exist in the buffer
+	     (if (not (jde-wiz-get-member-p name set-get-functions))
+		 (if (and (or bothp get-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (insert (jde-wiz-get-get-method type name staticp class))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (setq report (concat report "[Exists ]")))
+		     (progn
+		       (insert (jde-wiz-get-get-method type name staticp class))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (setq report (concat report "[Exists ]")))
 
-             (setq report (concat report "\t"))
+	     (setq report (concat report "\t"))
 
-             ;;getting the set method if it does not exist in the buffer
-             (if (and (not finalp);; it is final - can not have a setter
-                      (not (jde-wiz-set-member-p name set-get-functions)))
-                 (if (and (or bothp set-onlyp)
+	     ;;getting the set method if it does not exist in the buffer
+	     (if (and (not finalp);; it is final - can not have a setter
+		      (not (jde-wiz-set-member-p name set-get-functions)))
+		 (if (and (or bothp set-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (insert (jde-wiz-get-set-method type name staticp class))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (if (jde-wiz-set-member-p name set-get-functions)
-                   (setq report (concat report "[Exists ]"))
-                 (if finalp
-                     (setq report (concat report "[N/A    ]"))))))
-            ;;set method followed by its get method
-            ((string= "Set followed by get for each field" order)
-             ;;getting the set method if it does not exist in the buffer
-             (if (and (not finalp);; it is final - can not have a setter
-                      (not (jde-wiz-set-member-p name set-get-functions)))
-                 (if (and (or bothp set-onlyp)
+		     (progn
+		       (insert (jde-wiz-get-set-method type name staticp class))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (if (jde-wiz-set-member-p name set-get-functions)
+		   (setq report (concat report "[Exists ]"))
+		 (if finalp
+		     (setq report (concat report "[N/A    ]"))))))
+	    ;;set method followed by its get method
+	    ((string= "Set followed by get for each field" order)
+	     ;;getting the set method if it does not exist in the buffer
+	     (if (and (not finalp);; it is final - can not have a setter
+		      (not (jde-wiz-set-member-p name set-get-functions)))
+		 (if (and (or bothp set-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (insert (jde-wiz-get-set-method type name staticp class))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (if (jde-wiz-set-member-p name set-get-functions)
-                   (setq report (concat report "[Exists ]"))
-                 (if finalp
-                     (setq report (concat report "[N/A    ]")))))
+		     (progn
+		       (insert (jde-wiz-get-set-method type name staticp class))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (if (jde-wiz-set-member-p name set-get-functions)
+		   (setq report (concat report "[Exists ]"))
+		 (if finalp
+		     (setq report (concat report "[N/A    ]")))))
 
-             (setq report (concat report "\t"))
+	     (setq report (concat report "\t"))
 
-             ;;getting the get method if it does not exist in the buffer
-             (if (not (jde-wiz-get-member-p name set-get-functions))
-                 (if (and (or bothp get-onlyp)
+	     ;;getting the get method if it does not exist in the buffer
+	     (if (not (jde-wiz-get-member-p name set-get-functions))
+		 (if (and (or bothp get-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (insert (jde-wiz-get-get-method type name staticp class))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (setq report (concat report "[Exists ]"))))
+		     (progn
+		       (insert (jde-wiz-get-get-method type name staticp class))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (setq report (concat report "[Exists ]"))))
 
-            ;;all the get method first
-            ((string= "All get methods followed by all set methods" order)
-             ;;getting the get method if it does not exist in the buffer
-             (if (not (jde-wiz-get-member-p name set-get-functions))
-                 (if (and (or bothp get-onlyp)
+	    ;;all the get method first
+	    ((string= "All get methods followed by all set methods" order)
+	     ;;getting the get method if it does not exist in the buffer
+	     (if (not (jde-wiz-get-member-p name set-get-functions))
+		 (if (and (or bothp get-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (insert (jde-wiz-get-get-method type name staticp class))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (setq report (concat report "[Exists ]")))
+		     (progn
+		       (insert (jde-wiz-get-get-method type name staticp class))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (setq report (concat report "[Exists ]")))
 
-             (setq report (concat report "\t"))
+	     (setq report (concat report "\t"))
 
-             ;;getting the set method if it does not exist in the buffer
-             (if (and (not finalp);; it is final - can not have a setter
-                      (not (jde-wiz-set-member-p name set-get-functions)))
-                 (if (and (or bothp set-onlyp)
+	     ;;getting the set method if it does not exist in the buffer
+	     (if (and (not finalp);; it is final - can not have a setter
+		      (not (jde-wiz-set-member-p name set-get-functions)))
+		 (if (and (or bothp set-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (setq temp (concat temp (jde-wiz-get-set-method type name staticp class)))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (if (jde-wiz-set-member-p name set-get-functions)
-                   (setq report (concat report "[Exists ]"))
-                 (if finalp
-                     (setq report (concat report "[N/A    ]"))))))
+		     (progn
+		       (setq temp (concat temp (jde-wiz-get-set-method type name staticp class)))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (if (jde-wiz-set-member-p name set-get-functions)
+		   (setq report (concat report "[Exists ]"))
+		 (if finalp
+		     (setq report (concat report "[N/A    ]"))))))
 
-            ;;all the set method first
-            ((string= "All set methods followed by all get methods" order)
-             ;;getting the set method if it does not exist in the buffer
-             (if (and (not finalp);; it is final - can not have a setter
-                      (not (jde-wiz-set-member-p name set-get-functions)))
-                 (if (and (or bothp set-onlyp)
+	    ;;all the set method first
+	    ((string= "All set methods followed by all get methods" order)
+	     ;;getting the set method if it does not exist in the buffer
+	     (if (and (not finalp);; it is final - can not have a setter
+		      (not (jde-wiz-set-member-p name set-get-functions)))
+		 (if (and (or bothp set-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (insert (jde-wiz-get-set-method type name staticp class))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (if (jde-wiz-set-member-p name set-get-functions)
-                   (setq report (concat report "[Exists ]"))
-                 (if finalp
-                     (setq report (concat report "[N/A    ]")))))
+		     (progn
+		       (insert (jde-wiz-get-set-method type name staticp class))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (if (jde-wiz-set-member-p name set-get-functions)
+		   (setq report (concat report "[Exists ]"))
+		 (if finalp
+		     (setq report (concat report "[N/A    ]")))))
 
-             (setq report (concat report "\t"))
+	     (setq report (concat report "\t"))
 
-             ;;getting the get method if it does not exist in the buffer
-             (if (not (jde-wiz-get-member-p name set-get-functions))
-                 (if (and (or bothp get-onlyp)
+	     ;;getting the get method if it does not exist in the buffer
+	     (if (not (jde-wiz-get-member-p name set-get-functions))
+		 (if (and (or bothp get-onlyp)
 			  (or (not staticp) jde-wiz-get-set-static-members))
-                     (progn
-                       (setq temp (concat temp (jde-wiz-get-get-method type name staticp class)))
-                       (setq report (concat report "[Added  ]")))
-                   (setq report (concat report "[Skipped]")))
-               (setq report (concat report "[Exists ]")))))
+		     (progn
+		       (setq temp (concat temp (jde-wiz-get-get-method type name staticp class)))
+		       (setq report (concat report "[Added  ]")))
+		   (setq report (concat report "[Skipped]")))
+	       (setq report (concat report "[Exists ]")))))
 
       (setq report (concat report "\n"))
 
@@ -924,8 +938,8 @@ defined in the current buffer."
     (setq pos (point))
     (if temp (insert temp))
     (if jde-wiz-show-report
-        (with-output-to-temp-buffer (concat "*jde-wiz-get-set-methods report for " class "*")
-          (princ report)))
+	(with-output-to-temp-buffer (concat "*jde-wiz-get-set-methods report for " class "*")
+	  (princ report)))
     ;;indenting the new code
     (jde-wiz-indent pos)))
 
@@ -934,11 +948,11 @@ defined in the current buffer."
   (let (token name filtered-methods)
     (while tokens
       (setq token (car tokens))
-      (setq name (semantic-token-name token))
+      (setq name (semantic-tag-name token))
       (if (or (string-match "^get" name)
-              (string-match "^set" name)
-              (string-match "^is" name))
-          (setq filtered-methods (append filtered-methods (list name))))
+	      (string-match "^set" name)
+	      (string-match "^is" name))
+	  (setq filtered-methods (append filtered-methods (list name))))
       (setq tokens (cdr tokens)))
     filtered-methods))
 
@@ -948,9 +962,9 @@ protected modifiers"
   (let (token modifiers filtered-tokens)
     (while tokens
       (setq token (car tokens))
-      (setq modifiers (semantic-token-variable-modifiers token))
+      (setq modifiers (semantic-tag-modifiers token))
       (if (not (member "public" modifiers))
-          (setq filtered-tokens (append filtered-tokens (list token))))
+	  (setq filtered-tokens (append filtered-tokens (list token))))
       (setq tokens (cdr tokens)))
     filtered-tokens))
 
@@ -960,36 +974,36 @@ method templates. For Example if the variable is \"_Name\" and the variable
 `jde-wiz-get-set-variable-convention' is set to prefix _ this method will
 return \"Name\"."
   (let (answer
-        (cfs case-fold-search)
-        (fix (car jde-wiz-get-set-variable-convention))
-        (convention (cdr jde-wiz-get-set-variable-convention)))
+	(cfs case-fold-search)
+	(fix (car jde-wiz-get-set-variable-convention))
+	(convention (cdr jde-wiz-get-set-variable-convention)))
     (setq case-fold-search nil)
     (cond ((not convention)
-           (setq answer variable))
-          ((string= "Prefix" convention)
-           (progn
-             (if fix
-                 (let ((pos (string-match (concat "^" fix) variable)))
-                   (if pos
-                       (setq answer (substring variable (+ pos (length fix))))
-                     (setq answer variable)))
-               (setq answer variable))))
-          ((string= "Postfix" convention)
-           (progn
-             (if fix
-                 (let ((pos (string-match (concat fix "$") variable)))
-                   (if pos
-                       (setq answer (substring variable 0 pos))
-                     (setq answer variable)))
-               (setq answer variable))))
-          (t
-           (let ((pos (string-match "[A-Z]." variable)))
-             (if pos
-                 (let ((ans (substring variable pos)))
-                   (if ans
-                       (setq answer ans)
-                     (setq answer variable)))
-               (setq answer variable)))))
+	   (setq answer variable))
+	  ((string= "Prefix" convention)
+	   (progn
+	     (if fix
+		 (let ((pos (string-match (concat "^" fix) variable)))
+		   (if pos
+		       (setq answer (substring variable (+ pos (length fix))))
+		     (setq answer variable)))
+	       (setq answer variable))))
+	  ((string= "Postfix" convention)
+	   (progn
+	     (if fix
+		 (let ((pos (string-match (concat fix "$") variable)))
+		   (if pos
+		       (setq answer (substring variable 0 pos))
+		     (setq answer variable)))
+	       (setq answer variable))))
+	  (t
+	   (let ((pos (string-match "[A-Z]." variable)))
+	     (if pos
+		 (let ((ans (substring variable pos)))
+		   (if ans
+		       (setq answer ans)
+		     (setq answer variable)))
+	       (setq answer variable)))))
     (setq case-fold-search cfs)
     answer))
 
@@ -997,7 +1011,7 @@ return \"Name\"."
 (defun jde-wiz-get-get-method(type name &optional staticp &optional class-name)
   "Returns a string representing a get method"
   (let ((filtered-name (jde-wiz-get-name name))
-        get (javadoc "") temp temp2)
+	get (javadoc "") temp temp2)
     (setq
      get
      (concat
@@ -1021,8 +1035,8 @@ return \"Name\"."
        (concat "public" (if staticp " static"))
        type
        (concat
-        (if (string= type "boolean") "is" "get")
-        (upcase-initials filtered-name))
+	(if (string= type "boolean") "is" "get")
+	(upcase-initials filtered-name))
        nil)
       (if jde-gen-k&r "{" "\n{") "\n"
       "return " (if staticp (concat class-name ".") "this.")
@@ -1032,9 +1046,9 @@ return \"Name\"."
 (defun jde-wiz-get-set-method(type name &optional staticp class-name)
   "Returns a string representing a set method"
   (let ((filtered-name (jde-wiz-get-name name))
-        set (javadoc "") arg-name temp temp2)
+	set (javadoc "") arg-name temp temp2)
     (if jde-wiz-get-set-variable-prefix
-        (setq
+	(setq
 	 arg-name
 	 (jde-wiz-downcase-initials
 	  (concat jde-wiz-get-set-variable-prefix (upcase-initials filtered-name))))
@@ -1146,7 +1160,7 @@ If `jde-wiz-tostring-postfix' is defined, it is appended to the string. "
 	   class-name
 	   (semantic-find-nonterminal-by-token
 	    'type
-	    (semantic-bovinate-toplevel t)
+	    (semantic-fetch-tags)
 	    ))))
 	(method
 	 (concat
@@ -1165,7 +1179,7 @@ If `jde-wiz-tostring-postfix' is defined, it is appended to the string. "
    (setq variables (jde-wiz-filter-variables-by-typemodifier variables))
 
    (if jde-wiz-tostring-sort-variables
-       (setq variables (semantic-sort-tokens-by-name-increasing variables)))
+       (setq variables (semantic-sort-tags-by-name-increasing variables)))
 
    ;; Remove static members.
    (unless jde-wiz-tostring-static-members
@@ -1178,7 +1192,7 @@ If `jde-wiz-tostring-postfix' is defined, it is appended to the string. "
 	  (let ((staticp
 		 (member
 		  "static"
-		  (semantic-token-variable-modifiers var))))
+		  (semantic-tag-modifiers var))))
 	    (unless staticp var)))
 	variables))))
 
@@ -1188,8 +1202,8 @@ If `jde-wiz-tostring-postfix' is defined, it is appended to the string. "
 
    (while variables
      (let* ((var (car variables))
-	   (name (semantic-token-name var))  ;;variable name
-	   (type (semantic-token-type var))) ;;variable type i.e. boolean
+	   (name (semantic-tag-name var))  ;;variable name
+	   (type (semantic-tag-type var))) ;;variable type i.e. boolean
 
        (setq
 	method
@@ -1216,336 +1230,5 @@ If `jde-wiz-tostring-postfix' is defined, it is appended to the string. "
 
 
 (provide 'jde-wiz)
-
-
-;;; Change History:
-
-;; $Log: jde-wiz.el,v $
-;; Revision 1.91  2005/01/03 17:36:48  troy
-;; Add prefix and postfix settings for jde-wiz-tostring
-;;
-;; Revision 1.90  2004/10/20 06:17:06  paulk
-;; Update to support reloading classes from a single classpath entry. Thanks to Martin Schwamberger.
-;;
-;; Revision 1.89  2004/05/16 03:54:50  paulk
-;; Fix various bugs in jde-wiz-tostring command.
-;;
-;; Revision 1.88  2004/05/14 03:44:43  paulk
-;; - Remove extra space in generated get/set methods.
-;; - Adds the customization variable jde-wiz-tostring-static-members.
-;; - Enhances jde-wiz-tostring to respect the coding style specified
-;;   by jde-gen-k&r.
-;;
-;; Thanks to Yoon Kyung Koo.
-;;
-;; Revision 1.87  2004/05/03 02:33:02  paulk
-;; Initial implementation of jde-wiz-tostring command. Thanks to Jeff Jensen.
-;;
-;; Revision 1.86  2004/03/22 06:19:44  paulk
-;; Enhance the get/set wizard to use jde-gen-method-signature. Thanks to Martin Schwamberger.
-;;
-;; Revision 1.85  2004/02/21 06:22:37  paulk
-;; Adds jde-wiz-get-set-static-members option. Thanks to Petter  MÅÂhlÅÈn.
-;;
-;; Revision 1.84  2004/02/21 06:03:37  paulk
-;; Deleted spurious space in generated get method. Thanks to Petter Mahlen.
-;;
-;; Revision 1.83  2003/09/22 02:57:49  paulk
-;; Cosmetic change.
-;;
-;; Revision 1.82  2003/09/07 05:21:12  paulk
-;; Fix interface, abstract class, and method delegation wizards
-;; to observe jde-import-excluded-classes. Thanks to Martin
-;; Schwamberger.
-;;
-;; Revision 1.81  2003/04/09 02:24:42  paulk
-;; Tiny docstring change.
-;;
-;; Revision 1.80  2003/03/28 05:33:30  andyp
-;; XEmacs optimizations for JDEbug and efc.
-;;
-;; Revision 1.79  2003/03/19 04:11:06  paulk
-;; Updated doc for jde-wiz-include-javadoc, jde-wiz-generate-interface, jde-wiz-delegate,
-;; jde-wiz-generate-abstract-class commands.
-;;
-;; Revision 1.78  2003/02/25 15:01:01  jslopez
-;; Modifies jde-parse-get-qualified-name to take an extra parameters.
-;; If it does not find the qualified name it tries importing the class.
-;; And updates a few places where it is call to do that.
-;;
-;; Revision 1.77  2003/02/18 02:09:40  jslopez
-;; Fixes regression bugs.
-;;
-;; Revision 1.76  2003/02/17 08:13:05  paulk
-;; Changes required to support new package-independent version of beanshell.el
-;;
-;; Revision 1.75  2002/09/16 04:04:50  paulk
-;; Added require statement for semantic-util. Thanks to Andy Piper.
-;;
-;; Revision 1.74  2002/09/11 04:26:22  paulk
-;; Removed low-level condition-case clauses from interface wizard that were burying error messages to user.
-;;
-;; Revision 1.73  2002/09/06 12:51:52  paulk
-;; Fixed jde-wiz-override-method to allow entry only of a complete method signature or nil.
-;; If nil, the command now aborts and issues an informative message instead of a Lisp
-;; error.
-;;
-;; Revision 1.72  2002/05/31 18:59:29  mnl
-;; Fixed handling of several imports resulting from one override (add all
-;; instead of querying the user to select one).
-;;
-;; Revision 1.71  2002/05/14 06:29:55  paulk
-;; Enhances code generation wizards for implementing interfaces, abstract
-;; classes, etc., to use customizable templates to generate skeleton methods
-;; instead of hard-wired skeletons. Thanks to "Dr. Michael Lipp" <lipp@danet.de>
-;; for proposing and implementing this improvement.
-;;
-;; Revision 1.70  2002/05/13 05:23:04  paulk
-;; Put a space between the argument list and the opening brace of generated get/set methods.
-;; Thanks to "Molitor, Stephen" <SMolitor@erac.com>.
-;;
-;; Revision 1.69  2002/04/16 03:17:05  jslopez
-;; Integrates jde-open-source.
-;;
-;; Revision 1.68  2001/12/04 05:30:11  paulk
-;; Updated to reflect change in dialog class package name prefix from jde- to efc-.
-;;
-;; Revision 1.67  2001/11/28 20:44:19  jslopez
-;; Fixes compilation warnings.
-;; Fixes jde-wiz-update-implements-clause not to add an extra space.
-;;
-;; Revision 1.66  2001/11/05 00:47:57  jslopez
-;; Fixed bug cause by previous enhancement to jde-wiz-override-method.
-;;
-;; Revision 1.65  2001/11/04 20:52:20  jslopez
-;; Modified the method jde-wiz-override-method to show
-;; a list of the possible methods to overwrite.
-;;
-;; Revision 1.64  2001/11/02 13:45:54  paulk
-;; - fixed off-by-one bug in jde-wiz-update-implements-clause
-;; - fixed description mistake in jde-wiz-get-name
-;; Thanks to Greg Fenton.
-;;
-;; Revision 1.63  2001/10/30 06:43:39  paulk
-;; Fixed some bugs in the event source wizard.
-;;
-;; Revision 1.62  2001/10/26 06:41:56  paulk
-;; Updated to reflect the new modal behavior of jde-option-dialog.
-;;
-;; Revision 1.61  2001/10/24 11:20:47  paulk
-;; Removed spurious line endings.
-;;
-;; Revision 1.60  2001/10/24 10:45:47  paulk
-;; Fixed regression bug introduced by putting indentation
-;; code into jde-wiz-generate-interface. All indentation
-;; should be performed by higher-level functions, e.g.
-;; jde-wiz-implement-interface.
-;;
-;; Revision 1.59  2001/10/14 00:02:46  jslopez
-;; Now the following methods leave the cursor at point
-;; after inserting the code, jde-method-implement-interface,
-;; jde-wiz-override-method,jde-wiz-delegate,jde-wiz-extend-abstract-class,
-;; and jde-wiz-get-set-methods.
-;;
-;; Revision 1.58  2001/09/27 15:10:10  jslopez
-;; Fixing logic error when using jde-gen-k&r, it was backwards.
-;;
-;; Revision 1.57  2001/08/18 05:49:12  paulk
-;; Fixed regression error in the method override wizard and reimplemented the method selection dialog to use jde-option-dialog. Also eliminated some dead code.
-;;
-;; Revision 1.56  2001/08/17 03:50:53  paulk
-;; Fixes bugs caused by my rewording of jde-wiz-get-set-methods-order options. Thanks to Javier Lopez.
-;;
-;; Revision 1.55  2001/08/15 05:01:13  paulk
-;; Fixed capitalization bug caused by setting the jde-wiz-get-set-convention
-;; to Everything after the first upcase letter. Thanks to Javier Lopez.
-;;
-;; Revision 1.54  2001/08/14 06:05:49  paulk
-;; Updated jde-browse-class to use jde-parse-select-qualified-class-name.
-;;
-;; Revision 1.53  2001/08/11 06:47:18  paulk
-;; * Wizards now observe the jde-gen-k&r indentation preference.
-;; * Adds jde-wiz-get-set-methods-include and jde-wiz-get-set-methods-order variables.
-;;   Thanks to Javier Lopez.
-;;
-;; Revision 1.52  2001/08/05 06:02:12  paulk
-;; Various fixes and improvements to the get-set method code generation command. Thanks to Javier Lopez.
-;;
-;; Revision 1.51  2001/08/04 03:42:04  paulk
-;; Adds jde-wiz-extend-abstract-class command. Thanks to Javier Lopez.
-;;
-;; Revision 1.50  2001/07/31 05:07:39  paulk
-;; Adds JDE->Wizards->Generate Get/Set Methods. Thanks to Javier Lopez and Sandip Chitale.
-;;
-;; Revision 1.49  2001/07/08 04:35:48  paulk
-;; Added compatibility fixes for NT/XEmacs use of backslash as the
-;; default directory sep character. Thanks to William Griswold <wgg@cs.ucsd.edu>
-;;
-;; Revision 1.48  2001/06/28 04:06:04  paulk
-;; Fixed jde-wiz-update-classes so that it updates the classes list to the CLASSPATH environment variable if jde-global-classpath is not defined.
-;;
-;; Revision 1.47  2001/06/12 07:18:55  paulk
-;; Changed jde-parse-declared-type-of to return a qualified type.
-;; Thanks to "Evan Easton" <evan@eeaston.com> .
-;;
-;; Revision 1.46  2001/05/31 05:14:39  paulk
-;; Provide support for per-project caching of class data in the Beanshell. Thanks to Matt Conway.
-;;
-;; Revision 1.45  2001/05/23 05:14:00  paulk
-;; Updated jde-wiz-override-method-internal to intent the inserted code.
-;;
-;; Revision 1.44  2001/05/23 05:03:32  paulk
-;; Updated jde-wiz-implement-interface to indent the inserted code.
-;;
-;; Revision 1.43  2001/05/21 06:45:39  paulk
-;; Implement interface command now accepts unqualified interface names.
-;;
-;; Revision 1.42  2001/04/27 03:58:13  paulk
-;; Fixes Override Method Wizard so that it does not require a compiled version of the base class.
-;;
-;; Revision 1.41  2001/04/16 06:02:27  paulk
-;; Normalize paths. Thanks to Nick Sieger.
-;;
-;; Revision 1.40  2001/04/11 03:16:36  paulk
-;; Updated to resolve relative paths relative to the project file that defines them. Thanks to Nick Seiger.
-;;
-;; Revision 1.39  2001/03/13 03:45:06  paulk
-;; Cosmetic changes.
-;;
-;; Revision 1.38  2000/12/21 13:24:12  paulk
-;; Changed jde-wiz-insert-imports to jde-import-insert-imports to reflect recent repackaging scheme.
-;;
-;; Revision 1.37  2000/12/18 05:22:46  paulk
-;; *** empty log message ***
-;;
-;; Revision 1.36  2000/11/27 06:18:41  paulk
-;; Miscellaneous bug fixes and minor enhancements.
-;;
-;; Revision 1.35  2000/11/20 05:15:16  paulk
-;; Added jde-import-organize command. Moved all import-related code from
-;; jde-wiz.el to a new package named jde-import.el.
-;;
-;; Revision 1.34  2000/11/17 04:02:24  paulk
-;; jde-wiz-update-class-list now uses the current jde-global-classpath when building the class list. This eliminates the need to restart the beanshell when switching projects.
-;;
-;; Revision 1.33  2000/11/16 05:44:56  paulk
-;; Fixed problem in jde-sort-imports command. The problem was that jde-sort-imports temporarily defined sort-fold-case just before invoking sort-lines. Invoking sort-lines caused the sort package to be loaded. Since sort-fold-case is already defined, the sort package did not bother to define it. Then sort-lines returns to jde-sort-lines which proceeded to destroy the temporary copy of sort-fold-case. The fix is to have jde-sort-lines require the sort package before invoking sort-lines.
-;;
-;; Revision 1.32  2000/11/16 04:53:26  paulk
-;; Adds jde-wiz-kill-extra-imports command contributed by David Ponce.
-;;
-;; Revision 1.31  2000/10/25 04:35:20  paulk
-;; Updated sort import function to reflect new bovinator syntax.
-;;
-;; Revision 1.30  2000/10/08 12:55:39  paulk
-;; *** empty log message ***
-;;
-;; Revision 1.29  2000/09/24 08:42:52  paulk
-;; Now sorts import list after adding an import. To disable this feature, set jde-auto-sort-imports off. Thanks to "Jason Stell" <Jason.Stell@globalone.net>
-;;
-;; Revision 1.28  2000/08/03 04:54:11  paulk
-;; Restored use of the radio buttons by the import wizard. Somehow this functionality got deleted.
-;;
-;; Revision 1.27  2000/07/28 06:27:46  paulk
-;; Committing all modified files.
-;;
-;; Revision 1.26  2000/07/14 05:22:57  paulk
-;; Adds a delegation wizard contributed by Charles Hart.
-;;
-;; Revision 1.25  2000/07/13 07:18:24  paulk
-;; * You can now specify a list of packages to exclude from import
-;;   into a source file. See jde-wiz-import-excluded-packages for
-;;   more information. Thanks to "Jim Loverde" <loverde@str.com>
-;;   for this enhancement.
-;;
-;; * Changed name of jde-wiz-insert-excluded-packages-regexp to
-;;   jde-wiz-import-excluded-packages.
-;;
-;; Revision 1.23  2000/06/22 02:50:25  paulk
-;; The import wizard dialog now uses radio buttons rather than check boxes to select
-;;  the class to import. Thanks to Mark Gibson for this enhancement.
-;;
-;; Revision 1.22  2000/06/01 06:01:14  paulk
-;; Added jde-sort-imports command. Thanks to David Ponce <david_ponce@mail.schneider.fr>.
-;;
-;; Revision 1.21  2000/01/18 07:11:26  paulk
-;; Added jde-show-class-source. Thanks to Phil Lord for the initial
-;; implementation of this command.
-;;
-;; Revision 1.20  1999/12/19 07:02:30  paulk
-;; Changed import wizard to use jde.util.JdeUtilities.getQualifiedName
-;; eliminated redundancy. Thanks to Len Trigg <len@intelligenesis.net>
-;; for this improvement.
-;;
-;; Revision 1.19  1999/11/01 03:11:42  paulk
-;; Added jde-browse-class contributed by Rohit Namjoshi <Rohit_Namjoshi@trilogy.com>.
-;;
-;; Revision 1.18  1999/10/17 04:35:05  paulk
-;; Fixed a line in jde-wiz.el, where an int is concat'd with some
-;; strings.  This is not allowed by XEmacs 21.1.
-;;
-;; Revision 1.17  1999/10/01 05:58:14  paulk
-;; Added jde-wiz-update-class-list function contributed by Phillip Lord.
-;;
-;; Revision 1.16  1999/09/17 06:52:50  paulk
-;; Fixed regression error where the interface wizard was putting quotes
-;; around the code inserted into the source buffer.
-;;
-;; Revision 1.15  1999/08/29 04:29:18  paulk
-;; Patches provided by Michael Ernst <mernst@alum.mit.edu>
-;;
-;; Revision 1.14  1999/08/23 02:13:43  paulk
-;; Fixed regression bug in jde-wiz-implement-interface caused by recent
-;; change in jde-wiz-insert-imports.
-;;
-;; Revision 1.13  1999/06/22 21:12:20  paulk
-;; Added variable to filter out unwanted classes from the list of classes being
-;; considered for import command by jde-find-and-import. The jde-find-and-import
-;; command now prompts the user if more than one class matches the specified
-;; import name. Thanks to Phillip Lord <plord@hgmp.mrc.ac.uk> for these enhancements.
-;;
-;; Revision 1.12  1999/05/07 20:42:25  paulk
-;; Cosmetic change.
-;;
-;; Revision 1.11  1999/05/07 20:40:49  paulk
-;; Added new command, jde-wiz-find-and-import, that, given an unqualified class
-;; name, generates and inserts an import statement for that class.
-;;
-;; Revision 1.10  1999/02/17 19:16:07  paulk
-;; Provided more robust error handling for the interface wizard. The wizard
-;; no longer kills the bsh when it cannot create an interface and provides
-;; meaningfull error messages.
-;;
-;; Revision 1.9  1999/02/15 01:12:54  paulk
-;; Fixed bug in jde-wiz-get-method-class that caused it to fail when the open bracket
-;; for the class was not on the same line as the class keyworkd. Thanks to
-;; P.Lord@mdx.ac.uk (Phillip Lord) for diagnosing this bug.
-;;
-;; Revision 1.8  1999/02/12 15:13:00  paulk
-;; Added jde-wiz-import function.
-;;
-;; Revision 1.7  1999/02/11 19:14:50  paulk
-;; Fixed bug in jde-wiz-update-implements-clause.
-;;
-;; Revision 1.6  1999/02/11 18:28:40  paulk
-;; Corrected missing parentheses.
-;;
-;; Revision 1.5  1998/11/22 22:03:43  paulk
-;; Fixed bug in interface wizard.
-;;
-;; Revision 1.4  1998/11/22 21:55:33  paulk
-;; Fixed bug in interface wizard.
-;;
-;; Revision 1.3  1998/11/21 02:41:34  paulk
-;; Fixed bug.
-;; Added implements clause update function to interface implementation wizard.
-;;
-;; Revision 1.2  1998/11/10 00:46:39  paulk
-;; Added smart import insertion to interface wizard.
-;;
-;; Revision 1.1  1998/11/08 00:39:24  paulk
-;; Initial revision
-;;
-
 
 ;; End of jde-wiz.el

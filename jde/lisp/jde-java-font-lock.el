@@ -1,13 +1,14 @@
 ;;; jde-java-font-lock.el -- Extra level font locking for java
+;; $Id$
 
 ;; Copyright (C) 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005 by David Ponce
+;; Copyright (C) 2009 by Paul Landes
 
 ;; Author: David Ponce <david@dponce.com>
 ;; Maintainer: David Ponce <david@dponce.com>
-;;             Paul Kinnucan <paulk@mathworks.com>
+;;             Paul Landes <landes <at> mailc dt net>
 ;; Created: September 28 1998
 ;; Keywords: java, tools
-;; VC: $Id: jde-java-font-lock.el,v 1.24 2005/04/07 05:54:29 paulk Exp $
 
 ;; This file is not part of Emacs
 
@@ -63,7 +64,7 @@
 ;;
 ;; - Javadoc code samples (enclosed in HTML <code> tags or following
 ;;   @see tags) are fontified with `jde-java-font-lock-code-face'.
-;;  
+;;
 ;; - Javadoc HTML bold and strong styles are fontified with
 ;;   `jde-java-font-lock-bold-face'.
 ;;
@@ -102,6 +103,17 @@
     (require 'cc-fonts)
   (error nil))
 
+
+;; quiet "reference to free variable" build-time warnings
+(defvar jde-java-font-lock-javadoc-tag-keyword)
+(defvar jde-java-font-lock-javadoc-param-name-keyword)
+(defvar jde-java-font-lock-javadoc-exception-type-keyword)
+(defvar jde-java-font-lock-javadoc-docroot-keyword)
+(defvar jde-java-font-lock-javadoc-link-keyword)
+(defvar jde-java-font-lock-javadoc-see-ref-keyword)
+(defvar jde-java-font-lock-html-keywords)
+
+
 (defcustom jde-use-font-lock t
   "*Turn on font-locking if non-nil.
 Set to nil to disable the use of font-locking."
@@ -128,8 +140,8 @@ you have a lot of user's defined names don't use a value less than 1!"
   "Specific JDE faces for highlighting Java sources."
   :prefix "jde-java-font-lock-"
   :group (if (featurep 'xemacs)
-             'font-lock-faces
-           'font-lock-highlighting-faces))
+	     'font-lock-faces
+	   'font-lock-highlighting-faces))
 
 (defface jde-java-font-lock-number-face
   '((((class grayscale) (background light)) (:foreground "DimGray" :italic t))
@@ -179,6 +191,11 @@ you have a lot of user's defined names don't use a value less than 1!"
   "Font Lock Mode face used to highlight packages."
   :group 'jde-java-font-lock-faces)
 
+(defface jde-java-font-lock-javadoc-face
+  '((t :inherit font-lock-doc-face))
+  "Font Lock Mode face used to highlight javadoc (sans tags etc)."
+  :group 'jde-java-font-lock-faces)
+
 (defface jde-java-font-lock-doc-tag-face
   '((((class color) (background dark)) (:foreground "light coral"))
     (((class color) (background light)) (:foreground "green4"))
@@ -226,6 +243,16 @@ you have a lot of user's defined names don't use a value less than 1!"
   "Font Lock Mode face used to highlight public access."
   :group 'jde-java-font-lock-faces)
 
+(defface jde-java-font-lock-constructor-face
+  '((((type tty) (class color)) (:foreground "blue" :weight light))
+    (((class grayscale) (background light)) (:foreground "LightGray" :bold t))
+    (((class grayscale) (background dark)) (:foreground "DimGray" :bold t))
+    (((class color) (background light)) (:foreground "DarkBlue"))
+    (((class color) (background dark)) (:foreground "LightSteelBlue"))
+    (t (:bold t)))
+  "Font Lock Mode face used to highlight protected access."
+  :group 'jde-java-font-lock-faces)
+
 (defface jde-java-font-lock-bold-face
   '((t (:bold t)))
   "Font Lock Mode face used to highlight HTML bold text style."
@@ -260,6 +287,8 @@ you have a lot of user's defined names don't use a value less than 1!"
   "Face name to use for constants.")
 (defvar jde-java-font-lock-package-face   'jde-java-font-lock-package-face
   "Face name to use for packages.")
+(defvar jde-java-font-lock-javadoc-face   'jde-java-font-lock-javadoc-face
+  "Face name to use for javadocs (sans tags etc).")
 (defvar jde-java-font-lock-modifier-face  'jde-java-font-lock-modifier-face
   "Face name to use for modifiers.")
 (defvar jde-java-font-lock-private-face	  'jde-java-font-lock-private-face
@@ -268,6 +297,8 @@ you have a lot of user's defined names don't use a value less than 1!"
   "Face name to use for protected modifiers.")
 (defvar jde-java-font-lock-public-face    'jde-java-font-lock-public-face
   "Face name to use for public modifiers.")
+(defvar jde-java-font-lock-constructor-face 'jde-java-font-lock-constructor-face
+  "Face name to use for constructors.")
 (defvar jde-java-font-lock-api-face       'jde-java-font-lock-api-face
   "Face name to use for user's defined names.")
 (defvar jde-java-font-lock-doc-tag-face   'jde-java-font-lock-doc-tag-face
@@ -313,43 +344,43 @@ you have a lot of user's defined names don't use a value less than 1!"
 (defconst jde-java-font-lock-modifier-regexp
   (eval-when-compile
     (concat "\\<\\("
-            (regexp-opt '("abstract"
-                          "const"
-                          "final"
-                          "native"
+	    (regexp-opt '("abstract"
+			  "const"
+			  "final"
+			  "native"
 			  ;;; removed after making each its own font -PaulL
-                          ;;"private"
-                          ;;"protected"
-                          ;;"public"
-                          "static"
-                          "strictfp"
-                          "synchronized"
-                          "transient"
-                          "volatile"
-                          ))
-            "\\)\\>"))
+			  ;;"private"
+			  ;;"protected"
+			  ;;"public"
+			  "static"
+			  "strictfp"
+			  "synchronized"
+			  "transient"
+			  "volatile"
+			  ))
+	    "\\)\\>"))
   "Regular expression to match Java modifiers.")
 
 (defconst jde-java-font-lock-number-regexp
   (eval-when-compile
     (concat "\\("
-            "\\<[0-9]+[.][0-9]+\\([eE][-+]?[0-9]+\\)?[fFdD]?\\>"
-            "\\|"
-            "\\<[0-9]+[.][eE][-+]?[0-9]+[fFdD]?\\>"
-            "\\|"
-            "\\<[0-9]+[.][fFdD]\\>"
-            "\\|"
-            "\\<[0-9]+[.]"
-            "\\|"
-            "[.][0-9]+\\([eE][-+]?[0-9]+\\)?[fFdD]?\\>"
-            "\\|"
-            "\\<[0-9]+[eE][-+]?[0-9]+[fFdD]?\\>"
-            "\\|"
-            "\\<0[xX][0-9a-fA-F]+[lL]?\\>"
-            "\\|"
-            "\\<[0-9]+[lLfFdD]?\\>"
-            "\\)"
-            ))
+	    "\\<[0-9]+[.][0-9]+\\([eE][-+]?[0-9]+\\)?[fFdD]?\\>"
+	    "\\|"
+	    "\\<[0-9]+[.][eE][-+]?[0-9]+[fFdD]?\\>"
+	    "\\|"
+	    "\\<[0-9]+[.][fFdD]\\>"
+	    "\\|"
+	    "\\<[0-9]+[.]"
+	    "\\|"
+	    "[.][0-9]+\\([eE][-+]?[0-9]+\\)?[fFdD]?\\>"
+	    "\\|"
+	    "\\<[0-9]+[eE][-+]?[0-9]+[fFdD]?\\>"
+	    "\\|"
+	    "\\<0[xX][0-9a-fA-F]+[lL]?\\>"
+	    "\\|"
+	    "\\<[0-9]+[lLfFdD]?\\>"
+	    "\\)"
+	    ))
   "Regular expression to match Java numbers.")
 
 (defconst jde-java-font-lock-operator-regexp
@@ -359,98 +390,13 @@ you have a lot of user's defined names don't use a value less than 1!"
 (defconst jde-java-font-lock-capital-id-regexp
   (eval-when-compile
     (concat "\\(\\b[" jde-java-font-lock-capital-letter
-            "]+[" jde-java-font-lock-capital-letter-or-digit
-            "]*\\b\\)"))
+	    "]+[" jde-java-font-lock-capital-letter-or-digit
+	    "]*\\b\\)"))
   "Regular expression to match capitalised identifiers.")
 
 ;;;;
 ;;;; Support for fontification inside javadocs and comments.
 ;;;;
-
-(defun jde-java-font-lock-remove-javadoc-keywords (keywords)
-  "Remove existing javadoc font lock keywords from KEYWORDS.
-That is those with \"@\" in their matcher regexp."
-  (let (kw matcher)
-    (while keywords
-      (setq matcher  (car keywords)
-            keywords (cdr keywords))
-      (if (not (and (consp matcher)
-                    (stringp (car matcher))
-                    (string-match "@" (car matcher))))
-          (setq kw (cons matcher kw))))
-    (nreverse kw)))
-
-(defconst jde-java-font-lock-comment-faces
-  '(font-lock-comment-face font-lock-doc-face)
-  "List of faces font-lock uses for comments.")
-
-(defmacro jde-java-font-lock-at-comment (pos)
-  "Return non-nil if POS is in a comment."
-  `(memq (get-text-property ,pos 'face)
-         jde-java-font-lock-comment-faces))
-
-(defsubst jde-java-font-lock-search-in-comment (regexp end)
-  "Search forward from point for regular expression REGEXP.
-Ensure matching occurs in a java comment.  Buffer position END bounds
-the search.  The match found must not extend after that position."
-  (let ((here (point))
-        ok b p)
-    (while (and (not ok)
-                (setq p (re-search-forward regexp end t)))
-      (setq b (match-beginning 0))
-      (setq ok (and (jde-java-font-lock-at-comment b)
-                    (< p (next-single-property-change
-                          b 'face nil (point-max))))))
-    (if ok
-        (point)
-      (goto-char here)
-      nil)))
-
-(defsubst jde-java-font-lock-search-in-javadoc (regexp end)
-  "Search forward from point for regular expression REGEXP.
-Ensure matching occurs in a javadoc comment.  Buffer position END
-bounds the search.  The match found must not extend after that
-position."
-  (let ((here (point))
-        b c ok md p)
-    (while (and (not ok) (setq p (re-search-forward regexp end t)))
-      (setq b  (match-beginning 0)
-            md (match-data)
-            ok (and (re-search-backward "^\\s-*\\(/[*][*]\\)" nil t)
-                    (jde-java-font-lock-at-comment
-                     (goto-char (setq c (match-beginning 1))))
-                    (forward-comment 1)
-                    (< p (point))
-                    (>= b c)
-                    (setq here p)))
-      (goto-char p))
-    (set-match-data md)
-    (goto-char here)
-    ok))
-
-(defun jde-java-font-lock-quote-matcher (end)
-  "Font lock matcher for comment enclosed in \`\'.
-Limit search to END position."
-  (jde-java-font-lock-search-in-comment
-   "`\\([^']*\\)'"
-   end))
-
-(defconst jde-java-font-lock-quote-keyword
-  '(jde-java-font-lock-quote-matcher
-    1 jde-java-font-lock-doc-tag-face t)
-  "Font lock keyword for comment enclosed in \`\'.")
-
-(defun jde-java-font-lock-html-ahref-matcher (end)
-  "Font lock matcher for HTML A HREF anchor in javadoc comments.
-Limit search to END position."
-  (jde-java-font-lock-search-in-javadoc
-   "<[Aa]\\s-+[Hh][Rr][Ee][Ff][^>]*>\\([^>]+\\)</[Aa]>"
-   end))
-
-(defconst jde-java-font-lock-html-ahref-keyword
-  '(jde-java-font-lock-html-ahref-matcher
-    1 jde-java-font-lock-link-face t)
-  "Font lock keyword for javadoc HTML A HREF anchor.")
 
 (eval-and-compile
   (defun jde-java-font-lock-html-tag-regexp (tag &rest aliases)
@@ -487,25 +433,46 @@ expression in the returned regexp.  ALIASES are other names for TAG."
 (defmacro jde-java-font-lock-at-comment (pos)
   "Return non-nil if POS is in a comment."
   `(memq (get-text-property ,pos 'face)
-         jde-java-font-lock-comment-faces))
+	 jde-java-font-lock-comment-faces))
 
-
-  (defsubst jde-java-font-lock-search-in-comment (regexp end)
-    "Search forward from point for regular expression REGEXP.
+(defsubst jde-java-font-lock-search-in-comment (regexp end)
+  "Search forward from point for regular expression REGEXP.
 Ensure matching occurs in a java comment.  Buffer position END bounds
 the search.  The match found must not extend after that position."
-    (let ((here (point))
-          ok b p)
-      (while (and (not ok)
-                  (setq p (re-search-forward regexp end t)))
-        (setq b (match-beginning 0))
-        (setq ok (and (jde-java-font-lock-at-comment b)
-                      (< p (next-single-property-change
-                            b 'face nil (point-max))))))
-      (if ok
-          (point)
-        (goto-char here)
-        nil)))
+  (let ((here (point))
+	ok b p)
+    (while (and (not ok)
+		(setq p (re-search-forward regexp end t)))
+      (setq b (match-beginning 0))
+      (setq ok (and (jde-java-font-lock-at-comment b)
+		    (< p (next-single-property-change
+			  b 'face nil (point-max))))))
+    (if ok
+	(point)
+      (goto-char here)
+      nil)))
+
+(defsubst jde-java-font-lock-search-in-javadoc (regexp end)
+  "Search forward from point for regular expression REGEXP.
+Ensure matching occurs in a javadoc comment.  Buffer position END
+bounds the search.  The match found must not extend after that
+position."
+  (let ((here (point))
+	b c ok md p)
+    (while (and (not ok) (setq p (re-search-forward regexp end t)))
+      (setq b  (match-beginning 0)
+	    md (match-data)
+	    ok (and (re-search-backward "^\\s-*\\(/[*][*]\\)" nil t)
+		    (jde-java-font-lock-at-comment
+		     (goto-char (setq c (match-beginning 1))))
+		    (forward-comment 1)
+		    (< p (point))
+		    (>= b c)
+		    (setq here p)))
+      (goto-char p))
+    (set-match-data md)
+    (goto-char here)
+    ok))
 
 (defun jde-java-font-lock-quote-matcher (end)
   "Font lock matcher for comment enclosed in \`\'.
@@ -519,104 +486,86 @@ Limit search to END position."
     1 jde-java-font-lock-doc-tag-face t)
   "Font lock keyword for comment enclosed in \`\'.")
 
+(defun jde-java-font-lock-html-ahref-matcher (end)
+  "Font lock matcher for HTML A HREF anchor in javadoc comments.
+Limit search to END position."
+  (jde-java-font-lock-search-in-javadoc
+   "<[Aa]\\s-+[Hh][Rr][Ee][Ff][^>]*>\\([^>]+\\)</[Aa]>"
+   end))
+
+(defconst jde-java-font-lock-html-ahref-keyword
+  '(jde-java-font-lock-html-ahref-matcher
+    1 jde-java-font-lock-link-face t)
+  "Font lock keyword for javadoc HTML A HREF anchor.")
+
 (eval-and-compile
   (if (featurep 'cc-fonts)
-    
+
       ;; Highlight javadoc comments through cc-fonts.
       (defconst jde-java-font-lock-doc-comments
-        `(
-          ;; Fontify javadoc tags (including non official ones)
-          (,(concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
-                    "\\(@[" jde-java-font-lock-letter-or-digit "]+\\)")
-           2 jde-java-font-lock-doc-tag-face t)
-          ;; Fontify @param variable name
-          ("^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*@param\\>[ \t]*\\(\\sw+\\)?"
-           2 font-lock-variable-name-face prepend t)
-          ;; Fontify @exception or @throws exception type
-          ("^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*\
+	`(
+	  ;; Fontify javadoc tags (including non official ones)
+	  (,(concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
+		    "\\(@[" jde-java-font-lock-letter-or-digit "]+\\)")
+	   2 jde-java-font-lock-doc-tag-face t)
+	  ;; Fontify @param variable name
+	  ("^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*@param\\>[ \t]*\\(\\sw+\\)?"
+	   2 font-lock-variable-name-face prepend t)
+	  ;; Fontify @exception or @throws exception type
+	  ("^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*\
 @\\(exception\\|throws\\)\\>[ \t]*\\(\\S-+\\)?"
-           3 font-lock-type-face prepend t)
-          ;; Fontify @docRoot
-          ("{\\(@docRoot\\)}"
-           1 jde-java-font-lock-doc-tag-face t)
-          ;; Fontify @link
-          ("{\\(@link\\)\\>[ \t]+\\([^}]*\\)}"
-           (1 jde-java-font-lock-doc-tag-face t)
-           (2 jde-java-font-lock-link-face t))
-          ;; Fontify @see reference
-          (,(concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
-                    "@see\\>[ \t]*"
-                    "\\([.#" jde-java-font-lock-letter-or-digit "]+\\)")
-           2 jde-java-font-lock-code-face t)
-          ;; Fontify the text of a HREF anchor
-          ("<[Aa]\\s-+[Hh][Rr][Ee][Ff][^>]*>\\([^>]+\\)</[Aa]>"
-           1 jde-java-font-lock-link-face t)
-          ;; Fontify other HTML tags
-          (,(jde-java-font-lock-html-tag-regexp "b")
-           2 jde-java-font-lock-bold-face t)
-          (,(jde-java-font-lock-html-tag-regexp "strong")
-           2 jde-java-font-lock-bold-face t)
-          (,(jde-java-font-lock-html-tag-regexp "i")
-           2 jde-java-font-lock-italic-face t)
-          (,(jde-java-font-lock-html-tag-regexp "em")
-           2 jde-java-font-lock-italic-face t)
-          (,(jde-java-font-lock-html-tag-regexp "u")
-           2 jde-java-font-lock-underline-face t)
-          (,(jde-java-font-lock-html-tag-regexp "code")
-           2 jde-java-font-lock-code-face t)
-          (,(jde-java-font-lock-html-tag-regexp "pre")
-           2 jde-java-font-lock-pre-face t)
-          )
-        "Keywords highlighted in javadoc comments.")
-  
+	   3 font-lock-type-face prepend t)
+	  ;; Fontify @docRoot
+	  ("{\\(@docRoot\\)}"
+	   1 jde-java-font-lock-doc-tag-face t)
+	  ;; Fontify @link
+	  ("{\\(@link\\)\\>[ \t]+\\([^}]*\\)}"
+	   (1 jde-java-font-lock-doc-tag-face t)
+	   (2 jde-java-font-lock-link-face t))
+	  ;; Fontify @see reference
+	  (,(concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
+		    "@see\\>[ \t]*"
+		    "\\([.#" jde-java-font-lock-letter-or-digit "]+\\)")
+	   2 jde-java-font-lock-code-face t)
+	  ;; Fontify the text of a HREF anchor
+	  ("<[Aa]\\s-+[Hh][Rr][Ee][Ff][^>]*>\\([^>]+\\)</[Aa]>"
+	   1 jde-java-font-lock-link-face t)
+	  ;; Fontify other HTML tags
+	  (,(jde-java-font-lock-html-tag-regexp "b")
+	   2 jde-java-font-lock-bold-face t)
+	  (,(jde-java-font-lock-html-tag-regexp "strong")
+	   2 jde-java-font-lock-bold-face t)
+	  (,(jde-java-font-lock-html-tag-regexp "i")
+	   2 jde-java-font-lock-italic-face t)
+	  (,(jde-java-font-lock-html-tag-regexp "em")
+	   2 jde-java-font-lock-italic-face t)
+	  (,(jde-java-font-lock-html-tag-regexp "u")
+	   2 jde-java-font-lock-underline-face t)
+	  (,(jde-java-font-lock-html-tag-regexp "code")
+	   2 jde-java-font-lock-code-face t)
+	  (,(jde-java-font-lock-html-tag-regexp "pre")
+	   2 jde-java-font-lock-pre-face t)
+	  )
+	"Keywords highlighted in javadoc comments.")
+
     ;; Highlight javadoc comments through JDEE's own support
     (defun jde-java-font-lock-remove-javadoc-keywords (keywords)
       "Remove existing javadoc font lock keywords from KEYWORDS.
 That is those with \"@\" in their matcher regexp."
       (let (kw matcher)
-        (while keywords
-          (setq matcher  (car keywords)
-                keywords (cdr keywords))
-          (if (not (and (consp matcher)
-                        (stringp (car matcher))
-                        (string-match "@" (car matcher))))
-              (setq kw (cons matcher kw))))
-        (nreverse kw)))
-
-    (defsubst jde-java-font-lock-search-in-javadoc (regexp end)
-      "Search forward from point for regular expression REGEXP.
-Ensure matching occurs in a javadoc comment.  Buffer position END
-bounds the search.  The match found must not extend after that
-position."
-      (let ((here (point))
-            b c ok md p)
-        (while (and (not ok) (setq p (re-search-forward regexp end t)))
-          (setq b  (match-beginning 0)
-                md (match-data)
-                ok (and (re-search-backward "^\\s-*\\(/[*][*]\\)" nil t)
-                        (jde-java-font-lock-at-comment
-                         (goto-char (setq c (match-beginning 1))))
-                        (forward-comment 1)
-                        (< p (point))
-                        (>= b c)
-                        (setq here p)))
-          (goto-char p))
-        (set-match-data md)
-        (goto-char here)
-        ok))
-
-    (defun jde-java-font-lock-html-ahref-matcher (end)
-      "Font lock matcher for HTML A HREF anchor in javadoc comments.
-Limit search to END position."
-      (jde-java-font-lock-search-in-javadoc
-       "<[Aa]\\s-+[Hh][Rr][Ee][Ff][^>]*>\\([^>]+\\)</[Aa]>"
-       end))
+	(while keywords
+	  (setq matcher  (car keywords)
+		keywords (cdr keywords))
+	  (if (not (and (consp matcher)
+			(stringp (car matcher))
+			(string-match "@" (car matcher))))
+	      (setq kw (cons matcher kw))))
+	(nreverse kw)))
 
     (defconst jde-java-font-lock-html-ahref-keyword
       '(jde-java-font-lock-html-ahref-matcher
-        1 jde-java-font-lock-link-face t)
+	1 jde-java-font-lock-link-face t)
       "Font lock keyword for javadoc HTML A HREF anchor.")
-
 
     (defvar jde-java-font-lock-html-keywords nil
       "List of HTML keywords defined so far.")
@@ -626,11 +575,11 @@ Limit search to END position."
 Data inside TAG will be highlighted with FACE.
 A new keyword is pushed into `jde-java-font-lock-html-keywords'."
       (let* ((matcher (intern (format "jde-java-font-lock-html-%s-matcher" tag))))
-        `(progn
-           (add-to-list 'jde-java-font-lock-html-keywords '(,matcher 2 ,face t))
-           (defun ,matcher (end)
-             (jde-java-font-lock-search-in-javadoc
-              ,(jde-java-font-lock-html-tag-regexp tag) end)))))
+	`(progn
+	   (add-to-list 'jde-java-font-lock-html-keywords '(,matcher 2 ,face t))
+	   (defun ,matcher (end)
+	     (jde-java-font-lock-search-in-javadoc
+	      ,(jde-java-font-lock-html-tag-regexp tag) end)))))
 
     (jde-java-font-lock-def-html-keyword "b" jde-java-font-lock-bold-face)
     (jde-java-font-lock-def-html-keyword "strong" jde-java-font-lock-bold-face)
@@ -645,13 +594,13 @@ A new keyword is pushed into `jde-java-font-lock-html-keywords'."
 Limit search to END position."
       (jde-java-font-lock-search-in-javadoc
        (eval-when-compile
-         (concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
-                 "\\(@[" jde-java-font-lock-letter-or-digit "]+\\)"))
+	 (concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
+		 "\\(@[" jde-java-font-lock-letter-or-digit "]+\\)"))
        end))
 
     (defconst jde-java-font-lock-javadoc-tag-keyword
       '(jde-java-font-lock-javadoc-tag-matcher
-        2 jde-java-font-lock-doc-tag-face t)
+	2 jde-java-font-lock-doc-tag-face t)
       "Font lock keyword for javadoc tags.")
 
     (defun jde-java-font-lock-javadoc-docroot-matcher (end)
@@ -663,7 +612,7 @@ Limit search to END position."
 
     (defconst jde-java-font-lock-javadoc-docroot-keyword
       '(jde-java-font-lock-javadoc-docroot-matcher
-        1 jde-java-font-lock-doc-tag-face t)
+	1 jde-java-font-lock-doc-tag-face t)
       "Font lock keyword for javadoc @docRoot tags.")
 
     (defun jde-java-font-lock-javadoc-link-matcher (end)
@@ -675,8 +624,8 @@ Limit search to END position."
 
     (defconst jde-java-font-lock-javadoc-link-keyword
       '(jde-java-font-lock-javadoc-link-matcher
-        (1 jde-java-font-lock-doc-tag-face t)
-        (2 jde-java-font-lock-link-face t))
+	(1 jde-java-font-lock-doc-tag-face t)
+	(2 jde-java-font-lock-link-face t))
       "Font lock keyword for javadoc @link tags.")
 
     (defun jde-java-font-lock-javadoc-see-ref-matcher (end)
@@ -684,14 +633,14 @@ Limit search to END position."
 Limit search to END position."
       (jde-java-font-lock-search-in-javadoc
        (eval-when-compile
-         (concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
-                 "@see\\>[ \t]*"
-                 "\\([.#" jde-java-font-lock-letter-or-digit "]+\\)"))
+	 (concat "^[ \t]*\\(/\\*\\*\\|\\*?\\)[ \t]*"
+		 "@see\\>[ \t]*"
+		 "\\([.#" jde-java-font-lock-letter-or-digit "]+\\)"))
        end))
 
     (defconst jde-java-font-lock-javadoc-see-ref-keyword
       '(jde-java-font-lock-javadoc-see-ref-matcher
-        2 jde-java-font-lock-code-face t)
+	2 jde-java-font-lock-code-face t)
       "Font lock keyword for javadoc @see references.")
 
     (defun jde-java-font-lock-javadoc-param-name-matcher (end)
@@ -703,7 +652,7 @@ Limit search to END position."
 
     (defconst jde-java-font-lock-javadoc-param-name-keyword
       '(jde-java-font-lock-javadoc-param-name-matcher
-        2 font-lock-variable-name-face prepend t)
+	2 font-lock-variable-name-face prepend t)
       "Font lock keyword for javadoc @param names.")
 
     (defun jde-java-font-lock-javadoc-exception-type-matcher (end)
@@ -716,10 +665,12 @@ Limit search to END position."
 
     (defconst jde-java-font-lock-javadoc-exception-type-keyword
       '(jde-java-font-lock-javadoc-exception-type-matcher
-        3 font-lock-type-face prepend t)
+	3 font-lock-type-face prepend t)
       "Font lock keyword for javadoc exception types.")
 
     ))
+
+
 
 ;;;;
 ;;;; Support for fontification of user's defined names.
@@ -738,8 +689,8 @@ keywords by entering the command:
 \\[universal-argument] \\[jde-java-font-lock-setup-keywords]."
   :group 'jde-project
   :type '(choice :tag "Names"
-                 (const :tag "No" nil)
-                 (file  :tag "In file" :format "%t\n%v")))
+		 (const :tag "No" nil)
+		 (file  :tag "In file" :format "%t\n%v")))
 
 (defcustom jde-java-font-lock-api-name-filter nil
   "*Function used to filter a name."
@@ -749,7 +700,7 @@ keywords by entering the command:
 (defconst jde-java-font-lock-api-entry-regexp
   (eval-when-compile
     (concat "^[" jde-java-font-lock-letter "]"
-            "[" jde-java-font-lock-letter-or-digit "]+$"))
+	    "[" jde-java-font-lock-letter-or-digit "]+$"))
   "Regexp to match a valid entry in `jde-java-font-lock-api-file'.")
 
 (defconst jde-java-font-lock-api-entry-match 0
@@ -761,16 +712,16 @@ If optional FILTER function is non-nil it is called for each name
 found and must return non-nil to include it in the result list."
   (let (k kl)
     (if (and jde-java-font-lock-api-file
-             (file-readable-p jde-java-font-lock-api-file))
-        (with-temp-buffer
-          (erase-buffer)
-          (insert-file-contents jde-java-font-lock-api-file)
-          (goto-char (point-min))
-          (while (re-search-forward jde-java-font-lock-api-entry-regexp nil t)
-            (setq k (match-string jde-java-font-lock-api-entry-match))
-            ;; Allow filtering of names
-            (if (or (null filter) (funcall filter k))
-                (setq kl (cons k kl))))))
+	     (file-readable-p jde-java-font-lock-api-file))
+	(with-temp-buffer
+	  (erase-buffer)
+	  (insert-file-contents jde-java-font-lock-api-file)
+	  (goto-char (point-min))
+	  (while (re-search-forward jde-java-font-lock-api-entry-regexp nil t)
+	    (setq k (match-string jde-java-font-lock-api-entry-match))
+	    ;; Allow filtering of names
+	    (if (or (null filter) (funcall filter k))
+		(setq kl (cons k kl))))))
     kl))
 
 (defun jde-java-font-lock-api-split-list (l n)
@@ -779,17 +730,17 @@ If L is nil return nil.  If N is less than 1 all elements will be in
 one sub list."
   (if l
       (if (<= n 0)
-          (list l)
-        (let (split-list sub-list i)
-          (while l
-            (setq i 0 sub-list nil)
-            (while (and l (< i n))
-              (setq sub-list (cons (car l) sub-list)
-                    i        (1+ i)
-                    l        (cdr l)))
-            (if sub-list
-                (setq split-list (cons sub-list split-list))))
-          split-list))))
+	  (list l)
+	(let (split-list sub-list i)
+	  (while l
+	    (setq i 0 sub-list nil)
+	    (while (and l (< i n))
+	      (setq sub-list (cons (car l) sub-list)
+		    i        (1+ i)
+		    l        (cdr l)))
+	    (if sub-list
+		(setq split-list (cons sub-list split-list))))
+	  split-list))))
 
 (defun jde-java-font-lock-api-build-regexps (max-matches)
   "Build regular expressions matching names to fontify.
@@ -799,12 +750,12 @@ match all the names."
   (let ((max-specpdl-size 2000)) ;; Prevent errors in `regexp-opt'
 				 ;; when processing long string listes
     (mapcar (function
-             (lambda (k)
-               (concat "\\<" (regexp-opt k t) "\\>")))
-            (jde-java-font-lock-api-split-list
-             (jde-java-font-lock-api-names
-              jde-java-font-lock-api-name-filter)
-             max-matches))))
+	     (lambda (k)
+	       (concat "\\<" (regexp-opt k t) "\\>")))
+	    (jde-java-font-lock-api-split-list
+	     (jde-java-font-lock-api-names
+	      jde-java-font-lock-api-name-filter)
+	     max-matches))))
 
 (defvar jde-java-font-lock-api-cache nil
   "Cache of regular expressions matching names to fontify..")
@@ -815,9 +766,9 @@ There is a different cache file for each major version of (X)Emacs
 because of incompatible regular expressions returned by `regexp-opt'."
   (and jde-java-font-lock-api-file
        (format "%s.%semacs-%d.apicache"
-               jde-java-font-lock-api-file
-               (if (featurep 'xemacs) "x" "")
-               emacs-major-version)))
+	       jde-java-font-lock-api-file
+	       (if (featurep 'xemacs) "x" "")
+	       emacs-major-version)))
 
 (defconst jde-java-font-lock-api-cache-file-header
   ";;; Regular expressions matching names to fontify.
@@ -845,46 +796,46 @@ is created."
      ((null cache)
       ;; Clear the cache (no fontification)
       (setq jde-java-font-lock-api-cache nil))
-     
+
      ;; A cache file exists
      ((file-readable-p cache)
       (if (file-newer-than-file-p jde-java-font-lock-api-file cache)
-          (progn
-            (message
-             "jde-java-font-lock: names file %s newer than cache file %s"
-             jde-java-font-lock-api-file cache)
-            ;; The api file has been modified since the cache was
-            ;; created, so clear the cache to rebuild
-            (setq jde-java-font-lock-api-cache nil))
-        ;; Try to load the existing cache if needed
-        (or jde-java-font-lock-api-cache
-            (condition-case nil
-                (load-file cache)
-              ;; If load fails clear the cache to rebuild
-              (error
-               (setq jde-java-font-lock-api-cache nil)))))))
+	  (progn
+	    (message
+	     "jde-java-font-lock: names file %s newer than cache file %s"
+	     jde-java-font-lock-api-file cache)
+	    ;; The api file has been modified since the cache was
+	    ;; created, so clear the cache to rebuild
+	    (setq jde-java-font-lock-api-cache nil))
+	;; Try to load the existing cache if needed
+	(or jde-java-font-lock-api-cache
+	    (condition-case nil
+		(load-file cache)
+	      ;; If load fails clear the cache to rebuild
+	      (error
+	       (setq jde-java-font-lock-api-cache nil)))))))
 
     (or jde-java-font-lock-api-cache
-        (not cache)
-        ;; Build a new cache if it is empty and available
-        (progn
-          (message "jde-java-font-lock: building names cache...")
-          (when (setq jde-java-font-lock-api-cache
-                      (jde-java-font-lock-api-build-regexps
-                       jde-java-font-lock-max-names-by-regexp))
-            ;; Save regexps in cache
-            (with-current-buffer (find-file-noselect cache)
-              (erase-buffer)
-              (insert
-               (format jde-java-font-lock-api-cache-file-header
-                       (current-time-string))
-               (format "(setq jde-java-font-lock-api-cache '%S)"
-                       jde-java-font-lock-api-cache))
-              (save-buffer)
-              (kill-buffer (current-buffer))))
-          (message "jde-java-font-lock: building names cache...%s"
-                   (if jde-java-font-lock-api-cache "done" "empty"))))
-          jde-java-font-lock-api-cache))
+	(not cache)
+	;; Build a new cache if it is empty and available
+	(progn
+	  (message "jde-java-font-lock: building names cache...")
+	  (when (setq jde-java-font-lock-api-cache
+		      (jde-java-font-lock-api-build-regexps
+		       jde-java-font-lock-max-names-by-regexp))
+	    ;; Save regexps in cache
+	    (with-current-buffer (find-file-noselect cache)
+	      (erase-buffer)
+	      (insert
+	       (format jde-java-font-lock-api-cache-file-header
+		       (current-time-string))
+	       (format "(setq jde-java-font-lock-api-cache '%S)"
+		       jde-java-font-lock-api-cache))
+	      (save-buffer)
+	      (kill-buffer (current-buffer))))
+	  (message "jde-java-font-lock: building names cache...%s"
+		   (if jde-java-font-lock-api-cache "done" "empty"))))
+	  jde-java-font-lock-api-cache))
 
 (defun jde-java-font-lock-api-keywords (&optional rebuild)
   "Return a list of font lock keywords for user's defined names.
@@ -907,67 +858,94 @@ expressions."
   (dolist (b (buffer-list))
     (when (buffer-live-p b)
       (with-current-buffer b
-        (when (and font-lock-mode
-                   (memq major-mode '(java-mode jde-mode)))
-          (message "JDEE refontify buffer %s..." b)
-          (font-lock-mode -1)
-          (font-lock-mode 1)
-          (message "JDEE refontify  buffer %s...done" b))))))
+	(when (and font-lock-mode
+		   (memq major-mode '(java-mode jde-mode)))
+	  (message "JDEE refontify buffer %s..." b)
+	  (font-lock-mode -1)
+	  (font-lock-mode 1)
+	  (message "JDEE refontify  buffer %s...done" b))))))
 
 (defun jde-java-font-lock-keywords (&optional rebuild)
   "JDEE's extra level font lock keywords.
 If optional REBUILD flag is non-nil create a new cache of regular
 expressions."
   (if (featurep 'cc-fonts)
-      
+
       ;; Through cc-fonts support.
       (append
        java-font-lock-keywords-3
        ;; Fontify user's defined names
        (mapcar #'(lambda (e)
-                   (list
-                    (c-make-font-lock-search-function
-                     (car e)
-                     (list 0 (cdr e) t))))
-               (jde-java-font-lock-api-keywords rebuild))
+		   (list
+		    (c-make-font-lock-search-function
+		     (car e)
+		     (list 0 (cdr e) t))))
+	       (jde-java-font-lock-api-keywords rebuild))
        (list
-        ;; Fontify modifiers.
-        `(,(c-make-font-lock-search-function
-            jde-java-font-lock-modifier-regexp
-            '(0 jde-java-font-lock-modifier-face t)))
-        `(,(c-make-font-lock-search-function
-            "\\<\\(false\\|null\\|true\\)\\>"
-            '(1 jde-java-font-lock-constant-face t)))
-        ;; Fontify default and assert as keywords
-        `(,(c-make-font-lock-search-function
-            "\\<\\(default\\|assert\\)\\>"
-            '(1 'font-lock-keyword-face t)))
-        ;; Fontify const and goto with warning face. These keywords are
-        ;; reserved, even though they are not currently used.
-        `(,(c-make-font-lock-search-function
-            "\\<\\(const\\|goto\\)\\>"
-            '(1 'font-lock-warning-face t)))
-        ;; Fontify numbers
-        `(,(c-make-font-lock-search-function
-            jde-java-font-lock-number-regexp
-            '(0 jde-java-font-lock-number-face t)))
-        ;; Fontify operators
+	;; Fontify modifiers.
+	`(,(c-make-font-lock-search-function
+	    jde-java-font-lock-modifier-regexp
+	    '(0 jde-java-font-lock-modifier-face t)))
+	`(,(c-make-font-lock-search-function
+	    "\\<\\(false\\|null\\|true\\)\\>"
+	    '(1 jde-java-font-lock-constant-face t)))
+	;; Fontify default and assert as keywords
+	`(,(c-make-font-lock-search-function
+	    "\\<\\(default\\|assert\\)\\>"
+	    '(1 'font-lock-keyword-face t)))
+	;; Fontify const and goto with warning face. These keywords are
+	;; reserved, even though they are not currently used.
+	`(,(c-make-font-lock-search-function
+	    "\\<\\(const\\|goto\\)\\>"
+	    '(1 'font-lock-warning-face t)))
+	;; package and imports
+	`(,(c-make-font-lock-search-function
+	    "\\<\\(package\\|import\\(?:\\s-+static\\)?\\)\\s-+\\(\\(?:[a-z*][a-zA-Z0-9]*\\.?\\)*\\)"
+	    '(1 'font-lock-keyword-face t)
+	    '(2 'jde-java-font-lock-package-face t)))
+	;; constructor
+	`(,(c-make-font-lock-search-function
+	    (concat
+	     "^\\s-*\\<\\(?:public\\|private\\|protected\\)\\>?\\s-*"
+	     "\\([" jde-java-font-lock-capital-letter "]\\sw*\\)"
+	     "(.*?)")
+	    '(1 'jde-java-font-lock-constructor-face t)))
+	;; class names
+	`(,(c-make-font-lock-search-function
+	    "\\<\\(new\\|instanceof\\)\\>[ \t]+\\(\\sw+\\)"
+	    '(2 font-lock-type-face t)))
+
+	;; modifier protections
+	 `(,(c-make-font-lock-search-function
+	    "\\<\\(private\\)\\>"
+	    '(1 'jde-java-font-lock-private-face t)))
+	`(,(c-make-font-lock-search-function
+	    "\\<\\(protected\\)\\>"
+	    '(1 'jde-java-font-lock-protected-face t)))
+	`(,(c-make-font-lock-search-function
+	    "\\<\\(public\\)\\>"
+	    '(1 'jde-java-font-lock-public-face t)))
+	;; Fontify numbers
+	`(,(c-make-font-lock-search-function
+	    jde-java-font-lock-number-regexp
+	    '(0 jde-java-font-lock-number-face t)))
+	;; Fontify operators
 ;;;     `(,(c-make-font-lock-search-function
 ;;;         jde-java-font-lock-operator-regexp
 ;;;         '(0 jde-java-font-lock-operator-face t)))
-        ;; Fontify capitalised identifiers as constant
-        `(,jde-java-font-lock-capital-id-regexp
-          1 jde-java-font-lock-constant-face)
-        ;; Fontify text between `' in comments
-        jde-java-font-lock-quote-keyword
-        ;; Fontify javadoc comments
-        '((lambda (limit)
-            (c-font-lock-doc-comments
-                "/\\*\\*" limit
-              jde-java-font-lock-doc-comments)))
-        )
+	;; Fontify capitalised identifiers as constant
+	`(,jde-java-font-lock-capital-id-regexp
+	  1 jde-java-font-lock-constant-face)
+	;; Fontify text between `' in comments
+	jde-java-font-lock-quote-keyword
+	;; Fontify javadoc comments
+	'((lambda (limit)
+	    (c-font-lock-doc-comments
+		"/\\*\\*" limit
+	      jde-java-font-lock-doc-comments)))
+	)
        )
-    
+
     ;; Through JDEE's own support
     (append
      ;; Feature scoping: These must come first or the Special
@@ -975,15 +953,15 @@ expressions."
      ;; them.
 ;;; Compatibility
      (if (featurep 'xemacs)
-         (list
-            
-          ;; Special keywords and constants
-          '("\\<\\(this\\|super\\)\\>"
-            (1 font-lock-keyword-face))
-          '("\\<\\(false\\|null\\|true\\)\\>"
-            (1 jde-java-font-lock-constant-face))
-          ))
-       
+	 (list
+
+	  ;; Special keywords and constants
+	  '("\\<\\(this\\|super\\)\\>"
+	    (1 font-lock-keyword-face))
+	  '("\\<\\(false\\|null\\|true\\)\\>"
+	    (1 jde-java-font-lock-constant-face))
+	  ))
+
      (list
       ;; Fontify default as keyword
       '("\\<\\(default\\)\\>" (1 font-lock-keyword-face))
@@ -994,25 +972,25 @@ expressions."
       '("\\<\\(const\\|goto\\)\\>" (1 font-lock-warning-face))
       ;; Fontify modifiers.
       (cons jde-java-font-lock-modifier-regexp
-            'jde-java-font-lock-modifier-face)
+	    'jde-java-font-lock-modifier-face)
       ;; Fontify package directives
       '("\\<\\(package\\)\\>\\s-+\\(\\sw+\\)"
-        (1 font-lock-keyword-face)
-        (2 jde-java-font-lock-package-face nil t)
-        ("\\=\\.\\(\\sw+\\)" nil nil
-         (1 jde-java-font-lock-package-face nil t)))
+	(1 font-lock-keyword-face)
+	(2 jde-java-font-lock-package-face nil t)
+	("\\=\\.\\(\\sw+\\)" nil nil
+	 (1 jde-java-font-lock-package-face nil t)))
       ;; Fontify import directives
       '("\\<\\(import\\)\\>\\s-+\\(\\sw+\\)"
-        (1 font-lock-keyword-face)
-        (2 (if (equal (char-after (match-end 0)) ?\.)
-               'jde-java-font-lock-package-face
-             'font-lock-type-face))
-        ("\\=\\.\\(\\*\\|\\sw+\\)" nil nil
-         (1 (if (equal (char-after (match-end 0)) ?\.)
-                'jde-java-font-lock-package-face
-              (if (equal (char-before (match-end 0)) ?\*)
-                  'jde-java-font-lock-number-face
-                'font-lock-type-face)))))
+	(1 font-lock-keyword-face)
+	(2 (if (equal (char-after (match-end 0)) ?\.)
+	       'jde-java-font-lock-package-face
+	     'font-lock-type-face))
+	("\\=\\.\\(\\*\\|\\sw+\\)" nil nil
+	 (1 (if (equal (char-after (match-end 0)) ?\.)
+		'jde-java-font-lock-package-face
+	      (if (equal (char-before (match-end 0)) ?\*)
+		  'jde-java-font-lock-number-face
+		'font-lock-type-face)))))
       ;; modifier protections
       '("\\<\\(private\\)\\>" (1 jde-java-font-lock-private-face))
       '("\\<\\(protected\\)\\>" (1 jde-java-font-lock-protected-face))
@@ -1020,48 +998,48 @@ expressions."
       )
      ;; Fontify user's defined names
      (jde-java-font-lock-api-keywords rebuild)
-       
+
 ;;; Compatibility
      (if (featurep 'xemacs)
-         java-font-lock-keywords-2
+	 java-font-lock-keywords-2
        ;; Remove existing javadoc font lock keywords from GNU Emacs
        ;; `java-font-lock-keywords-3'
        (jde-java-font-lock-remove-javadoc-keywords
-        java-font-lock-keywords-3))
+	java-font-lock-keywords-3))
 
 ;;; Compatibility
      (unless (featurep 'xemacs)
        ;; GNU Emacs don't fontify capitalized types so do it
        (list
-        (list
-         (concat "\\<\\([" jde-java-font-lock-capital-letter "]\\sw*\\)\\>"
-                 "\\([ \t]*\\[[ \t]*\\]\\)*"
-                 "\\([ \t]*\\sw\\)")
-         '(font-lock-match-c-style-declaration-item-and-skip-to-next
-           (goto-char (match-beginning 3))
-           (goto-char (match-beginning 3))
-           (1 (if (match-beginning 2)
-                  font-lock-function-name-face
-                font-lock-variable-name-face))))
-        (cons
-         (concat "\\<\\([" jde-java-font-lock-capital-letter "]\\sw*\\)\\>"
-                 "\\([ \t]*\\[[ \t]*\\]\\)*"
-                 "\\([ \t]*\\sw\\)")
-         '(1 font-lock-type-face))
-        '("\\<\\(new\\|instanceof\\)\\>[ \t]+\\(\\sw+\\)"
-          2 font-lock-type-face)))
+	(list
+	 (concat "\\<\\([" jde-java-font-lock-capital-letter "]\\sw*\\)\\>"
+		 "\\([ \t]*\\[[ \t]*\\]\\)*"
+		 "\\([ \t]*\\sw\\)")
+	 '(font-lock-match-c-style-declaration-item-and-skip-to-next
+	   (goto-char (match-beginning 3))
+	   (goto-char (match-beginning 3))
+	   (1 (if (match-beginning 2)
+		  font-lock-function-name-face
+		font-lock-variable-name-face))))
+	(cons
+	 (concat "\\<\\([" jde-java-font-lock-capital-letter "]\\sw*\\)\\>"
+		 "\\([ \t]*\\[[ \t]*\\]\\)*"
+		 "\\([ \t]*\\sw\\)")
+	 '(1 font-lock-type-face))
+	'("\\<\\(new\\|instanceof\\)\\>[ \t]+\\(\\sw+\\)"
+	  2 font-lock-type-face)))
 
      ;; Some extra fontification
      (list
       ;; Fontify numbers
       (cons jde-java-font-lock-number-regexp
-            'jde-java-font-lock-number-face)
+	    'jde-java-font-lock-number-face)
       ;; Fontify operators
 ;;;      (cons jde-java-font-lock-operator-regexp
 ;;;            'jde-java-font-lock-operator-face)
       ;; Fontify capitalised identifiers as constant
       (cons jde-java-font-lock-capital-id-regexp
-            '(1 jde-java-font-lock-constant-face))
+	    '(1 jde-java-font-lock-constant-face))
       ;; Fontify text between `' in comments
       jde-java-font-lock-quote-keyword
       ;; Fontify javadoc tags (including non official ones)
@@ -1093,10 +1071,10 @@ expressions."
   (and (interactive-p)
        (consp current-prefix-arg)
        (setq rebuild t))
-  
+
   ;; Setup the JDEE's extra font lock keywords.
   (setq java-font-lock-keywords-4 (jde-java-font-lock-keywords rebuild))
-  
+
   ;; Update fontification of buffers in `java-mode' and `jde-mode'.
   (when (interactive-p)
     (jde-java-font-lock-refontify)))
@@ -1106,21 +1084,21 @@ expressions."
 
 ;; Define new defaults for Font Lock mode
 (defconst jde-java-font-lock-defaults
-  (let ((java-defaults 
-         (if (featurep 'xemacs)
-             (get 'java-mode 'font-lock-defaults)
-           ;;; To avoid compilation warning, replace obsolete variable,
+  (let ((java-defaults
+	 (if (featurep 'xemacs)
+	     (get 'java-mode 'font-lock-defaults)
+	   ;;; To avoid compilation warning, replace obsolete variable,
 	   ;;; font-lock-defaults-alist, with its value for java-mode.
-           ;;; (cdr (assq 'java-mode font-lock-defaults-alist)))))
+	   ;;; (cdr (assq 'java-mode font-lock-defaults-alist)))))
 	   ;;; Paul Kinnucan.
-	   '((java-font-lock-keywords 
+	   '((java-font-lock-keywords
 	      java-font-lock-keywords-1
-	      java-font-lock-keywords-2 
+	      java-font-lock-keywords-2
 	      java-font-lock-keywords-3)
 	     nil nil ((?_ . "w") (?$ . "w")) nil
 	     (font-lock-mark-block-function . mark-defun)))))
     (cons (append (car java-defaults) '(java-font-lock-keywords-4))
-          (cdr java-defaults)))
+	  (cdr java-defaults)))
   "Defaults for coloring Java keywords in jde-mode. The defaults
 consist of the java-mode defaults plus `java-font-lock-keywords-4'.")
 
@@ -1135,14 +1113,14 @@ on and uses `java-font-lock-keywords-4' extra level of fontification.
 If `jde-use-font-lock' is nil syntax coloring rules are those of
 standard `java-mode'."
   (when (or (featurep 'xemacs)          ; XEmacs and Emacs 21 support
-            (> emacs-major-version 20)  ; colors on ordinary terminal. 
-            window-system)              ; Others only on `window-system'.
+	    (> emacs-major-version 20)  ; colors on ordinary terminal.
+	    window-system)              ; Others only on `window-system'.
     ;; If `jde-use-font-lock' is non-nil setup
     ;; `java-font-lock-keywords-4' extra level of fontification.
     (when jde-use-font-lock
       ;; Setup `font-lock-defaults'
       (set (make-local-variable 'font-lock-defaults)
-           jde-java-font-lock-defaults)
+	   jde-java-font-lock-defaults)
       ;; Use the maximum decoration available
       (set (make-local-variable 'font-lock-maximum-decoration) t)
       ;; Handle multiline
@@ -1155,165 +1133,23 @@ standard `java-mode'."
 	  ;; The following is intended to avoid a byte-compilation warning
 	  ;; when compiling this file under Emacs. The Emacs version of
 	  ;; font-lock-set-defaults accepts no arguments.
-          (apply 'font-lock-set-defaults (list t))
-        (if global-font-lock-mode
-            (if (fboundp 'turn-on-font-lock-if-enabled) 
-                (turn-on-font-lock-if-enabled)
-              (turn-on-font-lock-if-desired)))))  ;; Newer emacs renamed -if-enabled to -if-desired
+	  (apply 'font-lock-set-defaults (list t))
+	(if global-font-lock-mode
+	    (if (fboundp 'turn-on-font-lock-if-enabled)
+		(turn-on-font-lock-if-enabled)
+	      (turn-on-font-lock-if-desired)))))  ;; Newer emacs renamed -if-enabled to -if-desired
     ;; Always turn on font locking if `jde-use-font-lock' is non-nil.
     (if jde-use-font-lock
-        (turn-on-font-lock))))
+	(turn-on-font-lock))))
+
+;; Java has a different font for comments than Emacs Lisp, but by default,
+;; `jde-java-font-lock-javadoc-face' inherits from `font-lock-doc-face', which
+;; is the mapping for `c-doc-face-name' Emacs 22 and up
+(defconst c-doc-face-name 'jde-java-font-lock-javadoc-face)
 
 ;; By default, enable extra fontification in `jde-mode'.
 (add-hook 'jde-mode-hook #'jde-setup-syntax-coloring)
-
+
 (provide 'jde-java-font-lock)
 
-;;; Change History:
-
-;;
-;; $Log: jde-java-font-lock.el,v $
-;; Revision 1.24  2005/04/07 05:54:29  paulk
-;; Defines faces for public, private, and protected keywords. Thanks to Paul Landes.
-;;
-;; Revision 1.23  2004/07/07 04:35:20  paulk
-;; Made changes to eliminate byte-compilation warnings.
-;;
-;; Revision 1.22  2004/05/28 04:34:18  paulk
-;; Remove DOS line endings.
-;;
-;; Revision 1.21  2004/05/14 04:03:27  paulk
-;; Update to support c-doc-face-name if defined. Thanks to David Ponce.
-;;
-;; Revision 1.20  2004/03/03 03:14:28  paulk
-;; Fix bug that causes a (wrong-type-argument integerp nil) error when entering an import statement in a new Java file. Thanks to David Ponce.
-;;
-;; Revision 1.19  2003/07/15 11:58:45  paulk
-;; Remove CRs.
-;;
-;; Revision 1.18  2003/07/06 13:42:01  paulk
-;; As of version 5.30, cc-mode provides its own set of font lock keywords and faces for
-;; Java: cc-fonts.  The JDEE now uses cc-fonts if defined. Thanks to David Ponce.
-;;
-;; Revision 1.17  2003/06/07 05:07:42  paulk
-;; Fix a small bug in the JDEE font lock on XEmacs 21.4.11. Thanks to Andrew Kensler.
-;;
-;; Revision 1.16  2003/02/07 00:38:10  jslopez
-;; Adds assert as a keyword to be fortified.
-;; Ideally we want the assert keyword fortified only when the user
-;; is using jdk 1.4 but I don't know of a good way of enabling/disabling
-;; fortifying a keyword based on another parameter. Since fortifying does
-;; not cause any harm, I rather have it fortified always. This might prevent
-;; users from using the assert keyword and causing them problem if they
-;; want to upgrade to 1.4 and use assertions.
-;;
-;; Revision 1.15  2002/09/16 04:42:54  paulk
-;; XEmacs compatibility fix: added require statement for regexp-opt package.
-;;
-;; Revision 1.14  2002/09/16 04:06:14  paulk
-;; XEmacs compatibility fixes. Thanks to Andy Piper.
-;;
-;; Revision 1.13  2002/06/23 17:38:28  jslopez
-;; Removes carriage returns.
-;;
-;; Revision 1.12  2002/06/22 06:29:32  paulk
-;; Improves highlighting of multiline HTML tags in javadoc comments. Thanks to David Ponce.
-;;
-;; Revision 1.11  2001/09/18 15:03:52  jslopez
-;; Adding david's fixed for the make error.
-;;
-;; Revision 1.10  2001/09/18 14:58:02  jslopez
-;; reverted to 1.8 code
-;;
-;; Revision 1.8  2001/09/16 17:55:37  paulk
-;; This new version should be a little bit faster when byte compiled and
-;; fixes the `font-lock-add-keywords' problem reported by Klaus Berndl
-;; <klaus.berndl@sdm.de>. Thanks to David Ponce.
-;;
-;; Revision 1.7  2001/08/06 05:32:20  paulk
-;; New implementation of `jde-setup-syntax-coloring' as a
-;; `java-mode-hook'.
-;;
-;; - If `jde-use-font-lock' is non-nil the JDE completely handles font
-;;   lock setup (it turns on font locking in `java-mode' if needed) and
-;;   installs the extra level of fontification in
-;;   `java-font-lock-keywords-4'.
-;;
-;; - If `jde-use-font-lock' is nil the JDE does nothing by itself (it
-;;   does not turn on font locking in `java-mode') and just delegates
-;;   syntax coloring setup to standard `java-mode'.
-;;
-;; Revision 1.6  2001/06/05 04:54:49  paulk
-;; Minor updates.
-;;
-;; Revision 1.5  2001/04/14 05:28:11  paulk
-;; - All extra fontification added by jde-java-font-lock have a specific
-;;   face.  So there is less font-lock implementation dependencies,
-;;   greater flexibility to setup a color theme, and fontification can be
-;;   kept consistent accross Emacs flavors :-) Notice that this change
-;;   may require to redo some face customization :(
-;;
-;;
-;; - For convenience all specific jde-java-font-lock faces are in the
-;;   customization group `jde-java-font-lock-faces' which is a sub group
-;;   of `font-lock-highlighting-faces' (Emacs) or `font-lock-faces'
-;;   (XEmacs).
-;;
-;;
-;; - Better fontification of numbers and imported package names.
-;;
-;;
-;; - When used interactively the command
-;;   `jde-java-font-lock-setup-keywords' automatically update
-;;   fontification of all Java buffers.  This is very useful when you
-;;   change your API file for example!
-;;
-;;
-;; - The `jde-setup-syntax-coloring' is greatly enhanced.  On Emacs, it
-;;   takes care of the current `global-font-lock-mode' setting.  Also, it
-;;   no more use `font-lock-defaults-alist' (which is an obsolete
-;;   variable on Emacs 21) but the preferred `font-lock-defaults' way to
-;;   setup fontification.
-;;
-;; - Finally, jde-java-font-lock works in java-mode too and it can be
-;;   used standalone if needed.
-;;
-;; Contributed by David Ponce.
-;;
-;; Revision 1.4  2001/01/17 18:59:03  paulk
-;; Font-locking improvements from David Ponce
-;;
-;;    - You can now fontify user-defined identifiers with the new
-;;     jde-java-font-lock-api-face.  These identifiers are read in the
-;;     file specified by the `jde-java-font-lock-api-file' option.
-;;
-;;     The JDE provides a default file "jde-java-font-lock.api" to fontify class
-;;     names of the core 'java' and 'javax' packages (JDK 1.3) and servlet
-;;     API (JSDK 2.0).  To enable this fontification just put this file on
-;;     your home directory, maybe modify it to suit your needs and execute
-;;     the command:
-;;
-;;        M-x jde-java-font-lock-setup-keywords (or restart Emacs).
-;;
-;;     To improve reloading a cache file of regular expressions matching
-;;     these names is created in the same directory (see the source for
-;;     more details).
-;;
-;;   - Because the 'const' and 'goto' keywords are reserved, but not
-;;     currently used they are now fontified with `font-lock-warning-face'.
-;;
-;;   - The 'default' keyword is now fontified with
-;;     `font-lock-keyword-face'.  This was suggested by Stephane Nicolas
-;;     s.nicolas@videotron.ca>.
-;;
-;; Revision 1.3  2000/12/18 05:22:45  paulk
-;; *** empty log message ***
-;;
-;; Revision 1.2  2000/10/10 06:41:47  paulk
-;; Fixed some XEmacs compatibility problems.
-;;
-;; Revision 1.1  2000/10/08 12:53:22  paulk
-;; Initial revision.
-;;
-
-;;; jde-java-font-lock.el ends here
+;; End of jde-java-font-lock.el

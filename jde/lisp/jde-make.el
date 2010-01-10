@@ -1,11 +1,12 @@
 ;;; jde-make.el -- Integrated Development Environment for Java.
-;; $Revision: 1.17 $ 
+;; $Id$
 
 ;; Author: Paul Kinnucan <pkinnucan@attbi.com>
-;; Maintainer: Paul Kinnucan
+;; Maintainer: Paul Landes <landes <at> mailc dt net>
 ;; Keywords: java, tools
 
 ;; Copyright (C) 1997, 1998, 2001, 2002, 2003, 2004 Paul Kinnucan.
+;; Copyright (C) 2009 by Paul Landes
 
 ;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -55,11 +56,11 @@ this will relax the requirement for an explicit jde project file."
   :group 'jde-make
   :type 'string)
 
-(defcustom jde-make-finish-hook 
+(defcustom jde-make-finish-hook
   '(jde-compile-finish-refresh-speedbar jde-compile-finish-update-class-info)
-  "List of functions to be invoked when compilation of a 
+  "List of functions to be invoked when compilation of a
 Java source file terminates. Each function should accept
-two arguments: the compilation buffer and a string 
+two arguments: the compilation buffer and a string
 describing how the compilation finished."
   :group 'jde-make
   :type 'hook)
@@ -71,8 +72,8 @@ describing how the compilation finished."
 "*Specify whether to prompt for additional make arguments.
 If this variable is non-nil, and if `jde-build-use-make' is non nil
 the jde-build command prompts you to enter additional make
-arguments in the minibuffer. These arguments are appended to those 
-specified by customization variables. The JDE maintains a history 
+arguments in the minibuffer. These arguments are appended to those
+specified by customization variables. The JDE maintains a history
 list of arguments entered in the minibuffer."
   :group 'jde-make
   :type 'boolean
@@ -90,12 +91,12 @@ list of arguments entered in the minibuffer."
   "Find the next Makefile upwards in the directory tree from DIR.
 Returns nil if it cannot find a project file in DIR or an ascendmake directory."
   (let ((file (find "Makefile"
-                    (directory-files dir) :test 'string=)))
-    
+		    (directory-files dir) :test 'string=)))
+
     (if file
-        (setq file (expand-file-name file dir))
+	(setq file (expand-file-name file dir))
       (if (not (jde-root-dir-p dir))
-          (setq file (jde-make-find-build-file (concat dir "../")))))
+	  (setq file (jde-make-find-build-file (concat dir "../")))))
 
     file))
 
@@ -110,7 +111,7 @@ enter to the make program along with the arguments specified by
   (interactive)
   (if jde-read-make-args
       (setq jde-interactive-make-args
-	      (read-from-minibuffer 
+	      (read-from-minibuffer
 	       "Make args: "
 	       jde-interactive-make-args
 	       nil nil
@@ -118,19 +119,19 @@ enter to the make program along with the arguments specified by
     (setq jde-interactive-make-args ""))
 
   (let ((make-command
-         (jde-make-make-command 
-          jde-interactive-make-args))
-        (save-default-directory default-directory)
-        (default-directory 
-          (if (string= jde-make-working-directory "")
-              (if jde-make-enable-find
-                  (let ((jde-make-buildfile
-                         (jde-make-find-build-file default-directory)))
-                    (if jde-make-buildfile
-                        (file-name-directory jde-make-buildfile)
-                      default-directory))
-                default-directory)
-            (jde-normalize-path 'jde-make-working-directory))))
+	 (jde-make-make-command
+	  jde-interactive-make-args))
+	(save-default-directory default-directory)
+	(default-directory
+	  (if (string= jde-make-working-directory "")
+	      (if jde-make-enable-find
+		  (let ((jde-make-buildfile
+			 (jde-make-find-build-file default-directory)))
+		    (if jde-make-buildfile
+			(file-name-directory jde-make-buildfile)
+		      default-directory))
+		default-directory)
+	    (jde-normalize-path 'jde-make-working-directory))))
 
 
     ;; Force save-some-buffers to use the minibuffer
@@ -140,7 +141,7 @@ enter to the make program along with the arguments specified by
     ;; which seems not to be supported--at least on
     ;; the PC.
     (if (and (eq system-type 'windows-nt)
-	     (not jde-xemacsp))	
+	     (not jde-xemacsp))
 	(let ((temp last-nonmenu-event))
 	  ;; The next line makes emacs think that jde-make
 	  ;; was invoked from the minibuffer, even when it
@@ -150,8 +151,8 @@ enter to the make program along with the arguments specified by
 	  (setq last-nonmenu-event temp))
       (save-some-buffers (not compilation-ask-about-save) nil))
 
-    (setq compilation-finish-function 
-      (lambda (buf msg) 
+    (setq compilation-finish-function
+      (lambda (buf msg)
 	(run-hook-with-args 'jde-make-finish-hook buf msg)
 	(setq compilation-finish-function nil)))
 
@@ -170,64 +171,5 @@ enter to the make program along with the arguments specified by
 (jde-update-autoloaded-symbols)
 
 (provide 'jde-make)
-
-;; $Log: jde-make.el,v $
-;; Revision 1.17  2004/08/21 04:30:43  paulk
-;; Update the JDEE wizard class list after making a project.
-;;
-;; Revision 1.16  2003/09/16 05:13:39  paulk
-;; Update jde-make command to issue a cd to the default directory before invoking
-;; make and to restore the original cwd afterwards. This fixes a bug in the
-;; implementation of the jde-make-working-directory variable.
-;;
-;; Revision 1.15  2002/11/21 04:18:41  paulk
-;; These packages, when autoloaded, now register and initialize the customization variables
-;; that they define to the values specified in the current project file.
-;;
-;; Revision 1.14  2002/10/22 05:02:09  paulk
-;; Put make customization variables in their own group and provide an autoloaded command for displaying them as a group.
-;;
-;; Revision 1.13  2002/09/16 05:14:18  paulk
-;; Adds a jde-make-finish-hook variable that allows you to specify functions
-;; to run when make finishes. By default the variable is set to functions
-;; that update the speedbar and the completion cache. Thanks to Sandip Chitale.
-;;
-;; Revision 1.12  2002/03/22 05:24:32  paulk
-;; Expanded documentation for the jde-make command.
-;;
-;; Revision 1.11  2001/07/16 13:39:33  paulk
-;; Added note to the doc for jde-make-working-directory that the path must end in a path separator.
-;;
-;; Revision 1.10  2001/05/31 04:00:50  paulk
-;; Backed out the previous change which was NOT a bug.
-;;
-;; Revision 1.9  2001/05/31 01:09:13  paulk
-;; Small bug fix. Thanks to Luis Miguel Hernanz Iglesias <luish@germinus.com>.
-;;
-;; Revision 1.8  2001/04/16 05:59:17  paulk
-;; Normalize paths. Thanks to Nick Sieger.
-;;
-;; Revision 1.7  2000/08/09 03:29:26  paulk
-;; Added jde-make-working-directory variable. Thanks to Laurent Latil <Laurent.Latil@france.sun.com>
-;;
-;; Revision 1.6  1999/04/27 16:44:49  paulk
-;; Updated to allow interactive entry of make arguments. Thanks to Yarek J. Kowalik <jgk@klg.com> for providing this enhancement.
-;;
-;; Revision 1.5  1999/01/17 00:43:57  paulk
-;; Removed two line feeds at the end of make command as they appeared to
-;; confuse GNU make for NT.
-;;
-;; Revision 1.4  1998/11/27 09:38:23  paulk
-;; Changed to use compile mode as suggested by Robert Grace <rmg2768@draper.com>.
-;;
-;; Revision 1.3  1998/05/29 01:46:39  paulk
-;; Added dummy function for jde-make-mode to facilitate autoloading.
-;;
-;; Revision 1.2  1998/05/27 06:04:52  paulk
-;; Added autoload comments.
-;;
-;; Revision 1.1  1998/03/27 04:44:36  kinnucan
-;; Initial revision
-;;
 
 ;; End of jde-make.el

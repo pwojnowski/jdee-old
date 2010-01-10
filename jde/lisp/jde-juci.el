@@ -1,8 +1,11 @@
 ;;; jde-juci.el --- JDEE Universal Communication Interface
+;; $Id$
 
 ;; Copyright (C) 2002, 2003 by Nick Sieger
+;; Copyright (C) 2009 by Paul Landes
 
 ;; Author: Nick Sieger <nsieger@bitstream.net>
+;; Maintainer: Paul Landes <landes <at> mailc dt net>
 ;; Keywords: processes, tools
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -298,11 +301,11 @@ that EXPECTED is `equal' to ACTUAL.  Signal an error if not."
   "xUnit-style assertion function to be used by unit tests.  Assert
 that a FORM, when executed, produces an error.  If no error is
 signaled, then signal an error."
-  (` (condition-case nil
-	 (let ((message-log-max))	;; quiet (message)
-	   (, form)
-	   (error "No error generated.  %S" (or (, msg) "")))
-       (error (message nil) t))))
+  `(condition-case nil
+       (let ((message-log-max))	;; quiet (message)
+	 ,form
+	 (error "No error generated.  %S" (or ,msg "")))
+     (error (message nil) t)))
 
 (defun jde-juci-test-roundtrips ()
   (jde-juci-xunit-assert-equal "hello" (jde-juci-test-echo "hello") "1a")

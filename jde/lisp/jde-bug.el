@@ -1,11 +1,12 @@
 ;;; jde-bug.el -- JDEbug Interface
-;; $Revision: 1.98 $ $Date: 2005/01/18 05:23:32 $ 
+;; $Id$
 
 ;; Author: Paul Kinnucan <paulk@mathworks.com>
-;; Maintainer: Paul Kinnucan
+;; Maintainer: Paul Landes <landes <at> mailc dt net>
 ;; Keywords: java, tools
 
 ;; Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005 Paul Kinnucan.
+;; Copyright (C) 2009 by Paul Landes
 
 ;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -24,11 +25,11 @@
 
 ;;; Commentary:
 
-;; This is one of a set of packages that make up the 
+;; This is one of a set of packages that make up the
 ;; Java Development Environment (JDE) for Emacs. See the
 ;; JDE User's Guide for more information.
 ;; The latest version of the JDE is available at
-;; <URL:http://sunsite.auc.dk/jde/>.
+;; <URL:http://jdee.sourceforge.net/>.
 
 ;; Please send any comments, bugs, or upgrade requests to
 ;; Paul Kinnucan at paulk@mathworks.com.
@@ -70,11 +71,11 @@ distribution. You need to set this variable only if this project uses a JDK 1.2 
   (or
    (> (jde-java-major-version) 1)
    (> (jde-java-minor-version) 2)))
-      
 
-(defcustom jde-bug-jre-home "" 
-"*Home directory of the JRE containing the executable used to 
-run debuggee processes.   
+
+(defcustom jde-bug-jre-home ""
+"*Home directory of the JRE containing the executable used to
+run debuggee processes.
 This variable specifies the home directory of the Java runtime
 environment containing the executable, e.g., java, to be used to
 launch processes (see `jde-bug-vm-executable'). If you do not specify
@@ -88,7 +89,7 @@ executable used to run the debugger itself."
 This defaults to java on Unix platforms and javaw on Windows platforms"
   :group 'jde-bug
   :type '(list
-	  (radio-button-choice 
+	  (radio-button-choice
 	  (const "java")
 	  (const "javaw")
 	  (const "java_g"))))
@@ -98,7 +99,7 @@ This defaults to java on Unix platforms and javaw on Windows platforms"
   :group 'jde-bug
   :type 'boolean)
 
-(defcustom jde-bug-server-socket (cons t "2112") 
+(defcustom jde-bug-server-socket (cons t "2112")
   "*Socket where debugger listens for apps needing debugger services.
 You can arrange for a vm to connect to JDEbug via a socket by starting it with the
 options -Xdebug and -Xrunjdwp:transport=dt_socket,address=MYHOST:NNNN,
@@ -107,20 +108,20 @@ NNNN is the socket specified by this variable. To connect via shared
 memory, start the debuggee process with the options -Xdebug and
 -Xrunjdwp:transport=dt_shmem,address=ANYSTRING, where ANYSTRING is
 the value of this variable. If you are running JDK 1.2, you must also
-specifiy the options  -Xnoagent and -Djava.compiler=NONE." 
-  :group 'jde-bug 
+specifiy the options  -Xnoagent and -Djava.compiler=NONE."
+  :group 'jde-bug
   :type '(cons
 	  (boolean :tag "Prompt for")
 	  (string :tag "Address")))
 
-(defcustom jde-bug-server-shmem-name (cons t "JDEbug") 
-  "*Shared memory name under which the debugger listens for apps 
+(defcustom jde-bug-server-shmem-name (cons t "JDEbug")
+  "*Shared memory name under which the debugger listens for apps
 needing debugger services. To connect via shared
 memory, start the debuggee process with the options -Xdebug and
 -Xrunjdwp:transport=dt_shmem,address=ANYSTRING, where ANYSTRING is
 the value of this variable. If you are running JDK 1.2, you must also
-specifiy the options  -Xnoagent and -Djava.compiler=NONE." 
-  :group 'jde-bug 
+specifiy the options  -Xnoagent and -Djava.compiler=NONE."
+  :group 'jde-bug
   :type '(cons
 	  (boolean :tag "Prompt for")
 	  (string :tag "Name")))
@@ -131,7 +132,7 @@ specifiy the options  -Xnoagent and -Djava.compiler=NONE."
 The default value is the value of the standard Emacs variable `system-name'.
 The JDE uses the host address to connect to JDEBug during startup. On some Windows
 systems, the JDE is unable to connect to the debugger socket under the system name.
-If this happens, you can try setting this variable to the absolute address of 
+If this happens, you can try setting this variable to the absolute address of
 a local host: 127.0.0.1 ."
   :group 'jde-bug
   :type 'string)
@@ -155,8 +156,8 @@ a local host: 127.0.0.1 ."
 "*Specifies the foreground and background colors of the debugger's
 breakpoint cursor."
   :group 'jde-bug
-  :type '(cons  
-	  (string :tag "Foreground Color") 
+  :type '(cons
+	  (string :tag "Foreground Color")
 	  (string :tag "Background Color"))
   :set '(lambda (sym val)
 	  (make-face 'jde-bug-breakpoint-cursor)
@@ -188,75 +189,75 @@ this feature just when is needed since retrieving the stack info is time
 consuming and slows down stepping through the code."
   :group 'jde-bug
   :type 'boolean)
-     
+
 (defvar jde-bug-minor-mode-hook nil
   "Hook to run when entering or leaving jde-bug-minor-mode.")
 
 (defvar jde-bug-menu-spec
   (list "JDEbug"
 
-	["Step Over"                  
-	 jde-bug-step-over 
+	["Step Over"
+	 jde-bug-step-over
 	 (jde-dbs-target-process-steppable-p)]
 
-	["Step Into"                  
-	 jde-bug-step-into 
+	["Step Into"
+	 jde-bug-step-into
 	 (jde-dbs-target-process-steppable-p)]
 
-	["Step Into All"              
-	 jde-bug-step-into-all 
+	["Step Into All"
+	 jde-bug-step-into-all
 	 (jde-dbs-target-process-steppable-p)]
 
-	["Step Out"                   
-	 jde-bug-step-out 
+	["Step Out"
+	 jde-bug-step-out
 	 (jde-dbs-target-process-steppable-p)]
 
-	["Run"                        
+	["Run"
 	 jde-debug
-	 :active                    t                                   
+	 :active                    t
 	 :included                  (null (jde-dbs-debugger-running-p)) ]
-  
-	["Continue"                   
+
+	["Continue"
 	 jde-bug-continue
-	 :active                    (jde-dbs-target-process-runnable-p) 
+	 :active                    (jde-dbs-target-process-runnable-p)
 	 :included                  (jde-dbs-debugger-running-p)        ]
 
-	["Exit Debugger"              
-	 jde-bug-exit 
+	["Exit Debugger"
+	 jde-bug-exit
 	 (jde-dbs-debugger-running-p)]
 
 	"-"
 	;; Added by lea
-	["Toggle Breakpoint"          
+	["Toggle Breakpoint"
 	 jde-bug-toggle-breakpoint t]
-	["Set Conditional Breakpoint" 
+	["Set Conditional Breakpoint"
 	 jde-bug-set-conditional-breakpoint nil]
-        ["Break on exception"
-         jde-bug-break-on-exception 
-	 :active (and 
+	["Break on exception"
+	 jde-bug-break-on-exception
+	 :active (and
 		  (jde-dbs-debugger-running-p)
 		  (jde-dbs-get-target-process))]
-	["Save Breakpoints"           
+	["Save Breakpoints"
 	 jde-bug-save-breakpoints nil]
 	(list
 	 "Watch for Field"
 
-	 ["Access"                   
-	  jde-bug-watch-field-access 
+	 ["Access"
+	  jde-bug-watch-field-access
 	  :style    nil
-	  :active   (and 
+	  :active   (and
 		     (jde-dbs-debugger-running-p)
 		     (jde-dbs-get-target-process))]
 
 
-	 ["Modification"             
+	 ["Modification"
 	  jde-bug-watch-field-modification
 	  :style   nil
-	  :active  (and 
+	  :active  (and
 		    (jde-dbs-debugger-running-p)
 		    (jde-dbs-get-target-process))]
 
-	 ["Cancel"                   
+	 ["Cancel"
 	  jde-bug-cancel-watch
 	  :style     nil
 	  :active    (and
@@ -270,45 +271,45 @@ consuming and slows down stepping through the code."
 
 	(list
 	 "Trace"
-	
-	 ["Class Prep..."             
+
+	 ["Class Prep..."
 	  jde-bug-trace-class-prep
 	  :style    nil
-	  :active	 (and 
+	  :active	 (and
 			  (jde-dbs-debugger-running-p)
 			  (jde-dbs-get-target-process))]
 
-	 ["Class Unload..."           
+	 ["Class Unload..."
 	  jde-bug-trace-class-unload
 	  :style    nil
-	  :active	 (and 
+	  :active	 (and
 			  (jde-dbs-debugger-running-p)
 			  (jde-dbs-get-target-process))]
 
 
-	 ["Method Entry..."           
+	 ["Method Entry..."
 	  jde-bug-trace-method-entry
 	  :style    nil
-	  :active	 (and 
+	  :active	 (and
 			  (jde-dbs-debugger-running-p)
 			  (jde-dbs-get-target-process))]
 
-	 ["Method Exit..."            
+	 ["Method Exit..."
 	  jde-bug-trace-method-exit
 	  :style    nil
-	  :active	 (and 
+	  :active	 (and
 			  (jde-dbs-debugger-running-p)
 			  (jde-dbs-get-target-process))]
 
-	 ["Exceptions..."            
+	 ["Exceptions..."
 	  jde-bug-trace-exceptions
 	  :style    nil
-	  :active	 (and 
+	  :active	 (and
 			  (jde-dbs-debugger-running-p)
 			  (jde-dbs-get-target-process))]
 
 
-	 ["Cancel..."                
+	 ["Cancel..."
 	  jde-bug-cancel-trace
 	  :style     nil
 	  :active    (and
@@ -325,34 +326,34 @@ consuming and slows down stepping through the code."
 	(list
 	 "Display"
 
-	 ["Loaded Classes"            
-	  jde-bug-display-loaded-classes 
-	  (and 
+	 ["Loaded Classes"
+	  jde-bug-display-loaded-classes
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
-	 ["Object Monitors"           
+	 ["Object Monitors"
 	  jde-bug-show-object-monitors
-	  (and 
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
-	 ["Path Info"                 
+	 ["Path Info"
 	  jde-bug-display-path-info
-	  (and 
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 	 )
 
-        ["Display Variable At Point"
-         jde-bug-display-variable
-         (and
-           (jde-dbs-debugger-running-p)
-           (jde-dbs-get-target-process))]
+	["Display Variable At Point"
+	 jde-bug-display-variable
+	 (and
+	   (jde-dbs-debugger-running-p)
+	   (jde-dbs-get-target-process))]
 
-	["Evaluate Expression"        
-	 jde-bug-evaluate-expression 
-	 (and 
+	["Evaluate Expression"
+	 jde-bug-evaluate-expression
+	 (and
 	  (jde-dbs-debugger-running-p)
 	  (jde-dbs-get-target-process))]
 
@@ -361,89 +362,89 @@ consuming and slows down stepping through the code."
 	 `["Enable"
 	   jde-bug-toggle-stack-info
 	   ,(if jde-xemacsp :active :enable) t
-	   :style radio 
+	   :style radio
 	   :selected jde-bug-stack-info]
-	 ["Up"                        
-	  jde-bug-up-stack 
+	 ["Up"
+	  jde-bug-up-stack
 	  (and
 	   (jde-dbs-target-process-steppable-p)
 	   (let* ((process (jde-dbs-get-target-process))
-		  (stack-max 
+		  (stack-max
 		   (if (slot-boundp process 'stack)
 		       (1- (length (oref process stack)))
 		     0))
 		  (stack-ptr (oref process stack-ptr)))
 	     (< stack-ptr stack-max)))]
 
-	 ["Down"                      
-	  jde-bug-down-stack 
-	  (and 
+	 ["Down"
+	  jde-bug-down-stack
+	  (and
 	   (jde-dbs-target-process-steppable-p)
 	   (let* ((process (jde-dbs-get-target-process))
 		  (stack-ptr (oref process stack-ptr)))
 	     (> stack-ptr 0)))]
-	 
+
 	 )
 	(list
 	 "Thread"
 
-	 ["Suspend"                   
+	 ["Suspend"
 	  jde-bug-suspend-thread
-	  (and 
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
 
-	 ["Resume"                    
-	  jde-bug-resume-thread 
-	  (and 
+	 ["Resume"
+	  jde-bug-resume-thread
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
-	 ["Interrupt"                 
-	  jde-bug-interrupt-thread 
-	  (and 
+	 ["Interrupt"
+	  jde-bug-interrupt-thread
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
-	 ["Stop"                      
-	  jde-bug-stop-thread 
-	  (and 
+	 ["Stop"
+	  jde-bug-stop-thread
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
-				       ; ["Show Thread Info"          
+				       ; ["Show Thread Info"
 			      ;   jde-bug-thread-show-thread-info nil]
 	 )
 
 	(list
 	 "Processes"
-	 ["Start Debugger"            
-	  jde-bug-start-debugger 
+	 ["Start Debugger"
+	  jde-bug-start-debugger
 	  (not (jde-dbs-debugger-running-p))]
 
-	 ["Launch Process"            
+	 ["Launch Process"
 	  jde-bug-launch-process
 	  (jde-dbs-debugger-running-p)]
 
-	 ["Suspend Process"           
+	 ["Suspend Process"
 	  jde-bug-suspend-process
 	  (let ((process (jde-dbs-get-target-process)))
-	    (and 
+	    (and
 	     (jde-dbs-debugger-running-p)
 	     process
 	     (not (oref process suspendedp))))]
 
-	 ["Resume Process"           
+	 ["Resume Process"
 	  jde-bug-resume-process
 	  (let ((process (jde-dbs-get-target-process)))
-	    (and 
+	    (and
 	     (jde-dbs-debugger-running-p)
 	     process
-	     (oref process suspendedp)))] 
+	     (oref process suspendedp)))]
 
-	 ["Finish Process"            
-	  jde-bug-finish-process 
+	 ["Finish Process"
+	  jde-bug-finish-process
 	  (let ((process (jde-dbs-get-target-process)))
 	    (and
 	     (jde-dbs-debugger-running-p)
@@ -454,36 +455,36 @@ consuming and slows down stepping through the code."
 
 	 (list
 	  "Attach Process"
-	  ["Via Shared Memory"        
+	  ["Via Shared Memory"
 	   jde-bug-attach-via-shared-memory
-	   (and 
+	   (and
 	    (eq system-type 'windows-nt)
 	    (jde-dbs-debugger-running-p))]
 
-	  ["On Local Host"             
+	  ["On Local Host"
 	   jde-bug-attach-local-host
 	   (jde-dbs-debugger-running-p)]
- 
-	  ["On Remote Host"             
+
+	  ["On Remote Host"
 	   jde-bug-attach-remote-host
-	   (jde-dbs-debugger-running-p)] 
+	   (jde-dbs-debugger-running-p)]
 	  )
 
 	 (list
 	  "Listen on"
-	  ["Shared Memory"             
+	  ["Shared Memory"
 	   jde-bug-listen-shmem
 	   (and
 	    (eq system-type 'windows-nt)
 	    (jde-dbs-debugger-running-p))]
-	  
-	  ["Socket"                     
+
+	  ["Socket"
 	   jde-bug-listen-socket
 	   (jde-dbs-debugger-running-p)]
 	  )
 
-	 ["Detach Process"            
-	  jde-bug-detach-process 
+	 ["Detach Process"
+	  jde-bug-detach-process
 	  (let ((process (jde-dbs-get-target-process)))
 	    (and
 	     (jde-dbs-debugger-running-p)
@@ -493,59 +494,59 @@ consuming and slows down stepping through the code."
 
 	 "-"
 
-	 ["Set Target Process"        
-	  jde-bug-set-target-process 
+	 ["Set Target Process"
+	  jde-bug-set-target-process
 	  (> (jde-dbs-proc-set-get-size
 	      jde-dbs-the-process-registry)
 	     0)]
 
-	 ["Show Processes"            
+	 ["Show Processes"
 	  jde-bug-set-show-processes nil]
 
-	 ["Remove Dead Processes"     
-	  jde-bug-remove-dead-processes 
+	 ["Remove Dead Processes"
+	  jde-bug-remove-dead-processes
 	  (oref jde-dbs-the-process-morgue proc-alist)]
 
 	 )
 	(list
 	 "Show Buffer"
 
-	 ["Locals"                    
-	  jde-bug-show-locals-buf 
+	 ["Locals"
+	  jde-bug-show-locals-buf
 	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
-	 ["CLI"                       
+	 ["CLI"
 	  jde-bug-show-cli-buf
-	  (and    
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 
-	 ["Threads"                   
+	 ["Threads"
 	  jde-bug-show-threads-buf
-	  (and    
+	  (and
 	   (jde-dbs-debugger-running-p)
 	   (jde-dbs-get-target-process))]
 	 )
-        ["Show Debug Frame"
-         jde-bug-show-debug-frame
-         (and (jde-dbs-debugger-running-p)
-              (jde-dbs-get-target-process))]
+	["Show Debug Frame"
+	 jde-bug-show-debug-frame
+	 (and (jde-dbs-debugger-running-p)
+	      (jde-dbs-get-target-process))]
 	"-"
-	["Preferences"                
+	["Preferences"
 	 jde-bug-show-preferences t]
 	"-"
-	["Help"                       
+	["Help"
 	 jde-bug-help t]
 	)
   "JDEbug menu specification")
 
- 
+
 (defvar jde-bug-mode-map
   (let ((km (make-sparse-keymap)))
     (easy-menu-define jde-bug-menu km "JDEbug Minor Mode Menu"
-                      jde-bug-menu-spec)
+		      jde-bug-menu-spec)
     km)
   "Keymap for JDEbug minor mode.")
 
@@ -560,12 +561,12 @@ With prefix argument ARG, turn on if positive, otherwise off.
 \\{jde-bug-mode-map}"
   (interactive
    (list (or current-prefix-arg
-             (if jde-bug-minor-mode 0 1))))
+	     (if jde-bug-minor-mode 0 1))))
 
   (setq jde-bug-minor-mode
-        (if arg 
+	(if arg
 	    (> (prefix-numeric-value arg) 0)
-          (not jde-bug-minor-mode)))
+	  (not jde-bug-minor-mode)))
 
   (run-hook-with-args 'jde-bug-minor-mode-hook jde-bug-minor-mode))
 
@@ -581,7 +582,7 @@ With prefix argument ARG, turn on if positive, otherwise off.
 	(cons "[?\C-c ?\C-z ?\C-b]" 'jde-bug-toggle-breakpoint))
   "*Specifies key bindings for JDEbug.
 The value of this variable is an association list. The car of
-each element specifies a key sequence. The cdr specifies 
+each element specifies a key sequence. The cdr specifies
 an interactive command that the key sequence executes. To enter
 a key with a modifier, type C-q followed by the desired modified
 keystroke. For example, to enter C-s (Control s) as the key to be
@@ -597,7 +598,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	  (if (and
 	       (boundp 'jde-bug-key-bindings)
 	       jde-bug-key-bindings)
-	      (mapc 
+	      (mapc
 	       (lambda (binding)
 		 (let ((key (car binding))
 		       (fcn (cdr binding)))
@@ -606,7 +607,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 		   (define-key jde-bug-mode-map key nil)))
 	       jde-bug-key-bindings))
 	  ;; Map new key bindings.
-	  (mapc 
+	  (mapc
 	   (lambda (binding)
 	     (let ((key (car binding))
 		   (fcn (cdr binding)))
@@ -617,7 +618,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	  (set-default sym val)))
 
 
-(defun jde-bug-step-over () 
+(defun jde-bug-step-over ()
   "Advances the process to the next line in the current method."
   (interactive)
   (let* ((process (jde-dbs-get-target-process))
@@ -625,7 +626,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	  (jde-dbs-step "step over" :process process)))
     (jde-dbs-cmd-exec cmd)))
 
-(defun jde-bug-step-into () 
+(defun jde-bug-step-into ()
   "Advances to the next step in the method at point except if the method
    belongs to the java, javax, or sun packages."
   (interactive)
@@ -634,7 +635,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	  (jde-dbs-step "step into" :process process :step-type "into")))
     (jde-dbs-cmd-exec cmd)))
 
-(defun jde-bug-step-into-all () 
+(defun jde-bug-step-into-all ()
   "Advances the process into the function invoked at point."
   (interactive)
   (let* ((process (jde-dbs-get-target-process))
@@ -642,7 +643,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	  (jde-dbs-step "step into" :process process :step-type "into-all")))
     (jde-dbs-cmd-exec cmd)))
 
-(defun jde-bug-step-out () 
+(defun jde-bug-step-out ()
   "Advances the process to the next line in the invoking method."
   (interactive)
   (let* ((process (jde-dbs-get-target-process))
@@ -651,7 +652,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
     (jde-dbs-cmd-exec cmd)))
 
 
-(defun jde-bug-continue () 
+(defun jde-bug-continue ()
   "Runs the target process. Execution continues from the current breakpoint."
   (interactive)
   (let* ((process (jde-dbs-get-target-process))
@@ -666,7 +667,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 
 
 
-(defun jde-bug-exit () 
+(defun jde-bug-exit ()
   (interactive)
   (if (jde-dbs-debugger-running-p)
       (progn
@@ -684,8 +685,8 @@ You can use the notation [f1], [f2], etc., to specify function keys."
     (error "Debugger is not running.")))
 
 
-(add-hook 
- 'jde-mode-hook 
+(add-hook
+ 'jde-mode-hook
  (lambda ()
    (if (buffer-file-name)
        (let ((this-file (file-name-nondirectory (buffer-file-name))))
@@ -696,11 +697,11 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 		   (bp (jde-db-find-breakpoint file line)))
 	      (when (not bp)
 		(setq jde-db-breakpoint-id-counter (1+ jde-db-breakpoint-id-counter))
-		(setq bp 
-		      (jde-db-breakpoint 
+		(setq bp
+		      (jde-db-breakpoint
 		       (format "breakpoint%d" jde-db-breakpoint-id-counter)
 		       :id jde-db-breakpoint-id-counter
-		       :file file 
+		       :file file
 		       :line line))
 		(jde-db-breakpoints-add bp))
 	      (if (string-match file this-file)
@@ -712,23 +713,23 @@ You can use the notation [f1], [f2], etc., to specify function keys."
   "Sets a breakpoint at the current line in the current buffer."
   (interactive)
   (let* ((file (buffer-file-name))
-         (line (jde-get-line-at-point))
-         (bp (jde-db-find-breakpoint file line))
-         (proc (jde-dbs-get-target-process)))
+	 (line (jde-get-line-at-point))
+	 (bp (jde-db-find-breakpoint file line))
+	 (proc (jde-dbs-get-target-process)))
     (unless bp
       (setq bp (jde-db-spec-breakpoint))
       (oset bp line line)
       (jde-db-breakpoints-add bp))
     (if (and bp proc)
-        (let* ((set-breakpoint (jde-dbs-set-breakpoint 
-                                "set breakpoint" 
-                                :process proc
-                                :breakpoint bp))
+	(let* ((set-breakpoint (jde-dbs-set-breakpoint
+				"set breakpoint"
+				:process proc
+				:breakpoint bp))
 	       (result (jde-dbs-cmd-exec set-breakpoint)))
-          (message "Breakpoint set at line %d in class %s." line file)))))
+	  (message "Breakpoint set at line %d in class %s." line file)))))
 
 
-(defun jde-bug-set-conditional-breakpoint () 
+(defun jde-bug-set-conditional-breakpoint ()
   (interactive)
   (message "not implemented"))
 
@@ -748,7 +749,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	 (proc (jde-dbs-get-target-process)))
     (if (and bp proc)
 	(let* ((clear-breakpoint
-		(jde-dbs-clear-breakpoint 
+		(jde-dbs-clear-breakpoint
 		 "clear breakpoint"
 		 :process proc
 		 :breakpoint bp))
@@ -769,11 +770,11 @@ You can use the notation [f1], [f2], etc., to specify function keys."
   (interactive)
 
   (assert (equal major-mode 'jde-mode)
-          nil "You can only toggle a breakpoint within jde-mode")
+	  nil "You can only toggle a breakpoint within jde-mode")
 
   (assert (jde-db-src-dir-matches-file-p (buffer-file-name))
-          nil "The current buffer is not in the source path.  See `jde-sourcepath' for more information.")
-  
+	  nil "The current buffer is not in the source path.  See `jde-sourcepath' for more information.")
+
   (let*  ((file (buffer-file-name))
 	  (line (jde-get-line-at-point))
 	  (bp (jde-db-find-breakpoint file line)))
@@ -789,7 +790,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun jde-bug-save-breakpoints ()
-  "Save breakpoints in project file." 
+  "Save breakpoints in project file."
   (interactive)
   (message "not implemented"))
 
@@ -814,7 +815,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 			     "Text field that specifies the thread suspension policy.")
    (class-inclusion-field    :initarg :class-inclusion-field
 			     :documentation
-			     "Specifies class inclusion filters.") 
+			     "Specifies class inclusion filters.")
    (class-exclusion-field    :initarg :class-exclusion-field
 			     :documentation
 			     "Specifies class exclusion filters.")
@@ -828,14 +829,14 @@ You can use the notation [f1], [f2], etc., to specify function keys."
   ;; Call parent initializer.
   (call-next-method)
 
-  (assert (or (string= (oref this trace-type) "entry") 
+  (assert (or (string= (oref this trace-type) "entry")
 	      (string= (oref this trace-type) "exit")))
 )
 
 
 (defmethod efc-dialog-create ((this jde-bug-trace-methods-dialog))
 
-  (widget-insert (concat "Trace method " 
+  (widget-insert (concat "Trace method "
 			 (oref this trace-type)
 			 "\n\n"))
 
@@ -856,7 +857,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   :doc "Specify which thread to suspend on method entry or exit."
 	   (const "all")
 	   (const "thread")
-	   (const "none"))))   
+	   (const "none"))))
 
 
   (oset this class-inclusion-field
@@ -869,7 +870,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   (string
 	    :format "%t: %v"
 	    :size 40
-	    :tag "Filter")))) 
+	    :tag "Filter"))))
 
     (oset this class-exclusion-field
 	(widget-create
@@ -881,7 +882,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   (string
 	    :format "%t: %v"
 	    :size 40
-	    :tag "Filter")))) 
+	    :tag "Filter"))))
   )
 
 (defmethod efc-dialog-ok ((this jde-bug-trace-methods-dialog))
@@ -890,18 +891,18 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	 (class-inclusion-filters (widget-value (oref this class-inclusion-field)))
 	 (class-exclusion-filters (widget-value (oref this class-exclusion-field)))
 	 (process (jde-dbs-get-target-process))
-	 (request (jde-dbs-trace-methods-request "trace methods request" 
+	 (request (jde-dbs-trace-methods-request "trace methods request"
 						 :trace-type (oref this trace-type)))
-	 (cmd  (jde-dbs-trace-methods 
-		"trace methods command" 
+	 (cmd  (jde-dbs-trace-methods
+		"trace methods command"
 		:process process :trace-request request)))
-    
+
     (if (and thread-restriction (not (string= thread-restriction "")))
-        (oset request :thread-restriction thread-restriction))
+	(oset request :thread-restriction thread-restriction))
 
     (if (and thread-suspension-policy (not (string= thread-suspension-policy "")))
 	(oset request :suspend-policy thread-suspension-policy))
-    
+
     (if class-inclusion-filters
 	(oset request :inclusion-filters class-inclusion-filters))
 
@@ -910,7 +911,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 
     (jde-dbs-cmd-exec cmd)
     (call-next-method)))
-		       
+
 
 (defun jde-bug-trace-method-entry ()
   "Displays the trace method entry dialog."
@@ -921,7 +922,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 (defun jde-bug-trace-method-exit ()
   "Displays the trace method exit dialog."
   (interactive)
-  (let ((dialog (jde-bug-trace-methods-dialog 
+  (let ((dialog (jde-bug-trace-methods-dialog
 		 "trace method exit dialog" :trace-type "exit")))
     (efc-dialog-show dialog)))
 
@@ -943,7 +944,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 			     "Text field that specifies the thread suspension policy.")
    (class-inclusion-field    :initarg :class-inclusion-field
 			     :documentation
-			     "Specifies class inclusion filters.") 
+			     "Specifies class inclusion filters.")
    (class-exclusion-field    :initarg :class-exclusion-field
 			     :documentation
 			     "Specifies class exclusion filters.")
@@ -957,14 +958,14 @@ You can use the notation [f1], [f2], etc., to specify function keys."
   ;; Call parent initializer.
   (call-next-method)
 
-  (assert (or (string= (oref this trace-type) "preparation") 
+  (assert (or (string= (oref this trace-type) "preparation")
 	      (string= (oref this trace-type) "unloading")))
 )
 
 
 (defmethod efc-dialog-create ((this jde-bug-trace-classes-dialog))
 
-  (widget-insert (concat "Trace class " 
+  (widget-insert (concat "Trace class "
 			 (oref this trace-type)
 			 "\n\n"))
 
@@ -977,7 +978,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   :doc "Specify which thread to suspend on class preparation or unloading."
 	   (const "all")
 	   (const "thread")
-	   (const "none"))))   
+	   (const "none"))))
 
 
   (oset this class-inclusion-field
@@ -990,7 +991,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   (string
 	    :format "%t: %v"
 	    :size 40
-	    :tag "Filter")))) 
+	    :tag "Filter"))))
 
     (oset this class-exclusion-field
 	(widget-create
@@ -1002,7 +1003,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   (string
 	    :format "%t: %v"
 	    :size 40
-	    :tag "Filter")))) 
+	    :tag "Filter"))))
   )
 
 (defmethod efc-dialog-ok ((this jde-bug-trace-classes-dialog))
@@ -1010,15 +1011,15 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	 (class-inclusion-filters (widget-value (oref this class-inclusion-field)))
 	 (class-exclusion-filters (widget-value (oref this class-inclusion-field)))
 	 (process (jde-dbs-get-target-process))
-	 (request (jde-dbs-trace-classes-request "trace classes request" 
+	 (request (jde-dbs-trace-classes-request "trace classes request"
 						 :trace-type (oref this trace-type)))
-	 (cmd  (jde-dbs-trace-classes 
-		"trace classes command" 
+	 (cmd  (jde-dbs-trace-classes
+		"trace classes command"
 		:process process :trace-request request)))
-    
+
     (if (and thread-suspension-policy (not (string= thread-suspension-policy "")))
 	(oset request :suspend-policy thread-suspension-policy))
-    
+
     (if class-inclusion-filters
 	(oset request :inclusion-filters class-inclusion-filters))
 
@@ -1027,7 +1028,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 
     (jde-dbs-cmd-exec cmd)
     (call-next-method)))
-		       
+
 
 (defun jde-bug-trace-class-prep ()
   "Displays the trace class preparation dialog."
@@ -1038,7 +1039,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 (defun jde-bug-trace-class-unload ()
   "Displays the trace class unloading dialog."
   (interactive)
-  (let ((dialog (jde-bug-trace-classes-dialog 
+  (let ((dialog (jde-bug-trace-classes-dialog
 		 "trace class unloading dialog" :trace-type "unloading")))
     (efc-dialog-show dialog)))
 
@@ -1064,7 +1065,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 			     "Text field that specifies the thread suspension policy.")
    (class-inclusion-field    :initarg :class-inclusion-field
 			     :documentation
-			     "Specifies class inclusion filters.") 
+			     "Specifies class inclusion filters.")
    (class-exclusion-field    :initarg :class-exclusion-field
 			     :documentation
 			     "Specifies class exclusion filters.")
@@ -1102,7 +1103,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   :doc "Specify the type of exception to trace."
 	   (const "caught")
 	   (const "uncaught")
-	   (const "both"))))   
+	   (const "both"))))
 
   (oset this thread-restriction-field
 	(widget-create
@@ -1121,7 +1122,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   :doc "Specify which thread to suspend on class preparation or unloading."
 	   (const "all")
 	   (const "thread")
-	   (const "none"))))   
+	   (const "none"))))
 
 
   (oset this class-inclusion-field
@@ -1134,7 +1135,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   (string
 	    :format "%t: %v"
 	    :size 40
-	    :tag "Filter")))) 
+	    :tag "Filter"))))
 
     (oset this class-exclusion-field
 	(widget-create
@@ -1146,7 +1147,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	   (string
 	    :format "%t: %v"
 	    :size 40
-	    :tag "Filter")))) 
+	    :tag "Filter"))))
   )
 
 (defmethod efc-dialog-ok ((this jde-bug-trace-exceptions-dialog))
@@ -1157,20 +1158,20 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	 (class-inclusion-filters (widget-value (oref this class-inclusion-field)))
 	 (class-exclusion-filters (widget-value (oref this class-inclusion-field)))
 	 (process (jde-dbs-get-target-process))
-	 (request (jde-dbs-trace-exceptions-request 
-		   "trace exceptions request" 
+	 (request (jde-dbs-trace-exceptions-request
+		   "trace exceptions request"
 		   :exception-class exception-class
 		   :trace-type trace-type))
 	 (cmd  (jde-dbs-trace-exceptions
-		"trace exceptions command" 
+		"trace exceptions command"
 		:process process :trace-request request)))
 
     (if (and thread-restriction (not (string= thread-restriction "")))
 	(oset request :thread-restriction thread-restriction))
-    
+
     (if (and thread-suspension-policy (not (string= thread-suspension-policy "")))
 	(oset request :suspend-policy thread-suspension-policy))
-    
+
     (if class-inclusion-filters
 	(oset request :inclusion-filters class-inclusion-filters))
 
@@ -1179,21 +1180,21 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 
     (jde-dbs-cmd-exec cmd)
     (call-next-method)))
-		       
+
 (defun jde-bug-break-on-exception (exception-class)
   (interactive "sFully qualified exception: ")
   (let* ((process (jde-dbs-get-target-process))
-         (request (jde-dbs-trace-exceptions-request
-                   "break on exceptions request"
-                   :exception-class exception-class
-                   :trace-type "both"
-                   :suspend-policy "all"))
-         (cmd (jde-dbs-trace-exceptions
-               "break on exceptions command"
-               :process process :trace-request request)))
+	 (request (jde-dbs-trace-exceptions-request
+		   "break on exceptions request"
+		   :exception-class exception-class
+		   :trace-type "both"
+		   :suspend-policy "all"))
+	 (cmd (jde-dbs-trace-exceptions
+	       "break on exceptions command"
+	       :process process :trace-request request)))
     (jde-dbs-cmd-exec cmd)
     (jde-dbs-proc-display-debug-message process "Use JDEbug->Trace->Cancel to remove this breakpoint")))
-                  
+
 
 (defun jde-bug-trace-exceptions ()
   "Displays the trace exceptions dialog."
@@ -1233,14 +1234,14 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	       'const
 	       :format "%t %v  %d"
 	       :tag "Request"
-	       :doc 
+	       :doc
 	       (concat
 		(if (typep request 'jde-dbs-trace-methods-request)
 		    (progn
 		      (concat
 		      (format "Trace method %s." (oref request trace-type))
 		      (if (slot-boundp request 'thread-restriction)
-			  (format " Thread restriction: %s." 
+			  (format " Thread restriction: %s."
 				  (oref request thread-restriction)))))
 		  (format "Trace class %s." (oref request trace-type)))
 		(if (slot-boundp request 'suspend-policy)
@@ -1257,7 +1258,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 
   (oset this check-boxes
 	(widget-create
-	 (list 
+	 (list
 	  'checklist
 	  :entry-format "  %b %v\n"
 	  :args items
@@ -1269,7 +1270,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
   (mapc
    (lambda (id-x)
      (let ((request
-	    (cdr 
+	    (cdr
 	     (find-if
 	      (lambda (x) (= (car x) id-x))
 	     (oref this requests)))))
@@ -1283,7 +1284,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 If only one trace request is outstanding, this command cancels that request.
 Otherwise, this command displays a cancel dialog that lets you choose the
 requests to cancel."
- (interactive) 
+ (interactive)
  (let* ((process (jde-dbs-get-target-process)))
    (if process
        (if (slot-boundp process 'trace-req)
@@ -1315,7 +1316,7 @@ requests to cancel."
 			      :documentation
 			      "Watch type: field access or modification.")
    (object-class              :initarg :object-class
-                              :type string
+			      :type string
 			      :initform ""
 			      :documentation
 			      "Default value of class to watch.")
@@ -1344,7 +1345,7 @@ requests to cancel."
 			      "Text field that specifies the thread suspension policy.")
    (class-inclusion-widget    :initarg :class-inclusion-widget
 			      :documentation
-			     "Specifies class inclusion filters.") 
+			     "Specifies class inclusion filters.")
    (class-exclusion-widget    :initarg :class-exclusion-widget
 			     :documentation
 			     "Specifies class exclusion filters.")
@@ -1383,15 +1384,15 @@ May be a wild card pattern of the form *.name. This allows you to omit a package
 	 :format "  %t:  %v\n  %h \n\n"
 	 :size 40
 	 :tag "Field name"
-	 :doc "Name of field to watch.")) 
- 
+	 :doc "Name of field to watch."))
+
   (oset this expression-widget
 	(widget-create
 	 'editable-field
 	 :format "  %t:  %v\n  %h \n\n"
 	 :size 40
 	 :tag "Watch expression"
-	 :doc "A boolean expression. 
+	 :doc "A boolean expression.
 Execution of the process is suspended only if the expression is true. The expression can contain any variable that is in scope when a field changes."))
 
   (oset this object-id-widget
@@ -1419,7 +1420,7 @@ Execution of the process is suspended only if the expression is true. The expres
 	   :doc "Specify which threads to suspend on field access or modification."
 	   (const "all")
 	   (const "thread")
-	   (const "none"))))   
+	   (const "none"))))
 
 
   (oset this class-inclusion-widget
@@ -1432,7 +1433,7 @@ Execution of the process is suspended only if the expression is true. The expres
 	   (string
 	    :format "%t: %v"
 	    :size 40
-	    :tag "Filter")))) 
+	    :tag "Filter"))))
 
     (oset this class-exclusion-widget
 	(widget-create
@@ -1456,13 +1457,13 @@ Execution of the process is suspended only if the expression is true. The expres
 	 (class-inclusion-filters (widget-value (oref this class-inclusion-widget)))
 	 (class-exclusion-filters (widget-value (oref this class-inclusion-widget)))
 	 (process (jde-dbs-get-target-process))
-	 (request (jde-dbs-watch-field-request 
-		   "watch field request" 
+	 (request (jde-dbs-watch-field-request
+		   "watch field request"
 		   :watch-type (oref this watch-type)
 		   :object-class obj-class
 		   :field-name field-name))
 	 (cmd  (jde-dbs-watch-field
-		"watch field command" 
+		"watch field command"
 		:process process :watch-request request)))
 
     (if (and expression (not (string= expression "")))
@@ -1473,10 +1474,10 @@ Execution of the process is suspended only if the expression is true. The expres
 
     (if (and thread-restriction (not (string= thread-restriction "")))
 	(oset request :thread-restriction thread-restriction))
-    
+
     (if (and thread-suspension-policy (not (string= thread-suspension-policy "")))
 	(oset request :suspend-policy thread-suspension-policy))
-    
+
     (if class-inclusion-filters
 	(oset request :inclusion-filters class-inclusion-filters))
 
@@ -1485,17 +1486,17 @@ Execution of the process is suspended only if the expression is true. The expres
 
     (jde-dbs-cmd-exec cmd)
     (call-next-method)))
-		       
+
 
 (defun jde-bug-watch-field-access ()
   "Request that the debugger watch for access of a
 field of an object or class of objects."
   (interactive)
-  (let ((dialog 
-	 (jde-bug-watch-field-dialog 
+  (let ((dialog
+	 (jde-bug-watch-field-dialog
 	  "watch field dialog"
-	  :object-class (concat 
-			 "*." 
+	  :object-class (concat
+			 "*."
 			 (car (jde-parse-get-innermost-class-at-point)))
 	  :field (thing-at-point 'symbol))))
     (efc-dialog-show dialog)))
@@ -1504,11 +1505,11 @@ field of an object or class of objects."
   "Request that the debugger watch for modifiction of a
 field of an object or class of objects."
   (interactive)
-  (let ((dialog (jde-bug-watch-field-dialog 
-		 "watch field dialog" 
+  (let ((dialog (jde-bug-watch-field-dialog
+		 "watch field dialog"
 		 :watch-type "modification"
-		 :object-class (concat 
-				"*." 
+		 :object-class (concat
+				"*."
 				(car (jde-parse-get-innermost-class-at-point)))
 		 :field (thing-at-point 'symbol))))
     (efc-dialog-show dialog)))
@@ -1543,7 +1544,7 @@ field of an object or class of objects."
 	       'const
 	       :format "%t %v  %d"
 	       :tag "Request"
-	       :doc 
+	       :doc
 	       (concat
 		(format "Watch type: %s. Class: %s. Field: %s."
 		       (oref request watch-type)
@@ -1560,7 +1561,7 @@ field of an object or class of objects."
 
   (oset this check-boxes
 	(widget-create
-	 (list 
+	 (list
 	  'checklist
 	  :entry-format "  %b %v\n"
 	  :args items
@@ -1572,7 +1573,7 @@ field of an object or class of objects."
   (mapc
    (lambda (id-x)
      (let ((request
-	    (cdr 
+	    (cdr
 	     (find-if
 	      (lambda (x) (= (car x) id-x))
 	     (oref this requests)))))
@@ -1586,7 +1587,7 @@ field of an object or class of objects."
 If only one watch request is outstanding, this command cancels that request.
 Otherwise, this command displays a cancel dialog that lets you choose the
 requests to cancel."
- (interactive) 
+ (interactive)
  (let* ((process (jde-dbs-get-target-process)))
    (if process
        (if (slot-boundp process 'watch-req)
@@ -1605,15 +1606,15 @@ requests to cancel."
   (let* ((current-frame (selected-frame))
 	 (falist
 	  (cons
-	   (cons (if jde-xemacsp 
+	   (cons (if jde-xemacsp
 		     (frame-property current-frame 'name)
 		   (frame-parameter current-frame 'name))
 		 current-frame) nil))
 	 (frame (next-frame nil t)))
     (while (not (eq frame current-frame))
       (progn
-	(setq falist (cons (cons 
-			    (if jde-xemacsp 
+	(setq falist (cons (cons
+			    (if jde-xemacsp
 				(frame-property frame 'name)
 			      (frame-parameter frame 'name))
 			    frame) falist))
@@ -1625,52 +1626,52 @@ requests to cancel."
   (interactive)
   (let* ((existing-frame (cdr (assoc "JDebug" (jde-make-frame-names-alist)))))
     (if existing-frame
-      (progn 
-        (make-frame-visible existing-frame)
-        (raise-frame existing-frame)
-        (select-frame existing-frame))
+      (progn
+	(make-frame-visible existing-frame)
+	(raise-frame existing-frame)
+	(select-frame existing-frame))
       (let* ((process (jde-dbs-get-target-process))
-             (cli-buffer (when (slot-boundp process 'cli-buf)
-                        (oref process cli-buf)))
-             (locals-buffer (when (slot-boundp process 'locals-buf)
-                           (oref process locals-buf)))
-             (threads-buffer (when (slot-boundp process 'threads-buf)
-                            (oref process threads-buf)))
-             (msg-buffer (when (slot-boundp process 'msg-buf)
-                        (oref process msg-buf)))
-             (frame (new-frame '((name . "JDebug") (minibuffer . nil))))
-             (height (/ (frame-height frame) (count-if 'identity
-                                                       (list cli-buffer
-                                                             locals-buffer
-                                                             threads-buffer
-                                                             msg-buffer))))
-             (init-frame (selected-frame))
-             (init-config (current-window-configuration))
-             (prev-window))
-        (save-excursion
-          (select-frame frame)
-          ;; msg buffer should always be there, if not this could break
-          (switch-to-buffer msg-buffer)
-          (setq prev-window (get-buffer-window msg-buffer))
-          (when locals-buffer
-            (let ((locals-win (split-window prev-window height)))
-              (setq prev-window locals-win)
-              (when (not jde-bug-local-variables)
-                (jde-bug-toggle-local-variables)
-                (if (featurep 'xemacs)
-                  (sleep-for 0.1)
-                  (sleep-for 0 100)))
-              (set-window-buffer locals-win locals-buffer)))
-          (when threads-buffer
-            (let ((threads-win (split-window prev-window height)))
-              (setq prev-window threads-win)
-              (jde-bug-show-threads)
-              (set-window-buffer threads-win threads-buffer)))
-          (when cli-buffer
-            (let ((cli-win (split-window prev-window height)))
-              (set-window-buffer cli-win cli-buffer)))
-          (select-frame init-frame)
-          (set-window-configuration init-config))))))
+	     (cli-buffer (when (slot-boundp process 'cli-buf)
+			(oref process cli-buf)))
+	     (locals-buffer (when (slot-boundp process 'locals-buf)
+			   (oref process locals-buf)))
+	     (threads-buffer (when (slot-boundp process 'threads-buf)
+			    (oref process threads-buf)))
+	     (msg-buffer (when (slot-boundp process 'msg-buf)
+			(oref process msg-buf)))
+	     (frame (new-frame '((name . "JDebug") (minibuffer . nil))))
+	     (height (/ (frame-height frame) (count-if 'identity
+						       (list cli-buffer
+							     locals-buffer
+							     threads-buffer
+							     msg-buffer))))
+	     (init-frame (selected-frame))
+	     (init-config (current-window-configuration))
+	     (prev-window))
+	(save-excursion
+	  (select-frame frame)
+	  ;; msg buffer should always be there, if not this could break
+	  (switch-to-buffer msg-buffer)
+	  (setq prev-window (get-buffer-window msg-buffer))
+	  (when locals-buffer
+	    (let ((locals-win (split-window prev-window height)))
+	      (setq prev-window locals-win)
+	      (when (not jde-bug-local-variables)
+		(jde-bug-toggle-local-variables)
+		(if (featurep 'xemacs)
+		  (sleep-for 0.1)
+		  (sleep-for 0 100)))
+	      (set-window-buffer locals-win locals-buffer)))
+	  (when threads-buffer
+	    (let ((threads-win (split-window prev-window height)))
+	      (setq prev-window threads-win)
+	      (jde-bug-show-threads)
+	      (set-window-buffer threads-win threads-buffer)))
+	  (when cli-buffer
+	    (let ((cli-win (split-window prev-window height)))
+	      (set-window-buffer cli-win cli-buffer)))
+	  (select-frame init-frame)
+	  (set-window-configuration init-config))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1679,7 +1680,7 @@ requests to cancel."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-display-variable () 
+(defun jde-bug-display-variable ()
   (interactive)
   (if (not (jde-dbs-target-process-runnable-p))
       (error "No target process or process is not suspended."))
@@ -1694,7 +1695,7 @@ requests to cancel."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-evaluate-expression (expression) 
+(defun jde-bug-evaluate-expression (expression)
 "Evaluates a Java expression. The Java expression may include
 any variables in scope in the program being debugged."
   (interactive
@@ -1702,7 +1703,7 @@ any variables in scope in the program being debugged."
 
   (if (not (jde-dbs-target-process-runnable-p))
       (error "No target process or process is not suspended."))
-	   
+
   (if  (string= expression "")
       (error "Empty expression."))
 
@@ -1710,7 +1711,7 @@ any variables in scope in the program being debugged."
 	 (state-info (oref process state-info))
 	 (thread-id (oref state-info thread-id))
 	 (evaluate-command
-	  (jde-dbs-evaluate 
+	  (jde-dbs-evaluate
 	   (format "Evaluate %s" expression)
 	   :process process
 	   :expression expression
@@ -1720,19 +1721,19 @@ any variables in scope in the program being debugged."
     (if result
 	(let* ((type  (nth 0 result))
 	       (value (nth 1 result))
-               (buf (get-buffer-create (concat "Expression: " expression))))
-            (jde-dbo-view-var-in-buf (jde-dbs-objectify-value result)
-                                     expression process t buf t)
-            (pop-to-buffer buf (split-window nil (- (window-height) 4))))
+	       (buf (get-buffer-create (concat "Expression: " expression))))
+	    (jde-dbo-view-var-in-buf (jde-dbs-objectify-value result)
+				     expression process t buf t)
+	    (pop-to-buffer buf (split-window nil (- (window-height) 4))))
       (message "Error: could not evaluate \"%s\"." expression))))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
 ;; Display Loaded Classes Command                                             ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-display-loaded-classes () 
+(defun jde-bug-display-loaded-classes ()
   "Displays the classes currently loaded by the target process."
   (interactive)
 
@@ -1746,7 +1747,7 @@ any variables in scope in the program being debugged."
 	   :process process))
 	 (result
 	  (jde-dbs-cmd-exec cmd)))
-    (if (not result)	    
+    (if (not result)
       (error "Could not get loaded classes."))))
 
 
@@ -1758,7 +1759,7 @@ any variables in scope in the program being debugged."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-show-threads () 
+(defun jde-bug-show-threads ()
 "Shows all threads and thread-groups running in the target process.
 This command displays the threads as a tree structure. To expand
 a node of the tree, click the + sign next to the node, using mouse
@@ -1767,11 +1768,11 @@ button 2."
 
   (if (not (jde-dbs-get-target-process))
       (error "No target process."))
-  
+
   (if (not jde-bug-stack-info)
       (progn
-        (jde-bug-toggle-stack-info)
-        (if (featurep 'xemacs)
+	(jde-bug-toggle-stack-info)
+	(if (featurep 'xemacs)
 	    (sleep-for 0.1)
 	  (sleep-for 0 100))))
 
@@ -1782,10 +1783,10 @@ button 2."
 	   :process process))
 	 (result
 	  (jde-dbs-cmd-exec get-threads-command)))
-    (if (not result)	    
+    (if (not result)
       (error "Could not get threads"))))
 
-(defun jde-bug-thread-show-thread-info () 
+(defun jde-bug-thread-show-thread-info ()
   (interactive)
   (message "not implemented"))
 
@@ -1796,7 +1797,7 @@ button 2."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-show-object-monitors (object-id) 
+(defun jde-bug-show-object-monitors (object-id)
 "Shows the threads that are monitoring a specified object, including the thread
 that currently owns the object and threads that are waiting to access the object."
   (interactive
@@ -1820,7 +1821,7 @@ that currently owns the object and threads that are waiting to access the object
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-display-path-info () 
+(defun jde-bug-display-path-info ()
   "Displays the base directory, boot classpath, and classpath of the target process."
   (interactive)
 
@@ -1834,7 +1835,7 @@ that currently owns the object and threads that are waiting to access the object
 	   :process process))
 	 (result
 	  (jde-dbs-cmd-exec cmd)))
-    (if (not result)	    
+    (if (not result)
       (error "Could not get path info."))))
 
 
@@ -1844,7 +1845,7 @@ that currently owns the object and threads that are waiting to access the object
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-clear-watchpoint () 
+(defun jde-bug-clear-watchpoint ()
   (interactive)
   (message "not implemented"))
 
@@ -1854,7 +1855,7 @@ that currently owns the object and threads that are waiting to access the object
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-up-stack () 
+(defun jde-bug-up-stack ()
   "Moves the source cursor up one frame in the call stack and displays the local
 variables at that point in the stack. This command works only for the stack of
 the thread at a breakpoint or step point."
@@ -1863,7 +1864,7 @@ the thread at a breakpoint or step point."
   (if (not (jde-dbs-target-process-steppable-p))
       (error "The target process is not suspended at a breakpoint or steppoint."))
 
-  (if (not 
+  (if (not
        (let* ((process (jde-dbs-get-target-process))
 	      (stack-max (1- (length (oref process stack))))
 	      (stack-ptr (oref process stack-ptr)))
@@ -1879,7 +1880,7 @@ the thread at a breakpoint or step point."
 	 (class (nth 1 frame))
 	 (file (nth 2 frame))
 	 (line (nth 3 frame)))
-	 
+
     (oset process :stack-ptr stack-ptr)
     (jde-db-set-debug-cursor class file line)
     (jde-dbo-update-locals-buf process thread-id stack-ptr)))
@@ -1891,7 +1892,7 @@ the thread at a breakpoint or step point."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-down-stack () 
+(defun jde-bug-down-stack ()
   "Moves the source cursor down one frame in the call stack and displays the local
 variables at that point in the stack. This command works only for the stack of
 the thread at a breakpoint or step point."
@@ -1914,19 +1915,19 @@ the thread at a breakpoint or step point."
 	 (class (nth 1 frame))
 	 (file (nth 2 frame))
 	 (line (nth 3 frame)))
-	 
+
     (oset process :stack-ptr stack-ptr)
     (jde-db-set-debug-cursor class file line)
     (jde-dbo-update-locals-buf process thread-id stack-ptr)))
 
 
 
-(defun jde-bug-suspend-thread (thread-id) 
+(defun jde-bug-suspend-thread (thread-id)
 "Suspends the thread or group of threads specified by THREAD-ID.
 If the thread or group is already suspended, this command increments
 the thread's suspend count. Use JDEBug->Threads->Show Threads (`jde-bug-thread-show-threads')
 to display the IDs of all threads and thread groups running in the
-target process. Use JDEBug->Processes->Suspend Process 
+target process. Use JDEBug->Processes->Suspend Process
 (`jde-bug-suspend-process') to suspend the entire process. Use
 Threads->Resume Thread (`jde-bug-resume-thread') to resume the thread."
   (interactive
@@ -1938,9 +1939,9 @@ Threads->Resume Thread (`jde-bug-resume-thread') to resume the thread."
 	       :process process
 	       :thread-id thread-id)))
     (jde-dbs-cmd-exec suspend-command)))
- 
 
-(defun jde-bug-resume-thread (thread-id) 
+
+(defun jde-bug-resume-thread (thread-id)
 "Resumes the previously suspended thread or group of threads specified
 by THREAD-ID.  This command has no effect if the specified thread or
 thread-group is running or was not suspended by you, using the
@@ -1961,7 +1962,7 @@ the entire process."
 	       :process process
 	       :thread-id thread-id)))
     (jde-dbs-cmd-exec resume-command)))
- 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
@@ -1969,7 +1970,7 @@ the entire process."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-interrupt-thread (thread-id) 
+(defun jde-bug-interrupt-thread (thread-id)
 "Interrupts the thread specified by THREAD-ID. The thread cannot be
 resumed. Use JDEBug->Threads->Show Threads
 (`jde-bug-thread-show-threads') to display the IDs of all threads
@@ -1984,12 +1985,12 @@ running in the target process. Use Threads->Suspend Thread
 	       :process process
 	       :thread-id thread-id)))
     (jde-dbs-cmd-exec interrupt-command)))
- 
 
-(defun jde-bug-stop-thread (thread-id exception-id) 
-"Stops a thread and throws an exception. THREAD-ID is the id of the thread you want 
-to stop. EXCEPTION-ID is the id of the exception object you want to throw. Use 
-JDEBug->Threads->Show Threads (`jde-bug-thread-show-threads') to display the IDs of 
+
+(defun jde-bug-stop-thread (thread-id exception-id)
+"Stops a thread and throws an exception. THREAD-ID is the id of the thread you want
+to stop. EXCEPTION-ID is the id of the exception object you want to throw. Use
+JDEBug->Threads->Show Threads (`jde-bug-thread-show-threads') to display the IDs of
 all threads and thread groups running in the target process. Use JDEBug->Evaluate Expression
 to creae the exception object."
  (interactive
@@ -2012,7 +2013,7 @@ to creae the exception object."
    ((string= jde-bug-jpda-directory "")
     (error "jde-bug-jpda-directory variable is not set.")
     nil)
-   ((not (file-exists-p 
+   ((not (file-exists-p
 	  (expand-file-name "lib/jpda.jar" (jde-normalize-path
 					    'jde-bug-jpda-directory))))
     (error "Cannot find JPDA jar file at %s"
@@ -2038,29 +2039,29 @@ to creae the exception object."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-launch-process () 
+(defun jde-bug-launch-process ()
   "Starts a virtual machine to run the application
 in the current source buffer. Halts at the beginning
 of the process to let you set breakpoints. The started
-process becomes the target process for debugger 
+process becomes the target process for debugger
 commands. Select Processes->Set Target Process from the JDEBug
 menu or run the `jde-bug-set-target-process' command
 to set another process as the target process."
   (interactive)
   (let* ((main-class (jde-run-get-main-class)))
     (unless (and
-	     (jde-dbs-proc-set-find jde-dbs-the-process-registry 
+	     (jde-dbs-proc-set-find jde-dbs-the-process-registry
 				    :main-class main-class)
-	     (not (yes-or-no-p 
-		   (format "An instance of %s is already running. Continue?" main-class))))	 
-      (let* ((process 
-	      (jde-dbs-proc (format "process%d" 
-				    (setq jde-dbs-proc-counter 
-					  (1+ jde-dbs-proc-counter))) 
+	     (not (yes-or-no-p
+		   (format "An instance of %s is already running. Continue?" main-class))))
+      (let* ((process
+	      (jde-dbs-proc (format "process%d"
+				    (setq jde-dbs-proc-counter
+					  (1+ jde-dbs-proc-counter)))
 			    :id jde-dbs-proc-counter :main-class main-class))
 	     (old-target (jde-dbs-get-target-process))
-	     (launch (jde-dbs-launch-process 
-		      (format "Launch %s" main-class) 
+	     (launch (jde-dbs-launch-process
+		      (format "Launch %s" main-class)
 		      :process process
 		      :vmexec (car jde-bug-vm-executable)
 		      ;; :vmexec "xyz"
@@ -2070,7 +2071,7 @@ to set another process as the target process."
 	(if (not (string= jde-bug-jre-home ""))
 	    (oset launch :jre-home (jde-normalize-path 'jde-bug-jre-home)))
 	(oset jde-dbs-the-process-registry :target-process process)
-	(when (not (jde-dbs-cmd-exec launch))	    
+	(when (not (jde-dbs-cmd-exec launch))
 	  (jde-dbs-proc-move-to-morgue process)
 	  (if old-target
 	      (oset jde-dbs-the-process-registry :target-process old-target))
@@ -2079,7 +2080,7 @@ to set another process as the target process."
 	  (jde-dbs-proc-set-add jde-dbs-the-process-morgue process)
 	  (setq succeededp nil))
 	succeededp))))
-	
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
@@ -2087,32 +2088,32 @@ to set another process as the target process."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun jde-bug-attach-via-shared-memory (process-name) 
+(defun jde-bug-attach-via-shared-memory (process-name)
   "Attaches the debugger to a process running on the same machine via shared
 memory. This command works only on Windows."
   (interactive
    "sProcess name: ")
-  (let* ((process 
-	  (jde-dbs-proc (format "process%d" 
-				(setq jde-dbs-proc-counter 
-				      (1+ jde-dbs-proc-counter))) 
+  (let* ((process
+	  (jde-dbs-proc (format "process%d"
+				(setq jde-dbs-proc-counter
+				      (1+ jde-dbs-proc-counter)))
 			:id jde-dbs-proc-counter :main-class process-name))
-         (old-target (jde-dbs-get-target-process))
-         (attach (jde-dbs-attach-shmem
-                  (format "Attach %s" process-name) 
-                  :process process 
-                  :process-name process-name)))
+	 (old-target (jde-dbs-get-target-process))
+	 (attach (jde-dbs-attach-shmem
+		  (format "Attach %s" process-name)
+		  :process process
+		  :process-name process-name)))
     (jde-dbs-proc-set-add jde-dbs-the-process-registry process)
     (oset jde-dbs-the-process-registry :target-process process)
-    (if (not (jde-dbs-cmd-exec attach))	    
-        (progn
-          (jde-dbs-proc-move-to-morgue process)
-          (if old-target
-              (oset jde-dbs-the-process-registry :target-process old-target))
-          (jde-dbs-proc-set-state process "unknown")
-          (jde-dbs-proc-set-state-reason process "Error launching process.")
-          (jde-dbs-proc-set-add jde-dbs-the-process-morgue process)
-          nil)
+    (if (not (jde-dbs-cmd-exec attach))
+	(progn
+	  (jde-dbs-proc-move-to-morgue process)
+	  (if old-target
+	      (oset jde-dbs-the-process-registry :target-process old-target))
+	  (jde-dbs-proc-set-state process "unknown")
+	  (jde-dbs-proc-set-state-reason process "Error launching process.")
+	  (jde-dbs-proc-set-add jde-dbs-the-process-morgue process)
+	  nil)
       (jde-bug-set-breakpoints process jde-db-breakpoints))
     t))
 
@@ -2121,32 +2122,32 @@ memory. This command works only on Windows."
 ;; Attach Process on Local Host Command                                       ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun jde-bug-attach-local-host (process-port) 
-  "Attaches the debugger to a process running on local host. This command connects 
+(defun jde-bug-attach-local-host (process-port)
+  "Attaches the debugger to a process running on local host. This command connects
 to the process via a socket."
   (interactive
    "sProcess Port: ")
-  (let* ((process 
-	  (jde-dbs-proc (format "process%d" 
-				(setq jde-dbs-proc-counter 
-				      (1+ jde-dbs-proc-counter))) 
+  (let* ((process
+	  (jde-dbs-proc (format "process%d"
+				(setq jde-dbs-proc-counter
+				      (1+ jde-dbs-proc-counter)))
 			:id jde-dbs-proc-counter :main-class process-port))
 	     (old-target (jde-dbs-get-target-process))
 	     (attach (jde-dbs-attach-socket
-		      (format "Attach %s" process-port) 
-		      :process process 
+		      (format "Attach %s" process-port)
+		      :process process
 		      :port process-port)))
     (jde-dbs-proc-set-add jde-dbs-the-process-registry process)
     (oset jde-dbs-the-process-registry :target-process process)
-    (if (not (jde-dbs-cmd-exec attach))	    
-        (progn
-          (jde-dbs-proc-move-to-morgue process)
-          (if old-target
-              (oset jde-dbs-the-process-registry :target-process old-target))
-          (jde-dbs-proc-set-state process "unknown")
-          (jde-dbs-proc-set-state-reason process "Error launching process.")
-          (jde-dbs-proc-set-add jde-dbs-the-process-morgue process)
-          nil)
+    (if (not (jde-dbs-cmd-exec attach))
+	(progn
+	  (jde-dbs-proc-move-to-morgue process)
+	  (if old-target
+	      (oset jde-dbs-the-process-registry :target-process old-target))
+	  (jde-dbs-proc-set-state process "unknown")
+	  (jde-dbs-proc-set-state-reason process "Error launching process.")
+	  (jde-dbs-proc-set-add jde-dbs-the-process-morgue process)
+	  nil)
       (jde-bug-set-breakpoints process jde-db-breakpoints))
     t))
 
@@ -2156,33 +2157,33 @@ to the process via a socket."
 ;; Attach Process on Remote Host Command                                      ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun jde-bug-attach-remote-host (process-host process-port) 
-  "Attaches the debugger to a process running on a remote host. This command connects 
+(defun jde-bug-attach-remote-host (process-host process-port)
+  "Attaches the debugger to a process running on a remote host. This command connects
 to the process via a socket."
  (interactive
    "sHost: \nsProcess Port: ")
-  (let* ((process 
-	  (jde-dbs-proc (format "process%d" 
-				(setq jde-dbs-proc-counter 
-				      (1+ jde-dbs-proc-counter))) 
+  (let* ((process
+	  (jde-dbs-proc (format "process%d"
+				(setq jde-dbs-proc-counter
+				      (1+ jde-dbs-proc-counter)))
 			:id jde-dbs-proc-counter :main-class process-port))
 	     (old-target (jde-dbs-get-target-process))
 	     (attach (jde-dbs-attach-socket
-		      (format "Attach %s" process-port) 
-		      :process process 
+		      (format "Attach %s" process-port)
+		      :process process
 		      :host process-host
 		      :port process-port)))
     (jde-dbs-proc-set-add jde-dbs-the-process-registry process)
     (oset jde-dbs-the-process-registry :target-process process)
-    (if (not (jde-dbs-cmd-exec attach))	    
-        (progn
-          (jde-dbs-proc-move-to-morgue process)
-          (if old-target
-              (oset jde-dbs-the-process-registry :target-process old-target))
-          (jde-dbs-proc-set-state process "unknown")
-          (jde-dbs-proc-set-state-reason process "Error launching process.")
-          (jde-dbs-proc-set-add jde-dbs-the-process-morgue process)
-          nil)
+    (if (not (jde-dbs-cmd-exec attach))
+	(progn
+	  (jde-dbs-proc-move-to-morgue process)
+	  (if old-target
+	      (oset jde-dbs-the-process-registry :target-process old-target))
+	  (jde-dbs-proc-set-state process "unknown")
+	  (jde-dbs-proc-set-state-reason process "Error launching process.")
+	  (jde-dbs-proc-set-add jde-dbs-the-process-morgue process)
+	  nil)
       (jde-bug-set-breakpoints process jde-db-breakpoints))
     t))
 
@@ -2200,24 +2201,24 @@ to the process via a socket."
   (interactive
    (list
     (if (car jde-bug-server-shmem-name)
-	(read-from-minibuffer "Name: " 
+	(read-from-minibuffer "Name: "
 			      (car jde-bug-server-shmem-name-history)
-			      nil nil 
+			      nil nil
 			      'jde-bug-server-shmem-name-history)
       (cdr jde-bug-server-shmem-name))))
-  (let* ((process 
-	  (jde-dbs-proc (format "process%d" 
-				(setq jde-dbs-proc-counter 
-				      (1+ jde-dbs-proc-counter))) 
+  (let* ((process
+	  (jde-dbs-proc (format "process%d"
+				(setq jde-dbs-proc-counter
+				      (1+ jde-dbs-proc-counter)))
 			:id jde-dbs-proc-counter :main-class shmem-name))
 	     (old-target (jde-dbs-get-target-process))
 	     (listen (jde-dbs-listen-for-process
-		      (format "Listen %s" shmem-name) 
-		      :process process 
+		      (format "Listen %s" shmem-name)
+		      :process process
 		      :address shmem-name)))
     (jde-dbs-proc-set-add jde-dbs-the-process-registry process)
     (oset jde-dbs-the-process-registry :target-process process)
-    (when (not (jde-dbs-cmd-exec listen))	    
+    (when (not (jde-dbs-cmd-exec listen))
       (jde-dbs-proc-move-to-morgue process)
       (if old-target
 	  (oset jde-dbs-the-process-registry :target-process old-target))
@@ -2239,30 +2240,30 @@ to the process via a socket."
 (defun jde-bug-listen-socket (socket)
   "Listens on socket for a vm requiring debugging services.
 If `jde-bug-server-socket' is set to \"prompt for,\" this command
-prompts you to enter the socket on which to listen. Otherwise, it 
+prompts you to enter the socket on which to listen. Otherwise, it
 listens on the socket specified by `jde-bug-server-socket'."
   (interactive
    (list
     (if (car jde-bug-server-socket)
-	(read-from-minibuffer "Socket: " 
+	(read-from-minibuffer "Socket: "
 			      (car jde-bug-server-socket-history)
-			      nil nil 
+			      nil nil
 			      'jde-bug-server-socket-history)
       (cdr jde-bug-server-socket))))
-  (let* ((process 
-	  (jde-dbs-proc (format "process%d" 
-				(setq jde-dbs-proc-counter 
-				      (1+ jde-dbs-proc-counter))) 
+  (let* ((process
+	  (jde-dbs-proc (format "process%d"
+				(setq jde-dbs-proc-counter
+				      (1+ jde-dbs-proc-counter)))
 			:id jde-dbs-proc-counter :main-class socket))
 	     (old-target (jde-dbs-get-target-process))
 	     (listen (jde-dbs-listen-for-process
-		      (format "Listen %s" socket) 
-		      :process process 
+		      (format "Listen %s" socket)
+		      :process process
 		      :address socket
 		      :transport "socket")))
     (jde-dbs-proc-set-add jde-dbs-the-process-registry process)
     (oset jde-dbs-the-process-registry :target-process process)
-    (when (not (jde-dbs-cmd-exec listen))	    
+    (when (not (jde-dbs-cmd-exec listen))
       (jde-dbs-proc-move-to-morgue process)
       (if old-target
 	  (oset jde-dbs-the-process-registry :target-process old-target))
@@ -2279,7 +2280,7 @@ listens on the socket specified by `jde-bug-server-socket'."
 ;; Detach Process Command                                                     ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun jde-bug-detach-process () 
+(defun jde-bug-detach-process ()
   "Detaches the debugger from the target process. The target process continues
 to run."
   (interactive)
@@ -2292,7 +2293,7 @@ to run."
 ;; Suspend Process Command                                                    ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun jde-bug-suspend-process () 
+(defun jde-bug-suspend-process ()
 "Suspends the target process. To suspend a particular thread or thread group,
 use JDEbug->Threads->Suspend Thread (`jde-bug-suspend-thread')."
   (interactive)
@@ -2302,7 +2303,7 @@ use JDEbug->Threads->Suspend Thread (`jde-bug-suspend-thread')."
     (jde-dbs-cmd-exec suspend-command)))
 
 
-(defun jde-bug-resume-process () 
+(defun jde-bug-resume-process ()
 "Resumes the target process. To resume a particular thread or thread group,
 use JDEbug->Threads->Resume Thread (`jde-bug-resume-thread')."
   (interactive)
@@ -2312,11 +2313,11 @@ use JDEbug->Threads->Resume Thread (`jde-bug-resume-thread')."
     (jde-dbs-cmd-exec resume-command)))
 
 
-(defun jde-bug-finish-process () 
+(defun jde-bug-finish-process ()
   "Terminates the target process."
   (interactive)
   (let* ((process (jde-dbs-get-target-process))
-	 (finish (jde-dbs-finish-process 
+	 (finish (jde-dbs-finish-process
 		  (format "finish %d" (oref process id))
 		  :process process))
 	 (result (jde-dbs-cmd-exec finish)))
@@ -2324,21 +2325,21 @@ use JDEbug->Threads->Resume Thread (`jde-bug-resume-thread')."
     (slot-makeunbound jde-dbs-the-process-registry :target-process)
     (jde-dbs-proc-set-state-reason process "finish")))
 
-(defun jde-bug-set-target-process (process-id) 
+(defun jde-bug-set-target-process (process-id)
   "Sets the process whose process-id is PROCESS-ID to be
 the focus of debugger commands."
   (interactive
    "nEnter process id: ")
-  (jde-dbs-proc-registry-set-target-proc 
+  (jde-dbs-proc-registry-set-target-proc
    jde-dbs-the-process-registry process-id))
-  
-	  
-(defun jde-bug-show-processes () 
+
+
+(defun jde-bug-show-processes ()
   (interactive)
   (message "not implemented"))
 
 
-(defun jde-bug-remove-dead-processes () 
+(defun jde-bug-remove-dead-processes ()
   "Remove dead processes and their associated buffers from the Emacs environment."
   (interactive)
   (if (oref jde-dbs-the-process-morgue proc-alist)
@@ -2351,19 +2352,19 @@ This command splits the window and shows the locals buffer."
   (interactive)
   (if (not jde-bug-local-variables)
       (progn
-        (jde-bug-toggle-local-variables)
+	(jde-bug-toggle-local-variables)
 	(if (featurep 'xemacs)
 	    (sleep-for 0.1)
 	  (sleep-for 0 100))))
 
   (let* ((process (jde-dbs-get-target-process))
-         (locals-buf (oref process locals-buf))
+	 (locals-buf (oref process locals-buf))
 	 (source-window (selected-window))
-         locals-window)
+	 locals-window)
     (if (one-window-p)
-        (progn
-          (setq locals-window (split-window source-window))
-          (set-window-buffer locals-window locals-buf)))
+	(progn
+	  (setq locals-window (split-window source-window))
+	  (set-window-buffer locals-window locals-buf)))
     (set-window-buffer (next-window source-window) locals-buf)
     (select-window source-window)))
 
@@ -2373,11 +2374,11 @@ This command splits the window and shows the locals buffer."
   (let* ((process (jde-dbs-get-target-process))
 	(cli-buf (oref process cli-buf))
 	(source-window (selected-window))
-        cli-window)
+	cli-window)
     (if (one-window-p)
-        (progn
-          (setq cli-window (split-window source-window))
-          (set-window-buffer cli-window cli-buf)))
+	(progn
+	  (setq cli-window (split-window source-window))
+	  (set-window-buffer cli-window cli-buf)))
     (set-window-buffer (next-window source-window) cli-buf)
     (select-window source-window)))
 
@@ -2385,23 +2386,23 @@ This command splits the window and shows the locals buffer."
 (defun jde-bug-show-threads-buf ()
   "Show the threads buffer of the target process."
   (interactive)
-  
+
   ;;Updating the threads buffer
   (jde-bug-show-threads)
-  
+
   (let* ((process (jde-dbs-get-target-process))
-         (threads-buf (oref process threads-buf))
-         (source-window (selected-window))
-         threads-window)
+	 (threads-buf (oref process threads-buf))
+	 (source-window (selected-window))
+	 threads-window)
     (if (one-window-p)
-        (progn
-          (setq threads-window (split-window source-window))
-          (set-window-buffer threads-window threads-buf)))
+	(progn
+	  (setq threads-window (split-window source-window))
+	  (set-window-buffer threads-window threads-buf)))
     (set-window-buffer (next-window source-window) threads-buf)
     (select-window source-window)))
 
 
-(defun jde-bug-show-preferences () 
+(defun jde-bug-show-preferences ()
   (interactive)
   (customize-apropos "jde-bug" 'groups))
 
@@ -2412,7 +2413,7 @@ This command splits the window and shows the locals buffer."
    (lambda (assoc-x)
      (let* ((breakpoint (cdr assoc-x))
 	    (set-breakpoint (jde-dbs-set-breakpoint
-			     (format "set breakpoint%d" 
+			     (format "set breakpoint%d"
 				     (oref breakpoint id))
 			     :process process
 			     :breakpoint breakpoint))
@@ -2423,7 +2424,7 @@ This command splits the window and shows the locals buffer."
 (defun jde-bug-debug-app ()
   "Runs the debugger on the application in the current source buffer."
   (interactive)
-  (if (and 
+  (if (and
        (jde-bug-jpda-installed-p)
        (not (jde-dbs-debugger-running-p)))
       (jde-dbs-debugger-start jde-dbs-the-debugger))
@@ -2438,16 +2439,13 @@ This command splits the window and shows the locals buffer."
   "Displays the JDEbug User's Guide."
   (interactive)
   (let* ((jde-dir (jde-find-jde-doc-directory))
-         (jdebug-help
-          (if jde-dir
-	      (expand-file-name "doc/html/jdebug-ug/jdebug-ug.html" jde-dir))))       
+	 (jdebug-help
+	  (if jde-dir
+	      (expand-file-name "doc/html/jdebug-ug/jdebug-ug.html" jde-dir))))
     (if (and
-         jdebug-help
-         (file-exists-p jdebug-help))
-        (browse-url (concat "file://" (jde-convert-cygwin-path jdebug-help))
-		    (if (boundp 'browse-url-new-window-flag)
-			'browse-url-new-window-flag
-		      browse-url-new-window-p))
+	 jdebug-help
+	 (file-exists-p jdebug-help))
+	(browse-url (concat "file://" (jde-convert-cygwin-path jdebug-help)))
       (signal 'error '("Cannot find JDEbug User's Guide.")))))
 
 (defun jde-bug-keys ()
@@ -2461,15 +2459,15 @@ the value of the variable `jde-bug-local-variables'"
   (interactive)
   (setq jde-bug-local-variables (not jde-bug-local-variables))
   (if (and jde-dbo-current-process
-           jde-dbo-current-thread-id
-           jde-bug-local-variables)
+	   jde-dbo-current-thread-id
+	   jde-bug-local-variables)
       (jde-dbo-update-locals-buf jde-dbo-current-process
-                                 jde-dbo-current-thread-id 0)
+				 jde-dbo-current-thread-id 0)
     (save-excursion
       (if jde-dbo-current-process
-          (progn 
-            (set-buffer (oref jde-dbo-current-process locals-buf))
-            (kill-all-local-variables))))))
+	  (progn
+	    (set-buffer (oref jde-dbo-current-process locals-buf))
+	    (kill-all-local-variables))))))
 
 (defun jde-bug-toggle-stack-info ()
   "Enables and disables the retrieval of stack info. It toggles the value
@@ -2477,362 +2475,17 @@ of the variable `jde-bug-stack-info'"
   (interactive)
   (setq jde-bug-stack-info (not jde-bug-stack-info))
   (if (and jde-dbo-current-process
-           jde-dbo-current-thread-id
-           jde-bug-stack-info)
+	   jde-dbo-current-thread-id
+	   jde-bug-stack-info)
       (jde-dbo-update-stack jde-dbo-current-process
-                            jde-dbo-current-thread-id)
+			    jde-dbo-current-thread-id)
     (save-excursion
       (if jde-dbo-current-process
-          (progn 
-            (set-buffer (oref jde-dbo-current-process threads-buf))
-            (kill-all-local-variables)
-            (erase-buffer))))))
+	  (progn
+	    (set-buffer (oref jde-dbo-current-process threads-buf))
+	    (kill-all-local-variables)
+	    (erase-buffer))))))
 
 (provide 'jde-bug)
 
-;; $Log: jde-bug.el,v $
-;; Revision 1.98  2005/01/18 05:23:32  paulk
-;; Change variables named assoc to assoc-x. This is intended to fix a "Symbol's value as variable is void: old-assoc" problem when debugging with the compiled version of JDE in xemacs/cygwin. Thanks to Henry S. Thompson.
-;;
-;; Revision 1.97  2004/10/18 02:52:19  paulk
-;; Updated copyright notice.
-;;
-;; Revision 1.96  2003/09/22 03:34:39  paulk
-;; Move Break on Exception menu item.
-;;
-;; Revision 1.95  2003/09/21 04:56:25  paulk
-;; Enable Break on Exception menu item only when a debuggee process
-;; is running.
-;;
-;; Revision 1.94  2003/09/17 05:31:56  ahyatt
-;; Added message to help users remove exception breakpoint
-;;
-;; Revision 1.93  2003/09/17 05:12:24  ahyatt
-;; Added exception breakpoints
-;;
-;; Revision 1.92  2003/03/28 05:33:29  andyp
-;; XEmacs optimizations for JDEbug and efc.
-;;
-;; Revision 1.91  2003/01/12 18:39:41  jslopez
-;; Fixes bug in jde-bug-set-breakpoint.
-;; The line number was not being set for new breakpoints with this method.
-;;
-;; Revision 1.90  2002/12/19 22:23:44  ahyatt
-;; Should have used slot-boundp instead of slot-existsp
-;;
-;; Revision 1.88  2002/12/08 20:40:35  ahyatt
-;; Removed most items from the debug "Display" menu, and created two new
-;; menu items, a "Display variable at point", and "Show debug frame".
-;; The "Display variable at point", and the "Evaluate expression" command
-;; shows a tree-view of the returned variable.  The "Show debug frame"
-;; will put up a debug frame of all debug buffers.
-;;
-;; Revision 1.87  2002/12/07 17:09:44  jslopez
-;; Fixes bug ID 4. The overlay arrow nows get cleared after using
-;; jde-bug-continue.
-;;
-;; Revision 1.86  2002/10/30 13:01:41  paulk
-;; Moved XEmacs compatibility fix for beginning/end-of-line functions
-;; from this file to jde-db.el
-;;
-;; Revision 1.85  2002/10/16 04:55:43  paulk
-;; Adds a menu entry to JDEbug to toggle the stack display. Thanks to Andy Piper.
-;;
-;; Revision 1.84  2002/09/11 03:37:43  paulk
-;; Fixes typo in code.
-;;
-;; Revision 1.83  2002/08/07 05:54:26  paulk
-;; jde-display-variable now uses semantic-analyze-current-context to determine the variable
-;; at point. This eliminates the last remaining dependency on the gud package. Therefore
-;; this update also removes the require form for gud.
-;;
-;; Revision 1.82  2002/07/13 00:47:23  jslopez
-;; Adds a require 'gud when we are using emacs-21. the library is not
-;; loaded by default.
-;;
-;; Revision 1.81  2002/03/31 07:49:52  paulk
-;; Renamed jde-db-source-directories. The new name is jde-sourcepath.
-;;
-;; Revision 1.80  2002/03/13 04:05:44  paulk
-;; XEmacs compatibility fix: use single arg form of sleep-for function
-;; (thanks to ens Lautenbacher <jtl@schlund.de>).
-;;
-;; Revision 1.79  2002/02/01 05:18:58  paulk
-;; Replaced calls to obsolete jde-dbo-show-line with calls to
-;; jde-db-set-debug-cursor.
-;;
-;; Revision 1.78  2002/01/16 07:33:21  paulk
-;; Updated JDEbug to use most of the new generalized breakpoint functionality.
-;;
-;; Revision 1.77  2001/12/10 04:29:55  paulk
-;; Created generalized breakpoint framework. Provided initial
-;; implementation for jdb. A lot of work remains.
-;;
-;; Revision 1.76  2001/12/04 05:33:44  paulk
-;; * Fixed two JDEbug menu related bugs. The menu now always appears when jde-debugger is set to JDEbug. Also, keybindings now work on XEmacs.
-;;
-;; * Updated to reflect change in dialog class package name prefix from jde- to efc-.
-;;
-;; Revision 1.75  2001/12/04 01:14:14  jslopez
-;; Fixes bug that caused JDEBug not to set
-;; saved breakpoints when attaching to an external
-;; process.
-;;
-;; Revision 1.74  2001/11/26 06:17:37  paulk
-;; Removed the customization variables, jde-bug-jdk-directory
-;; and jde-bug-vm-includes-jpda-p. These variables are no
-;; longer needed as the JDE can get the required information
-;; from the jde-java-version and jde-get-jdk-dir functions
-;; introduced in previous releases.
-;;
-;; Revision 1.73  2001/11/25 06:32:25  paulk
-;; Updated to reflect name change from jde-file-in-source-directories-p to
-;; jde-src-dir-matches-file-p.
-;;
-;; Revision 1.72  2001/11/25 05:35:59  paulk
-;; Toggle breakpoint command signals an error if you attempt to set a breakpoint
-;; in a buffer that is not a Java source buffer or that is not in
-;; jde-db-source-directories. Thanks to Kevin Burton.
-;;
-;; Revision 1.71  2001/11/20 01:29:53  jslopez
-;; Adds a better user message when trying to start
-;; an already started debugger.
-;;
-;; Revision 1.70  2001/11/18 14:52:23  jslopez
-;; Modifies the menu entries to display
-;; Threads and Local Variables.
-;;
-;; Revision 1.69  2001/11/16 12:51:37  jslopez
-;; Fixes jde-bug-show-locals-buf and jde-bug-show-cli-buf
-;; to keep the current source window.
-;;
-;; Modifies jde-bug-show-locals-buf to display
-;; the local variables without doing a
-;; M-x jde-bug-toggle-local-variables
-;;
-;; Modifies jde-bug-show-threads-buf to
-;; display the stack info without
-;; doing M-x jde-bug-toggle-stack-info
-;;
-;; Revision 1.68  2001/10/31 08:58:44  paulk
-;; Emacs 21 compatibility fix: added support for browse-url-new-window-flag variable (replaces browse-url-new-window-p in Emacs 21).
-;;
-;; Revision 1.67  2001/10/01 18:40:36  jslopez
-;; Added require 'cl to avoid make error.
-;;
-;; Revision 1.66  2001/09/28 05:01:16  paulk
-;; Fixes typo.
-;;
-;; Revision 1.65  2001/09/07 14:23:28  jslopez
-;; Adding the group and the type to jde-bug-local-variables and jde-bug-stack-info.
-;;
-;; Revision 1.64  2001/09/07 14:14:55  jslopez
-;; Added customization variables jde-bug-local-variables and jde-bug-stack-info.
-;; Modify the menu entries Display->Local Variables, and Threads and
-;; ShowBuffer->Locals and Threads to be disable when jde-bug-local-variable and
-;; jde-bug-stack-info are nil, respectively.
-;; Added method jde-bug-toggle-local-variables and jde-bug-toggle-stack-info.
-;;
-;; Revision 1.63  2001/07/29 07:06:16  paulk
-;; Fixes JDEbug->Help command so that it works on XEmacs. Thanks to Dr. Volker Zell.
-;;
-;; Revision 1.62  2001/07/06 02:08:34  paulk
-;; The JDEbug Run menu item becomes Continue when the debugger halts at a breakpoint.
-;; Thanks to Alan Hadsell <ahadsell@MtDiablo.com>
-;;
-;; Revision 1.61  2001/04/23 04:55:52  paulk
-;; The watchpoint command now defaults to the field at point and to "all" as the program suspension policy when a field is accessed or modified.
-;;
-;; Revision 1.60  2001/04/16 05:43:47  paulk
-;; Normalized paths. Thanks to Nick Sieger.
-;;
-;; Revision 1.59  2001/04/02 02:49:50  paulk
-;; Increased default debugger command timeout factor to 30 seconds.
-;;
-;; Revision 1.58  2001/03/13 03:54:00  paulk
-;; Update copyright.
-;;
-;; Revision 1.57  2000/12/18 05:22:45  paulk
-;; *** empty log message ***
-;;
-;; Revision 1.56  2000/11/18 05:31:43  paulk
-;; Fixed bug in jde-bug-remove-breakpoint-highlight.
-;;
-;; Revision 1.55  2000/11/16 02:58:29  paulk
-;; Fixed bug that caused highlight not to be removed from breakpint.
-;;
-;; Revision 1.54  2000/09/23 04:33:26  paulk
-;; Fixed bug in jde-bug-clear-breakpoint command where the command was off by a line. Thanks to Stan Lanning <lanning@pobox.com> for providing this fix.
-;;
-;; Revision 1.53  2000/08/14 02:33:36  paulk
-;; Adds support for Step Into All command.
-;;
-;; Revision 1.52  2000/07/28 06:27:44  paulk
-;; Committing all modified files.
-;;
-;; Revision 1.51  2000/07/13 05:22:46  paulk
-;; *** empty log message ***
-;;
-;; Revision 1.50  2000/06/12 08:29:32  paulk
-;; Restored jde-bug-install-jdebug-menu for XEmacs compatibility.
-;; Added jde-bug-debugger-host-address variable.
-;;
-;; Revision 1.49  2000/05/26 09:18:20  paulk
-;; Added variable jde-bug-raise-frame-p to allow a user to specify
-;; whether the Emacs window should pop up when a breakpoint is hit.
-;;
-;; Revision 1.48  2000/05/10 05:36:49  paulk
-;; The JDEbug menu now appears or disappears when you select or deselect JDEbug as the current debugger.
-;;
-;; Revision 1.47  2000/03/16 05:08:25  paulk
-;; Added JDEbug option to jde-db-debugger.
-;;
-;; Revision 1.46  2000/03/03 07:03:21  paulk
-;; Fixed bug where jde-bug-launch-process was returning t even when it failed.
-;;
-;; Revision 1.45  2000/02/17 06:41:09  paulk
-;; Added key bindings for debugger.
-;;
-;; Revision 1.44  2000/02/16 04:59:48  paulk
-;; Implemented color customization for breakpoint marker.
-;; Implemented persistent breakpoints.
-;;
-;; Revision 1.43  2000/02/14 06:19:37  paulk
-;; Implemented up and down stack commands.
-;;
-;; Revision 1.42  2000/02/10 02:53:37  paulk
-;; Fixed bug where Display->Threads command was not enabled when debugger
-;; was attached to a process.
-;;
-;; Revision 1.41  2000/02/02 05:49:51  paulk
-;; Fixed bug in socket listen command.
-;;
-;; Revision 1.40  2000/02/01 05:58:44  paulk
-;; Added commands for listening for applications needing debug services.
-;;
-;; Revision 1.39  2000/02/01 04:11:54  paulk
-;; ReleaseNotes.txt
-;;
-;; Revision 1.38  2000/01/15 08:04:07  paulk
-;; Added show buffer commands.
-;;
-;; Revision 1.37  2000/01/02 08:07:55  paulk
-;; Added attach process commands.
-;;
-;; Revision 1.36  1999/12/27 08:01:17  paulk
-;; Added show object monitors command.
-;;
-;; Revision 1.35  1999/12/20 07:52:06  paulk
-;; Added cancel watchpoint command.
-;;
-;; Revision 1.34  1999/12/19 06:54:21  paulk
-;; Added watch field command.
-;;
-;; Revision 1.33  1999/12/14 04:46:02  paulk
-;; Added JDEbug->Processes->Remove Dead Processes command.
-;;
-;; Revision 1.32  1999/12/13 05:54:08  paulk
-;; Added jde-bug-vm-executable and jde-bug-jre-home variables.
-;; Fixed jde-dbs-launch-process command so that it fails gracefully.
-;;
-;; Revision 1.31  1999/12/03 08:22:00  paulk
-;; Updated JDEbug to run under JDK 1.3beta.
-;;
-;; Revision 1.30  1999/11/30 05:46:21  paulk
-;; Added JDEbug->Display->Path Info command.
-;;
-;; Revision 1.29  1999/11/29 06:58:41  paulk
-;; Added JDEbug->Display->Loaded Classes Command.
-;;
-;; Revision 1.28  1999/11/27 05:13:49  paulk
-;; Added commands for tracing classes.
-;;
-;; Revision 1.27  1999/11/23 06:37:03  paulk
-;; Added Trace->Cancel command.
-;;
-;; Revision 1.26  1999/11/16 05:58:17  paulk
-;; Added trace method commands and skeletons for trace class and cancel
-;; trace commands.
-;;
-;; Revision 1.25  1999/11/04 05:54:07  paulk
-;; Added class and method tracing command skeletons.
-;;
-;; Revision 1.24  1999/10/28 04:18:09  paulk
-;; Added interrupt and stop thread commands.
-;;
-;; Revision 1.23  1999/10/15 05:16:58  paulk
-;; Fixed bugs in JDEbug->Exit Debugger.
-;;
-;; Revision 1.22  1999/10/14 04:59:23  paulk
-;; Added Resume Process and Resume Thread commands.
-;;
-;; Revision 1.21  1999/10/13 08:16:43  paulk
-;; Added suspend process and suspend thread commands.
-;;
-;; Revision 1.20  1999/10/13 06:19:56  paulk
-;; Add JDEBug->Threads->Show Threads command
-;;
-;; Revision 1.19  1999/09/28 04:01:57  paulk
-;; Patched to use either gud-find-c-expr or find-c-expr.
-;;
-;; Revision 1.18  1999/09/16 05:36:59  paulk
-;; Added get locals command.
-;;
-;; Revision 1.17  1999/09/13 05:37:33  paulk
-;; Enhanced get array command.
-;;
-;; Revision 1.16  1999/09/10 06:41:50  paulk
-;; Finished first cut at get_object command.
-;;
-;; Revision 1.15  1999/09/08 05:40:45  paulk
-;; Updated debugger code to take advantage of new unbound slot capability
-;; of eieio.
-;;
-;; Revision 1.14  1999/09/07 05:12:35  paulk
-;; Added get array command.
-;;
-;; Revision 1.13  1999/09/05 04:35:34  paulk
-;; Added initial implementation of evaluate and display variable commands.
-;;
-;; Revision 1.12  1999/08/30 07:10:41  paulk
-;; Converted clear breakpoint command to OOPS.
-;;
-;; Revision 1.11  1999/08/28 05:34:19  paulk
-;; Improved multiple process handling, window configuration.
-;;
-;; Revision 1.10  1999/08/27 05:27:52  paulk
-;; Provided initial support for multiple processes.
-;; Fixed jde-find-data-directory to work on XEmacs with a standard
-;; JDE distribution.
-;; Ported breakpoint highlighting code to XEmacs. Still has bugs though.
-;; Now includes jde-db-option options on vm command-line for process.
-;;
-;; Revision 1.9  1999/08/24 06:29:43  paulk
-;; Reimplemented the constructor for jde-dbs-proc the right way. Renamed
-;; jde-bug-counter to jde-bug-breakpoint-counter.
-;;
-;; Revision 1.8  1999/08/23 06:17:45  paulk
-;; Minor bug.
-;;
-;; Revision 1.7  1999/08/23 05:33:37  paulk
-;; Added customization variable jde-bug-jpda-directory. Also check to
-;; ensure that this variable specifies a valid path.
-;;
-;; Revision 1.6  1999/08/23 01:44:25  paulk
-;; Updated to use Eric Ludlam's eieio object system.
-;;
-;; Revision 1.5  1999/08/19 10:18:27  paulk
-;; *** empty log message ***
-;;
-;; Revision 1.4  1999/08/18 01:18:41  paulk
-;; Continuing implementation
-;;
-;; Revision 1.3  1999/08/17 01:06:03  paulk
-;; *** empty log message ***
-;;
-;; Revision 1.2  1999/08/15 23:46:46  paulk
-;; Implemented more functionality.
-;;
-;; Revision 1.1  1999/08/10 09:59:59  paulk
-;; Initial revision
-;;
+;; End of jde-bug.el

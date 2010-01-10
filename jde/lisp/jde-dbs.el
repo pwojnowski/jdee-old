@@ -1,11 +1,12 @@
 ;;; jde-dbs.el -- JDEbug Session Interface Functions
-;; $Revision: 1.101 $ $Date: 2005/01/18 05:23:31 $ 
+;; $Id$
 
 ;; Author: Paul Kinnucan <paulk@mathworks.com>
-;; Maintainer: Paul Kinnucan
+;; Maintainer: Paul Landes <landes <at> mailc dt net>
 ;; Keywords: java, tools
 
 ;; Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005 Paul Kinnucan.
+;; Copyright (C) 2009 by Paul Landes
 
 ;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -24,12 +25,12 @@
 
 ;;; Commentary:
 
-;; This is one of a set of packages that make up the 
+;; This is one of a set of packages that make up the
 ;; Java Development Environment (JDE) for Emacs. See the
 ;; JDE User's Guide for more information.
 
 ;; The latest version of the JDE is available at
-;; <URL:http://sunsite.auc.dk/jde/>.
+;; <URL:http://jdee.sourceforge.net/>.
 
 ;; Please send any comments, bugs, or upgrade requests to
 ;; Paul Kinnucan at paulk@mathworks.com.
@@ -37,20 +38,27 @@
 ;;; Code:
 
 (require 'regress)
-(require 'jde-dbo) 
+(require 'jde-dbo)
 (require 'jde-db)
 (require 'eieio)
 (require 'jde-widgets)
 (jde-require 'tree-widget)
 
-;; Need jde-run only to get the definition for 
+
+;; quiet "reference to free variable" build-time warnings
+(defvar jde-bug-debug)
+(defvar jde-bug-debugger-command-timeout)
+(defvar jde-bug-debugger-host-address)
+
+
+;; Need jde-run only to get the definition for
 ;; save-w32-show-window macro.
 (eval-when-compile
   (require 'jde-run))
 
 (defcustom jde-bug-sio-connect-delay 1
   "Length of time in seconds that the JDE waits
-before attempting to connect to the   
+before attempting to connect to the
 debuggee application's standard I/O. This delay
 is intended to give JDEbug time to create the
 SIO socket. Try increasing this variable if JDEbug
@@ -100,7 +108,7 @@ debugger is starting and nil when it is quitting.")
 (defmethod jde-dbs-proc-set-add ((this jde-dbs-proc-set) process)
   "Adds a process to this debuggee process set."
   (oset this :proc-alist
-	(cons 
+	(cons
 	 (cons (oref process :id) process)
 	 (oref this :proc-alist))))
 
@@ -134,7 +142,7 @@ debugger is starting and nil when it is quitting.")
   (if (slot-boundp this 'proc-alist)
       (length (oref this proc-alist))
     0))
-	      
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
@@ -162,16 +170,16 @@ registered process becomes the target process"
 		      nil)
 		  (message "Error: process %s does not exist." id)
 		  nil))
-	    (let ((existing-processes 
+	    (let ((existing-processes
 		   (oref jde-dbs-the-process-registry :proc-alist)))
 	      (if existing-processes (cdr (nth 0 existing-processes)))))))
     (when target-process
       (oset this target-process target-process)
       (set-window-configuration (oref target-process win-cfg)))
     target-process))
-  
 
-(defvar jde-dbs-the-process-registry  
+
+(defvar jde-dbs-the-process-registry
   (jde-dbs-proc-registry "Process Registry")
   "The debuggee process registry.")
 
@@ -187,12 +195,12 @@ registered process becomes the target process"
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-proc-morgue (jde-dbs-proc-set) ()
-  "Class of process morgues. A process morgue contains dead or dying processes. 
+  "Class of process morgues. A process morgue contains dead or dying processes.
 Their carcasses must be kept around until the debugger stops sending messages
 concerning them." )
 
 (defmethod jde-dbs-proc-morgue-bury-the-dead ((this jde-dbs-proc-morgue))
-  (mapc 
+  (mapc
    (lambda (dead-proc-assoc)
      (let* ((dead-proc (cdr dead-proc-assoc))
 	    (cli-buffer (if (slot-boundp dead-proc 'cli-buf) (oref dead-proc cli-buf)))
@@ -207,7 +215,7 @@ concerning them." )
   (oset this proc-alist nil))
 
 
-(defvar jde-dbs-the-process-morgue 
+(defvar jde-dbs-the-process-morgue
   (jde-dbs-proc-morgue "Process Morgue")
   "The JDE process morgue. This morgue contains processes that are dead or
 dying, for example, because they have been terminated by the user or the
@@ -249,14 +257,14 @@ and then in the process morgue for the process."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Breakpoint Specification                                                   ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-proc-bpspec ()
   ((id         :initarg :id
 	       :type integer
-	       :documentation 
+	       :documentation
 	       "Id assigned to this breakpoint by the debugger.")
    (breakpoint :initarg :breakpoint
 	       :type jde-db-breakpoint
@@ -264,7 +272,7 @@ and then in the process morgue for the process."
 	       "Instance of `jde-db-breakpoint'.")
    (resolved   :initarg :resolved))
   (:allow-nil-initform t)
-  "Class of breakpoint specifications. A breakpoint specification contains 
+  "Class of breakpoint specifications. A breakpoint specification contains
 process-specific information about a breakpoint")
 
 
@@ -274,13 +282,13 @@ process-specific information about a breakpoint")
 
 (defun jde-dbs-proc-bpspecs-add (bpspecs bpspec)
   "Adds BPSPEC to BPSPECS, a process's breakpoint spec list."
-  (cons 
+  (cons
    (cons (oref bpspec id) bpspec)
    bpspecs))
 
 (defun jde-dbs-proc-bpspecs-remove (bpspecs bpspec)
   "Removes BPSPEC from BPSPECS"
-  (remove-if (lambda (x) 
+  (remove-if (lambda (x)
 	       (equal (car x) (oref bpspec id) ))
 	     bpspecs))
 
@@ -291,14 +299,14 @@ process-specific information about a breakpoint")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-trace-request ()
   ((id                  :initarg :id
-	                :type integer
-		        :documentation
-		        "Trace request id")
+			:type integer
+			:documentation
+			"Trace request id")
    (suspend-policy      :initarg :suspend-policy
-		        :type string
-		        :initform "none"
-		        :documentation
-		        "Valid values are all (all threads), thread (current thread), or none")
+			:type string
+			:initform "none"
+			:documentation
+			"Valid values are all (all threads), thread (current thread), or none")
    (inclusion-filters   :initarg :inclusion-filters
 			:type list
 			:documentation
@@ -325,10 +333,10 @@ process-specific information about a breakpoint")
    ((trace-type         :initarg :trace-type
 			:type string
 			:initform "entry"
-			:documentation 
+			:documentation
 			"Entry or exit.")
    (thread-restriction  :initarg :thread-restriction
-	                :type string
+			:type string
 			:documentation
 			"Thread to trace."))
    "Trace methods request."
@@ -349,7 +357,7 @@ process-specific information about a breakpoint")
    ((trace-type         :initarg :trace-type
 			:type string
 			:initform "preparation"
-			:documentation 
+			:documentation
 			"Valid values are preparation or unloading."))
    "Trace classes request."
 )
@@ -373,7 +381,7 @@ process-specific information about a breakpoint")
    (trace-type         :initarg :trace-type
 		       :type string
 		       :initform "both"
-		       :documentation 
+		       :documentation
 			"Valid values are caught, uncaught, or both."))
    "Trace exceptions request."
 )
@@ -400,15 +408,15 @@ process-specific information about a breakpoint")
 		       "Class of object to watch. Can be a wild card pattern.")
    (field-name         :initarg :field-name
 		       :type string
-		       :documentation 
+		       :documentation
 			"Name of field to watch.")
    (expression         :initarg :expression
 		       :type string
-		       :documentation 
+		       :documentation
 		       "Boolean expression that must be satisfied to suspend execution.")
    (object-id          :initarg :object-id
 		       :type string
-		       :documentation 
+		       :documentation
 		       "Id of object to watch."))
    "Watch field request."
 )
@@ -422,15 +430,15 @@ process-specific information about a breakpoint")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-proc-status (jde-db-debuggee-status)
    ((startup-p     :initarg :startupp
-                  :type boolean
-                  :initform nil
-                  :documentation
+		  :type boolean
+		  :initform nil
+		  :documentation
 		  "Non-nil if this process is in the startup state.")
     (steppable-p  :initarg :steppablep
-                  :type boolean
-                  :initform nil
-                  :documentation
-		  "Non-nil if this process can be single-stepped."))  
+		  :type boolean
+		  :initform nil
+		  :documentation
+		  "Non-nil if this process can be single-stepped."))
   "Status of process being debugged with JDEbug.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -440,21 +448,21 @@ process-specific information about a breakpoint")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-proc (jde-db-debuggee-app)
   ((id            :initarg :id
-                  :type integer
-                  :documentation
-                  "Id assigned by the JDE.")
+		  :type integer
+		  :documentation
+		  "Id assigned by the JDE.")
    (cli-socket    :initarg :cli-socket
-                  :type integer
-	          :documentation
-                  "Number of socket used by the process's command line interface.")
+		  :type integer
+		  :documentation
+		  "Number of socket used by the process's command line interface.")
    (cli-buf       :initarg :cli-buf
-                  :type buffer
-	          :documentation
-	          "Buffer for the process's command-line interface.")
+		  :type buffer
+		  :documentation
+		  "Buffer for the process's command-line interface.")
    (msg-buf       :initarg :msf-buf
-	          :type buffer
-	          :documentation
-	          "Buffer used to display debugger output for this process")
+		  :type buffer
+		  :documentation
+		  "Buffer used to display debugger output for this process")
    (threads-buf   :initarg :threads-buf
 		  :type buffer
 		  :documentation
@@ -464,24 +472,24 @@ process-specific information about a breakpoint")
 		  :documentation
 		  "Buffer used to display local variables.")
    (startupp       :initarg :startupp
-                  :type boolean
-                  :initform nil
-                  :documentation
+		  :type boolean
+		  :initform nil
+		  :documentation
 		  "non-nil if this process is in the startup state.")
    (suspendedp    :initarg :suspendedp
-                  :type boolean
-                  :initform nil
-                  :documentation
+		  :type boolean
+		  :initform nil
+		  :documentation
 		  "non-nil if this process has been suspended by the debugger.")
    (steppablep    :initarg :steppablep
-                  :type boolean
-                  :initform nil
-                  :documentation
+		  :type boolean
+		  :initform nil
+		  :documentation
 		  "non-nil if this process can be single-stepped.")
    (state-info    :initarg :state-info
-	          :type jde-dbs-proc-state-info
-	          :documentation
-	          "Process state information.")
+		  :type jde-dbs-proc-state-info
+		  :documentation
+		  "Process state information.")
    (stack         :initarg :stack
 		  :type list
 		  :documentation
@@ -494,28 +502,28 @@ process-specific information about a breakpoint")
    (trace-req     :initarg :trace-req
 		  :type list
 		  :documentation
-                  "List of outstanding trace requests.")
+		  "List of outstanding trace requests.")
    (watch-req     :initarg :watch-req
 		  :type list
 		  :documentation
-                  "List of outstanding watch field requests.")
+		  "List of outstanding watch field requests.")
    (object-refs   :initarg :object-refs
 		  :type list
 		  :initform nil
 		  :documentation
 		  "IDs of debuggee objects currently referenced by the debugger.")
    (bpspecs       :initarg :bpspecs
-	          :type list
-	          :documentation
-                  "Breakpoints set in this process.")
+		  :type list
+		  :documentation
+		  "Breakpoints set in this process.")
    (last-cmd      :initarg :last-cmd
-	          :type jde-dbs-cmd
-	          :documentation
-                  "Most recent command targeting this process.")
+		  :type jde-dbs-cmd
+		  :documentation
+		  "Most recent command targeting this process.")
    (win-cfg       :initarg :win-cfg
-	          :type window-configuration
-	          :documentation
-	          "Desired window configuration for this process.")
+		  :type window-configuration
+		  :documentation
+		  "Desired window configuration for this process.")
    (attachedp     :initarg :attachedp
 		  :type boolean
 		  :initform nil
@@ -529,35 +537,35 @@ process-specific information about a breakpoint")
   (call-next-method)
 
   (if (not (slot-boundp this 'state-info))
-      (oset this state-info 
-	    (jde-dbs-proc-state-info 
+      (oset this state-info
+	    (jde-dbs-proc-state-info
 	     (format "State Info %d" (oref this id)))))
 
   (assert (slot-boundp this 'main-class))
   (assert (slot-boundp this 'id))
-  
-  (oset this msg-buf (get-buffer-create 
-                      (format "*Process %s(%d)*" 
-                              (oref this main-class)
-                              (oref this id))))
+
+  (oset this msg-buf (get-buffer-create
+		      (format "*Process %s(%d)*"
+			      (oref this main-class)
+			      (oref this id))))
   (save-excursion
     (set-buffer (oref this msg-buf))
-    (erase-buffer)	
+    (erase-buffer)
     (goto-char (point-min))
-    (insert 
-       (format "*** Debugger Output for Process %s(%d) ***\n\n" 
+    (insert
+       (format "*** Debugger Output for Process %s(%d) ***\n\n"
 	       (oref this main-class)
 	       (oref this id))))
 
   (oset this locals-buf (get-buffer-create
-                         (format "*%s(%d) Local Variables*"
-                                 (oref this main-class)
-                                 (oref this id))))
+			 (format "*%s(%d) Local Variables*"
+				 (oref this main-class)
+				 (oref this id))))
 
   (oset this threads-buf (get-buffer-create
-                          (format "*%s(%d) Threads*"
-                                  (oref this main-class)
-                                  (oref this id)))))
+			  (format "*%s(%d) Threads*"
+				  (oref this main-class)
+				  (oref this id)))))
 
 
 (defmethod jde-dbs-proc-set-state ((this jde-dbs-proc) state)
@@ -575,31 +583,31 @@ process-specific information about a breakpoint")
   (oref (oref this state-info) reason))
 
 (defmethod jde-dbs-proc-display-debug-message ((this jde-dbs-proc)
-                                               message
-                                               &optional pop-buffer)
+					       message
+					       &optional pop-buffer)
   (let ((buffer
 	 (oref this msg-buf)))
     (if buffer
 	(save-excursion
 	  (let ((source-window (selected-window))
-                (currbuffp (equal buffer (current-buffer)))
-                win)
+		(currbuffp (equal buffer (current-buffer)))
+		win)
 	    (if (not currbuffp) (other-window -1))
 	    (set-buffer buffer)
 	    (goto-char (point-max))
 	    (insert (concat message "\n"))
 	    (goto-char (point-max))
 	    (if (not currbuffp) (other-window 1))
-            (if (and pop-buffer (one-window-p))
-                (progn
-                  (setq win (split-window source-window))
-                  (set-window-buffer win buffer)))
-            (if pop-buffer
-                (progn
-                  (set-window-buffer (next-window source-window) buffer)
-                  (select-window source-window))
-              (if (not currbuffp) 
-                  (message message))))))))
+	    (if (and pop-buffer (one-window-p))
+		(progn
+		  (setq win (split-window source-window))
+		  (set-window-buffer win buffer)))
+	    (if pop-buffer
+		(progn
+		  (set-window-buffer (next-window source-window) buffer)
+		  (select-window source-window))
+	      (if (not currbuffp)
+		  (message message))))))))
 
 (defmethod jde-dbs-proc-move-to-morgue ((this jde-dbs-proc))
   "Moves this process from the process registry to the process morgue."
@@ -646,7 +654,7 @@ for the breakpoint."
 
 (defun jde-dbs-display-debug-message (proc-id message)
   (let ((process (jde-dbs-get-process proc-id)))
-    (if process 
+    (if process
 	(jde-dbs-proc-display-debug-message process message)
       (message message))))
 
@@ -666,14 +674,14 @@ for the breakpoint."
      ;;   GRADER - the desired result or a sexp which determines
      ;;   how we did
      ("Test creation of a jde-dbs-proc instance"
-      (jde-dbs-proc 
+      (jde-dbs-proc
        (format "process%d" 100) :id 100 :main-class "jmath.Test")
       :test t)
      )))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Java Object                                                                ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -715,7 +723,7 @@ for the breakpoint."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Java Variable                                                              ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -729,7 +737,7 @@ for the breakpoint."
 		 :documentation
 		 "Type of this variable.")
    (value        :initarg :value
-                 :type jde-dbs-java-obj
+		 :type jde-dbs-java-obj
 		 :documentation
 		 "Value of this variable."))
   "Class that defines the JDE's representation of a Java variable.")
@@ -742,7 +750,7 @@ for the breakpoint."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Java Class Instance                                                        ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -759,7 +767,7 @@ for the breakpoint."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Java Array                                                                 ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -778,25 +786,25 @@ for the breakpoint."
 
 
 (defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-array))
-  (let ((str (format "<%s:%d%s> %d" 
-                     (if (slot-boundp this :jtype)
-                         (oref this jtype))
-                     (if (slot-boundp this :id)
-                         (oref this id))
-                     (if (slot-boundp this :gc-flag)
-                         (if (oref this gc-flag) ":gc" ""))
-                     (if (slot-boundp this :length)
-                         (oref this length)
-                       0)))
+  (let ((str (format "<%s:%d%s> %d"
+		     (if (slot-boundp this :jtype)
+			 (oref this jtype))
+		     (if (slot-boundp this :id)
+			 (oref this id))
+		     (if (slot-boundp this :gc-flag)
+			 (if (oref this gc-flag) ":gc" ""))
+		     (if (slot-boundp this :length)
+			 (oref this length)
+		       0)))
 	(elements (if (slot-boundp this :elements)
-                      (oref this elements))))
+		      (oref this elements))))
     (if elements
 	(let ((sep "\n |- "))
-	  (concat 
+	  (concat
 	   str
 	   sep
 	   (mapconcat
-	    (lambda (element) 
+	    (lambda (element)
 	      (jde-dbs-java-obj-to-string element))
 	    elements sep)))
       str)))
@@ -804,7 +812,7 @@ for the breakpoint."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Java User-Defined Class Instance                                           ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -823,25 +831,25 @@ for the breakpoint."
 
 
 (defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-udci))
-  (let ((str (format "<%s:%d%s>" 
+  (let ((str (format "<%s:%d%s>"
 		     (oref this jtype)
 		     (oref this id)
 		     (if (oref this gc-flag) ":gc" "")))
 	(fields (oref this fields)))
     (if fields
 	(let ((sep "\n |- "))
-	  (concat 
+	  (concat
 	   str
 	   sep
 	   (mapconcat
-	    (lambda (assoc-x) 
+	    (lambda (assoc-x)
 	      (jde-dbs-java-variable-to-string (cdr assoc-x)))
 	    fields sep)))
       str)))
-	 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Debugger Class                                                             ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -882,9 +890,9 @@ for the breakpoint."
 	(message "An instance of the debugger is running.")
 	(pop-to-buffer (jde-dbs-get-app-buffer-name))
 	nil)
-    (let* ((debugger-buffer-name 
+    (let* ((debugger-buffer-name
 	      (oref this buffer-name))
-	     (debugger-buffer 
+	     (debugger-buffer
 	      (let ((old-buf (get-buffer debugger-buffer-name)))
 		    (if old-buf (kill-buffer old-buf))
 		    (get-buffer-create debugger-buffer-name)))
@@ -893,43 +901,43 @@ for the breakpoint."
 	     (win32-quote-process-args ?\") ;; XEmacs
 	     (source-directory default-directory)
 	     (working-directory
-	      (if (and 
+	      (if (and
 		   jde-run-working-directory
 		   (not (string= jde-run-working-directory "")))
 		  (jde-normalize-path 'jde-run-working-directory)
-		source-directory))	     
-             (vm (oref (jde-run-get-vm) :path))
+		source-directory))
+	     (vm (oref (jde-run-get-vm) :path))
 	     (jde-java-directory
 	      (expand-file-name "java"
 	       (jde-find-jde-data-directory)))
-	     (vm-args 
+	     (vm-args
 		(let (args)
-		  (setq args 
-			(append 
+		  (setq args
+			(append
 			 args
 			 (list
 			  "-classpath"
 			  (jde-build-classpath
 			       (list
-				 (expand-file-name 
+				 (expand-file-name
 				  (if jde-bug-debug "classes" "lib/jde.jar")
 				  jde-java-directory)
 				 (if (jde-bug-vm-includes-jpda-p)
-                                   (jde-get-tools-jar)
-				   (expand-file-name 
+				   (jde-get-tools-jar)
+				   (expand-file-name
 				    "lib/jpda.jar" (jde-normalize-path
 						    'jde-bug-jpda-directory))))))))
 		  (if jde-bug-debug
-		      (setq args 
+		      (setq args
 			    (append args
 			     (list "-Xdebug"
-				   "-Xnoagent"   
+				   "-Xnoagent"
 				   "-Xrunjdwp:transport=dt_socket,address=2112,server=y,suspend=n"))))
 		  (setq args (append args (list "jde.debugger.Main")))
-		  args))		  
-	     (command-string 
-	      (concat 
-	       vm " " 
+		  args))
+	     (command-string
+	      (concat
+	       vm " "
 	       (jde-run-make-arg-string
 		vm-args)
 	       "\n\n"))
@@ -964,7 +972,7 @@ for the breakpoint."
 	(cd source-directory)
 
 	(bury-buffer debugger-buffer)
-	
+
 	(setq jde-dbs-proc-counter 0)
 
 	(setq jde-dbs-cmd-counter 0)
@@ -986,10 +994,10 @@ for the breakpoint."
 	(setq jde-dbs-the-process-morgue
 	      (jde-dbs-proc-morgue "Process Morgue")))))
 
- 
 
-   
-(defmethod jde-dbs-debugger-quit ((debugger jde-dbs-debugger)) 
+
+
+(defmethod jde-dbs-debugger-quit ((debugger jde-dbs-debugger))
   (jde-dbs-do-command -1 "quit")
   (run-hook-with-args 'jde-dbs-debugger-hook nil)
   (slot-makeunbound debugger :process)
@@ -1024,7 +1032,7 @@ for the breakpoint."
 	       :documentation
 	       "Command id.")
    (name       :initarg :name
-               :type string
+	       :type string
 	       :documentation
 	       "Name of command.")
    (result     :initarg :result
@@ -1039,7 +1047,7 @@ for the breakpoint."
 	       "Message to display to user in debug buffer.")
    )
   "Super class of debugger commands.")
- 
+
 
 (defmethod initialize-instance ((this jde-dbs-cmd) &rest fields)
   "Constructor for debugger commands. Generates a unique id for this command."
@@ -1057,7 +1065,7 @@ extend this method to specify command arguments."
 	 (command-id (oref this id))
 	 (command-name (oref this name)))
     (format "%s %s %s" process-id command-id command-name)))
-    
+
 (defvar jde-dbs-debugger-output nil
   "Contains output from the debugger.")
 
@@ -1070,11 +1078,11 @@ extend this method to specify command arguments."
 (defun jde-dbs-eval-debugger-output (lisp-form)
   (condition-case error-desc
       (eval (read lisp-form))
-    (error 
+    (error
      (let* ((process (jde-dbs-get-target-process)))
        (if process
-	   (jde-dbs-proc-display-debug-message 
-	    process 
+	   (jde-dbs-proc-display-debug-message
+	    process
 	    (concat
 	     "Error: evaluating debugger output caused a Lisp error.\n"
 	     "  See *messages* buffer for details.")))
@@ -1090,7 +1098,7 @@ extend this method to specify command arguments."
     (if (string-match re debugger-output)
 	(let ((start (match-beginning 0))
 	      (end (match-end 0)))
-	  (setq lisp-form (format "(jde-dbo-unknown-exception \"%s\")" 
+	  (setq lisp-form (format "(jde-dbo-unknown-exception \"%s\")"
 				  (substring debugger-output 0 end)))
 	  (if (< end output-length)
 	      (setq remainder (substring debugger-output end output-length))))
@@ -1111,7 +1119,7 @@ debugger output following the Lisp form."
 	(output-length (length debugger-output))
 	command-end
 	lisp-form-end)
-    (setq 
+    (setq
      lisp-form-end
      (catch 'found-lisp-form
        ;; skip over any inital white space.
@@ -1120,13 +1128,13 @@ debugger output following the Lisp form."
 
        (while (< curr-pos output-length)
 
-	 (cond 
+	 (cond
 
 	  ;; Current character = left slash (escape)
 	  ((equal (aref debugger-output curr-pos) ?\\)
 	   (if in-string-p
 	       (setq in-escape-p (not in-escape-p))))
-	  
+
 	  ;; Current character = quotation mark
 	  ((equal (aref debugger-output curr-pos) ?\")
 	   (if in-string-p
@@ -1191,13 +1199,13 @@ debugger output following the Lisp form."
 `jde-dbs-pending-command'."
   ;; (message "entering command reply listener")
   (let* ((combined-output (concat jde-dbs-debugger-output output))
-	 (parsed-output 
+	 (parsed-output
 	  (if (string-match "^[\n\t ]*(" combined-output)
 	      (jde-dbs-extract-lisp-form combined-output)
-	    (jde-dbs-extract-exception combined-output)))			 
+	    (jde-dbs-extract-exception combined-output)))
 	 (form (car parsed-output))
 	 (remainder (cdr parsed-output)))
-	 
+
     ;; (message "form: %s" form)
     ;; (message "remainder: %s" remainder)
 
@@ -1209,14 +1217,14 @@ debugger output following the Lisp form."
     (while (not (string= form ""))
 
       (if (jde-dbs-reply-p form)
-	  
+
 	  ;; The current form is a reply to a debugger command.
-	  (progn 
+	  (progn
 	    (setq jde-dbs-command-reply form)
 	    (setq jde-dbs-reply-received t))
-	    
+
 	;; The form is an event. Postpone processing the event
-        ;; until we receive a reply to the last command.
+	;; until we receive a reply to the last command.
 	;; (message "   appending %s to pending event queue" form)
 	(setq jde-dbs-pending-event-queue
 	      (append jde-dbs-pending-event-queue (list form))))
@@ -1241,14 +1249,14 @@ debugger output following the Lisp form."
 		       "?")
 		     jde-bug-debugger-command-timeout)
 		    (setq jde-dbs-command-reply nil)))))
-	
+
 (defun jde-dbs-asynch-output-listener (process output)
   "Listens for asynchronous debugger output."
   (let* ((combined-output (concat jde-dbs-debugger-output output))
-	 (parsed-output 
+	 (parsed-output
 	  (if (string-match "^[\n\t ]*(" combined-output)
 	      (jde-dbs-extract-lisp-form combined-output)
-	    (jde-dbs-extract-exception combined-output)))		
+	    (jde-dbs-extract-exception combined-output)))
 	 (lisp-form (car parsed-output))
 	 (remainder (cdr parsed-output))
 	 events)
@@ -1274,10 +1282,10 @@ debugger output following the Lisp form."
 
 (defun jde-dbs-do-command (vm command)
   "Posts the specified command to the debugger and returns its response."
-  (let* ((debugger-process 
+  (let* ((debugger-process
 	  (oref jde-dbs-the-debugger process))
 	 (previous-listener (process-filter debugger-process))
-	 cmd)	
+	 cmd)
     (setq jde-dbs-debugger-output "")
     (setq jde-dbs-command-reply "")
     (setq jde-dbs-reply-received nil)
@@ -1294,7 +1302,7 @@ debugger output following the Lisp form."
     (set-process-filter debugger-process previous-listener)
     (if jde-dbs-command-reply
 	(let ((result (jde-dbs-eval-debugger-output jde-dbs-command-reply)))
-	  ;; evaluate any events that occurred between issuance and 
+	  ;; evaluate any events that occurred between issuance and
 	  ;; acknowledgement of this command
 	  (mapc (lambda (event) (jde-dbs-eval-debugger-output event))
 		jde-dbs-pending-event-queue)
@@ -1315,12 +1323,12 @@ debugger output following the Lisp form."
 
 (defmethod jde-dbs-cmd-display-response ((this jde-dbs-cmd))
   (if (slot-boundp this 'msg)
-      (jde-dbs-proc-display-debug-message 
+      (jde-dbs-proc-display-debug-message
        (oref this process)
        (oref this msg))))
 
 (defmethod jde-dbs-cmd-execute-pending-events ((this jde-dbs-cmd))
-  "Evaluate any events that occurred between issuance and 
+  "Evaluate any events that occurred between issuance and
    acknowledgement of this command"
   (let ((events jde-dbs-pending-event-queue))
     ;; Empty queue to avoid recursion if commands are executed
@@ -1332,12 +1340,12 @@ debugger output following the Lisp form."
 
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-cmd))
   "Posts the specified command to the debugger and returns its response."
-  (let* ((debugger-process 
+  (let* ((debugger-process
 	  (oref jde-dbs-the-debugger process))
 	 (previous-listener (process-filter debugger-process))
 	 (target-process (oref this process))
 	 (command-line (format "%s\n" (jde-dbs-cmd-make-command-line this))))
-	
+
     (setq jde-dbs-debugger-output "")
     (setq jde-dbs-command-reply "")
     (setq jde-dbs-reply-received nil)
@@ -1355,7 +1363,7 @@ debugger output following the Lisp form."
 		(setq jde-dbs-command-reply nil))
 
     (process-send-string debugger-process "\n")
- 
+
     (set-process-filter debugger-process previous-listener)
 
     (if jde-dbs-command-reply
@@ -1393,14 +1401,14 @@ debugger output following the Lisp form."
 		:documentation
 		"Home directory of JRE used to launch this process.")
    (vmexec     :initarg :vmexec
-	        :type string
+		:type string
 		:initform "java"
-	        :documentation
-	        "Name of vm executable used to run process.")
+		:documentation
+		"Name of vm executable used to run process.")
    (vm-args     :initarg :args
-	        :type string
+		:type string
 		:initform ""
-	        :documentation
+		:documentation
 		"Command line arguments to be passed to vm's main method.")
    (app-args    :initarg :app-args
 		:type string
@@ -1411,7 +1419,7 @@ debugger output following the Lisp form."
 
 (defun jde-dbs-get-app-buffer-name ()
   (concat "*" (jde-run-get-main-class) "*"))
-    
+
 (defmethod initialize-instance ((this jde-dbs-launch-process) &rest fields)
   "Constructor for debugger commands. Generates a unique id for this command."
 
@@ -1433,21 +1441,21 @@ debugger output following the Lisp form."
   ;; (oset this vm (jde-dbs-choose-vm))
 
   ;; Set vm args
-  (oset this vm-args 
- 	(concat (mapconcat (lambda (s) s) (jde-db-get-vm-args jde-dbs-the-debugger) " ")
+  (oset this vm-args
+	(concat (mapconcat (lambda (s) s) (jde-db-get-vm-args jde-dbs-the-debugger) " ")
 		" "
- 		(mapconcat (lambda (s) s) (jde-db-get-vm-args-from-user) " ")))
+		(mapconcat (lambda (s) s) (jde-db-get-vm-args-from-user) " ")))
 
 
   ;; Set application arguments.
   (oset this app-args
- 	(concat 
+	(concat
 	 (if jde-db-option-application-args
-	     (mapconcat (lambda (s) s) jde-db-option-application-args " ") 
+	     (mapconcat (lambda (s) s) jde-db-option-application-args " ")
 	   "")
 	 " "
 	 (mapconcat (lambda (s) s) (jde-db-get-app-args-from-user) " "))))
-  
+
 
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-launch-process))
@@ -1456,25 +1464,25 @@ debugger output following the Lisp form."
 		     (oref this id)                    ;; cid
 		     (oref this name)                  ;; launch
 		     (oref (oref this process) id)     ;; pid
-		     (oref this vmexec))))  
+		     (oref this vmexec))))
 
     (if (slot-boundp this 'jre-home)
 	(setq cmd (concat cmd " -home " (oref this jre-home))))
-		     
-    (setq cmd 
-	  (format "%s %s %s %s" 
+
+    (setq cmd
+	  (format "%s %s %s %s"
 		  cmd
 		  (oref this vm-args)            ;; vm args
 		  (oref this main-class)         ;; main class
 		  (oref this app-args)))         ;; command line args
 
     (oset this msg
-	  (format "Launch command line:\n  %s %s %s %s\n" 
+	  (format "Launch command line:\n  %s %s %s %s\n"
 		  (oref this vmexec)
 		  (oref this vm-args)            ;; vm args
 		  (oref this main-class)         ;; main class
-		  (oref this app-args)))         ;; command line args	  
-    cmd))    
+		  (oref this app-args)))         ;; command line args
+    cmd))
 
 (defmethod jde-dbs-cmd-success-action ((this jde-dbs-launch-process))
   (call-next-method)
@@ -1484,7 +1492,7 @@ debugger output following the Lisp form."
 	 (source-buffer (current-buffer))
 	 (cli-socket
 	  (car (jde-dbo-command-result-data (oref this result))))
-	 (cli-buffer-name 
+	 (cli-buffer-name
 	  (format "%s(%d) CLI" main-class (oref process id))))
 
     (oset process cli-socket cli-socket)
@@ -1492,15 +1500,15 @@ debugger output following the Lisp form."
     ;; Connect to socket used by debugger to transport the
     ;; standard I/O of the debuggee process.
     (sleep-for jde-bug-sio-connect-delay)
-    (oset 
+    (oset
      process
      cli-buf
-     (make-comint 
-      cli-buffer-name 
+     (make-comint
+      cli-buffer-name
       (cons jde-bug-debugger-host-address cli-socket)))
-	  
+
     (oset this msg
-	  (format "%s\nEmacs connected to standard IO port %d for process %s." 
+	  (format "%s\nEmacs connected to standard IO port %d for process %s."
 		  (oref this msg)
 		  cli-socket
 		  (oref this main-class)))
@@ -1515,7 +1523,7 @@ debugger output following the Lisp form."
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
     (oset this  msg
-	  (format "%s\nError: debugger unable to launch %s.\n  Reason: %s" 
+	  (format "%s\nError: debugger unable to launch %s.\n  Reason: %s"
 		  (oref this msg)
 		  (oref this main-class)
 		  (oref this data)))
@@ -1523,7 +1531,7 @@ debugger output following the Lisp form."
       (pop-to-buffer (oref process msg-buf))
       (pop-to-buffer source-buffer)
       (oset process win-cfg (current-window-configuration))))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
 ;; Attach Shared Memory                                                       ;;
@@ -1551,11 +1559,11 @@ debugger output following the Lisp form."
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-attach-shmem))
   "Creates the command line for the attach_shmem command."
-  (format "-1 %s %s %s %s" 
+  (format "-1 %s %s %s %s"
 	  (oref this id)
 	  (oref this name)                 ;; command name
 	  (oref (oref this process) id)    ;; process id
-	  (oref this process-name)))       ;; process name   
+	  (oref this process-name)))       ;; process name
 
 (defmethod jde-dbs-cmd-success-action ((this jde-dbs-attach-shmem))
   (call-next-method)
@@ -1564,7 +1572,7 @@ debugger output following the Lisp form."
 	 (source-buffer (current-buffer)))
     (oset process :attachedp t)
     (oset process :startupp t)
-    (oset this msg  (format "Attached to process %s." 
+    (oset this msg  (format "Attached to process %s."
 			    (oref this process-name)))
     (split-window-vertically)
     (pop-to-buffer (oref process msg-buf))
@@ -1576,7 +1584,7 @@ debugger output following the Lisp form."
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
     (oset this  msg
-     (format "Error: cannot attach process %s.\n Reason: %s." 
+     (format "Error: cannot attach process %s.\n Reason: %s."
 		    (oref this process-name)
 		    (oref this data)))
       (split-window-vertically)
@@ -1617,7 +1625,7 @@ debugger output following the Lisp form."
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-attach-socket))
   "Creates the command line for the attach_socket command."
   (let ((cmd
-	 (format "-1 %s %s %s -port %s" 
+	 (format "-1 %s %s %s -port %s"
 	  (oref this id)
 	  (oref this name)                 ;; command name
 	  (oref (oref this process) id)    ;; process id
@@ -1633,7 +1641,7 @@ debugger output following the Lisp form."
 	(source-buffer (current-buffer)))
     (oset process attachedp t)
     (oset process startupp t)
-    (oset this msg  (format "Attached to process on port %s of %s." 
+    (oset this msg  (format "Attached to process on port %s of %s."
 			    (oref this port)
 			    (if (slot-boundp this 'host)
 				(oref this host)
@@ -1648,7 +1656,7 @@ debugger output following the Lisp form."
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
     (oset this  msg
-     (format "Error: cannot attach to process on port %s of %s.\n Reason: %s." 
+     (format "Error: cannot attach to process on port %s of %s.\n Reason: %s."
 	     (oref this port)
 	     (if (slot-boundp this 'host)
 		 (oref this host)
@@ -1686,19 +1694,19 @@ debugger output following the Lisp form."
 
   (assert (slot-boundp this 'address))
 
-  (assert (not 
+  (assert (not
 	   (and
 	    (not (eq system-type 'windows-nt))
 	    (string= (oref this transport) "shmem"))))
 
   ;; Set command name.
-  (oset this name 
+  (oset this name
 	(concat "listen_"
 		(oref this transport))))
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-listen-for-process))
   "Creates the command line for the listen command."
-  (format "-1 %s %s %s %s" 
+  (format "-1 %s %s %s %s"
 	  (oref this id)
 	  (oref this name)                 ;; command name
 	  (oref (oref this process) id)    ;; process id
@@ -1709,7 +1717,7 @@ debugger output following the Lisp form."
   (delete-other-windows)
   (let* ((process (oref this process))
 	(source-buffer (current-buffer)))
-    (oset this msg  (format "Listening for process at %s address: %s." 
+    (oset this msg  (format "Listening for process at %s address: %s."
 			    (if (string= (oref this transport) "shmem")
 				"shared memory" "socket")
 			    (oref this address)))
@@ -1724,7 +1732,7 @@ debugger output following the Lisp form."
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
     (oset this  msg
-     (format "Error: cannot listen for process at %s address: %s.\n Reason: %s." 
+     (format "Error: cannot listen for process at %s address: %s.\n Reason: %s."
 	     (if (string= (oref this transport) "shmem")
 		 "shared memory" "socket")
 	     (oref this address)
@@ -1758,11 +1766,11 @@ debugger output following the Lisp form."
 
 (defmethod jde-dbs-cmd-success-action ((this jde-dbs-run-process))
   (call-next-method)
-  (oset this msg (format "Running %s." 
+  (oset this msg (format "Running %s."
 			 (oref (oref this process)  main-class))))
 
 (defmethod jde-dbs-cmd-failure-action ((this jde-dbs-run-process))
-  (oset this msg 
+  (oset this msg
 	(format "Error: unable to run %s..\n  Reason: %s."
 		(oref (oref this process) main-class)
 		(oref this result))))
@@ -1799,7 +1807,7 @@ debugger output following the Lisp form."
       (jde-dbs-proc-display-debug-message process
        (concat "Error: debugger unable to terminate: "
 	       main-class
-	       ".\n  Reason: " 
+	       ".\n  Reason: "
 	       (car (jde-dbo-command-result-data result))))
       nil)))
 
@@ -1809,11 +1817,11 @@ debugger output following the Lisp form."
 ;; Set Breakpoint Command Class                                               ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defclass jde-dbs-set-breakpoint (jde-dbs-cmd) 
+(defclass jde-dbs-set-breakpoint (jde-dbs-cmd)
   ((breakpoint    :initarg :breakpoint
-	          :type jde-db-breakpoint
-	          :documentation
-	          "Breakpoint specification."))
+		  :type jde-db-breakpoint
+		  :documentation
+		  "Breakpoint specification."))
   "Set breakpoint command.")
 
 (defmethod initialize-instance ((this jde-dbs-set-breakpoint) &rest fields)
@@ -1833,10 +1841,10 @@ debugger output following the Lisp form."
   (let* ((bp-spec (oref this breakpoint))
 	 (file (file-name-nondirectory (oref bp-spec file)))
 	 (line (jde-db-breakpoint-get-line bp-spec)))
-    (format "%s %s %s" 
+    (format "%s %s %s"
 	    (call-next-method)
 	    file     ;; File
-	    line)))  ;; Line number    
+	    line)))  ;; Line number
 
 (defmethod jde-dbs-cmd-success-action ((this jde-dbs-set-breakpoint))
   (call-next-method)
@@ -1857,7 +1865,7 @@ debugger output following the Lisp form."
   (let* ((bp-spec (oref this breakpoint))
 	 (file (oref bp-spec file))
 	 (line (jde-db-breakpoint-get-line bp-spec)))
-    (oset this msg  (format "Error: cannot set breakpoint at line %s in file %s.\n  Reason:" 
+    (oset this msg  (format "Error: cannot set breakpoint at line %s in file %s.\n  Reason:"
 			    file line (oref this data)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1865,11 +1873,11 @@ debugger output following the Lisp form."
 ;; Clear Breakpoint Command Class                                             ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defclass jde-dbs-clear-breakpoint (jde-dbs-cmd) 
+(defclass jde-dbs-clear-breakpoint (jde-dbs-cmd)
   ((breakpoint    :initarg :breakpoint
-	          :type jde-db-breakpoint
-	          :documentation
-	          "Breakpoint specification."))
+		  :type jde-db-breakpoint
+		  :documentation
+		  "Breakpoint specification."))
   "Set breakpoint command.")
 
 (defmethod initialize-instance ((this jde-dbs-clear-breakpoint) &rest fields)
@@ -1893,12 +1901,12 @@ debugger output following the Lisp form."
     (format "%s %s"              ;; PID CID clear BPID
 	    (call-next-method)
 	    bp-procid)))         ;; Id assigned by debugger to this breakpoint
- 
+
 
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-clear-breakpoint))
   "Execute clear breakpoint command."
   (let* ((process (oref this process))
-	 (breakpoint (oref this breakpoint))	
+	 (breakpoint (oref this breakpoint))
 	 (file (oref breakpoint file))
 	 (line (jde-db-breakpoint-get-line breakpoint))
 	 (proc-id (oref process id))
@@ -1908,14 +1916,14 @@ debugger output following the Lisp form."
 	      (result (call-next-method)))
 	  (if (jde-dbo-command-succeeded-p result)
 	      (let ((bpspecs (oref process bpspecs)))
-		(oset process bpspecs 
+		(oset process bpspecs
 		      (jde-dbs-proc-bpspecs-remove bpspecs bpspec))
-		(jde-dbs-proc-display-debug-message  
+		(jde-dbs-proc-display-debug-message
 		 process
 		 (format "Cleared breakpoint at line %s in file %s" line file)))
-	    (jde-dbs-proc-display-debug-message 
+	    (jde-dbs-proc-display-debug-message
 	     process
-	     (format "Error: cannot clear breakpoint at line %s in file %s.\n Reason: %s." 
+	     (format "Error: cannot clear breakpoint at line %s in file %s.\n Reason: %s."
 		     line file (car (jde-dbo-command-result-data result))))
 	    nil)))))
 
@@ -1947,8 +1955,8 @@ debugger output following the Lisp form."
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-step))
   "Creates the command line for the step command."
-  (format "%s %d" (call-next-method) 
-	  (oref (oref (oref this process) state-info) thread-id)))  
+  (format "%s %d" (call-next-method)
+	  (oref (oref (oref this process) state-info) thread-id)))
 
 
 (defmethod jde-dbs-cmd-failure-action ((this jde-dbs-step))
@@ -1965,8 +1973,8 @@ debugger output following the Lisp form."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmethod jde-dbs-proc-step-into ((this jde-dbs-proc))
   (let* ((proc-id (oref this id))
-	 (thread-id 
-	  (oref (oref this state-info) thread-id))	
+	 (thread-id
+	  (oref (oref this state-info) thread-id))
 	 (result (jde-dbs-do-command proc-id  (format "step into %s" thread-id))))
     (when (not (jde-dbo-command-succeeded-p result))
       (jde-dbs-proc-display-debug-message this
@@ -1981,8 +1989,8 @@ debugger output following the Lisp form."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defmethod jde-dbs-proc-step-out ((this jde-dbs-proc))
   (let* ((proc-id (oref this id))
-	 (thread-id 
-	  (oref (oref this state-info) thread-id))	
+	 (thread-id
+	  (oref (oref this state-info) thread-id))
 	 (result (jde-dbs-do-command proc-id  (format "step out %s" thread-id))))
     (when (not (jde-dbo-command-succeeded-p result))
       (jde-dbs-proc-display-debug-message this
@@ -1995,11 +2003,11 @@ debugger output following the Lisp form."
 ;; Evaluate Command Class                                                     ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defclass jde-dbs-evaluate (jde-dbs-cmd) 
+(defclass jde-dbs-evaluate (jde-dbs-cmd)
   ((expression    :initarg :expression
-	          ;; :type string
-	          :documentation
-	          "Expression to be evaluate. Required.")
+		  ;; :type string
+		  :documentation
+		  "Expression to be evaluate. Required.")
    (thread-id     :initarg :thread-id
 		  ;; :type integer
 		  :documentation
@@ -2015,7 +2023,7 @@ debugger output following the Lisp form."
   (assert (oref this process))
   (assert (oref this expression))
   (assert (oref this thread-id))
- 
+
   ;; Set command name.
   (oset this name "evaluate"))
 
@@ -2025,7 +2033,7 @@ debugger output following the Lisp form."
 	    (call-next-method)       ;; PID CID evaluate
 	    (oref this thread-id)    ;; thread id
 	    (oref this expression))) ;; expression to be evaluated.
- 
+
 
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-evaluate))
   "Execute evaluate expression command. Returns
@@ -2036,9 +2044,9 @@ garbage collected."
 	 (result (call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(car (jde-dbo-command-result-data result))
-      (jde-dbs-proc-display-debug-message 
+      (jde-dbs-proc-display-debug-message
        process
-       (format "Error: cannot evaluate \"%s\".\n Reason: %s." 
+       (format "Error: cannot evaluate \"%s\".\n Reason: %s."
 	       (oref this expression)
 	       (car (jde-dbo-command-result-data result))))
       nil)))
@@ -2049,7 +2057,7 @@ garbage collected."
 ;; Get Array                                                                  ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defclass jde-dbs-get-array (jde-dbs-cmd) 
+(defclass jde-dbs-get-array (jde-dbs-cmd)
   ((array    :initarg :array
 	     :type jde-dbs-java-array
 	     :documentation
@@ -2088,16 +2096,16 @@ can be another array or some other object.")
 	 (format "%s %d" (call-next-method) (oref (oref this array) id)))
 	(index (if (slot-boundp this :index) (oref this :index))))
     (if index
-	(setq cl 
+	(setq cl
 	      (format "%s %d %d"                ;; PID CID get_array OBJ-ID INDEX LENGTH
 		      cl
 		      index                     ;; index of slice to be returned.
 		      (oref this length))))    ;; length of slice to be returned.
     cl))
- 
+
 
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-get-array))
-  "Executes the get-array command. If a slice is specified, 
+  "Executes the get-array command. If a slice is specified,
 returns the slice as a list of elements. Otherwise, return
 the length of the array."
   (let* ((process (oref this process))
@@ -2116,15 +2124,15 @@ the length of the array."
 	  (oset array id id)
 	  (oset array gc-flag gc-flag)
 	  (oset array length length)
-	  (oset array elements 
-		(mapcar 
+	  (oset array elements
+		(mapcar
 		 (lambda (element)
 		   (jde-dbs-objectify-value element))
 		 elements))
-	  array)      
-      (jde-dbs-proc-display-debug-message 
+	  array)
+      (jde-dbs-proc-display-debug-message
        process
-       (format "Error: cannot get array %d.\n Reason: %s." 
+       (format "Error: cannot get array %d.\n Reason: %s."
 	       (oref this object-id)
 	       (car (jde-dbo-command-result-data result))))
       nil)))
@@ -2135,11 +2143,11 @@ the length of the array."
 ;; Abstract Get Object                                                        ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defclass jde-dbs-abstract-get-object (jde-dbs-cmd) 
+(defclass jde-dbs-abstract-get-object (jde-dbs-cmd)
   ((object-id     :initarg :object-id
-	          :type integer
-	          :documentation
-	          "Id of object. Required."))
+		  :type integer
+		  :documentation
+		  "Id of object. Required."))
   "Parent class of get object commands.")
 
 
@@ -2156,7 +2164,7 @@ the length of the array."
   "Creates the command line for the get-object command."
 
   (format "%s %d" (call-next-method) (oref this object-id)))
- 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
 ;; Get Object                                                                 ;;
@@ -2184,7 +2192,7 @@ the object.")
       (jde-dbs-java-null "null"))
      ((= lvf 2)
       (jde-dbs-java-primitive
-       "primitive" 
+       "primitive"
        :jtype  value-type
        :value  (nth 1 value-form)))
      ((= lvf 3)
@@ -2204,14 +2212,14 @@ the object.")
   (let* ((var-name   (car (car variable-form)))
 	 (var-type   (cdr (car variable-form)))
 	 (value-form (cdr variable-form))
-	 (value      (jde-dbs-objectify-value 
-		      value-form)))				
+	 (value      (jde-dbs-objectify-value
+		      value-form)))
     (jde-dbs-java-variable
      (format "variable %s" var-name)
      :name var-name
      :jtype (mapconcat (lambda (x) x) (nreverse var-type) " ")
      :value value)))
- 
+
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-get-object))
   "Executes the get-object command. Returns a Lisp object of type
 `jde-dbs-java-class-instance' that represents the Java object."
@@ -2236,10 +2244,10 @@ the object.")
 			(jde-dbs-objectify-variable variable-form)))
 		   (jde-dbs-java-udci-add-field object field)))
 	       fields))
-	  object)	    
-      (jde-dbs-proc-display-debug-message 
+	  object)
+      (jde-dbs-proc-display-debug-message
        process
-       (format "Error: cannot get object %d.\n Reason: %s." 
+       (format "Error: cannot get object %d.\n Reason: %s."
 	       (oref this object-id)
 	       (car (jde-dbo-command-result-data result))))
       nil)))
@@ -2267,10 +2275,10 @@ the object.")
   (let* ((process (oref this process))
 	 (result (call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
-	(nth 3 (car (jde-dbo-command-result-data result)))	    
-      (jde-dbs-proc-display-debug-message 
+	(nth 3 (car (jde-dbo-command-result-data result)))
+      (jde-dbs-proc-display-debug-message
        process
-       (format "Error: cannot get string %d.\n Reason: %s." 
+       (format "Error: cannot get string %d.\n Reason: %s."
 	       (oref this object-id)
 	       (car (jde-dbo-command-result-data result))))
       nil)))
@@ -2280,11 +2288,11 @@ the object.")
 ;; Get Locals                                                                 ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defclass jde-dbs-get-locals (jde-dbs-cmd) 
+(defclass jde-dbs-get-locals (jde-dbs-cmd)
   ((thread-id         :initarg :thread-id
-	              :type integer
-	              :documentation
-	              "ID of thread whose local variables are being queried.")
+		      :type integer
+		      :documentation
+		      "ID of thread whose local variables are being queried.")
    (stack-frame-index :initarg :stack-frame-index
 		      :type integer
 		      :initform 0
@@ -2307,11 +2315,11 @@ the object.")
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-locals))
   "Creates the command line for the get-locals command."
-  (format "%s %d %d" 
-	  (call-next-method) 
+  (format "%s %d %d"
+	  (call-next-method)
 	  (oref this thread-id)
 	  (oref this stack-frame-index)))
- 
+
 
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-get-locals))
   "Executes the get-locals command. Returns a list of Lisp objects of type
@@ -2323,12 +2331,12 @@ the object.")
 	       (variables      (if variable-forms
 				   (mapcar
 				    (lambda (variable-form)
-			                (jde-dbs-objectify-variable variable-form))
+					(jde-dbs-objectify-variable variable-form))
 				    variable-forms))))
-	  variables)	    
-      (jde-dbs-proc-display-debug-message 
+	  variables)
+      (jde-dbs-proc-display-debug-message
        process
-       (format "Error: cannot get local variables.\n Reason: %s." 
+       (format "Error: cannot get local variables.\n Reason: %s."
 	       (car (jde-dbo-command-result-data result))))
       nil)))
 
@@ -2340,9 +2348,9 @@ the object.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-get-this (jde-dbs-cmd)
   ((thread-id         :initarg :thread-id
-	              :type integer
-	              :documentation
-	              "ID of thread of stack frame whose this object is required.")
+		      :type integer
+		      :documentation
+		      "ID of thread of stack frame whose this object is required.")
    (stack-frame-index :initarg :stack-frame-index
 		      :type integer
 		      :initform 0
@@ -2366,17 +2374,17 @@ the object.")
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-this))
   "Creates the command line for the get_this command."
-  (format "%s %d %d" 
-	  (call-next-method) 
+  (format "%s %d %d"
+	  (call-next-method)
 	  (oref this thread-id)
 	  (oref this stack-frame-index)))
- 
+
 (defmethod jde-dbs-cmd-success-action ((this jde-dbs-get-this))
   (call-next-method)
   (let ((this-obj (oref this :data)))
-    (oset 
-     this 
-     :result 
+    (oset
+     this
+     :result
      (if (string= (nth 0 this-obj) "null")
 	 (jde-dbs-java-null "null")
        (jde-dbs-java-udci
@@ -2385,11 +2393,11 @@ the object.")
 	  :id (nth 1 this-obj))))))
 
 (defmethod jde-dbs-cmd-failure-action ((this jde-dbs-get-this))
- (oset 
-  this 
-  msg 
-  (format 
-   "Error: unable to get this object for stack frame %s on thread %d.\n Reason: %s." 
+ (oset
+  this
+  msg
+  (format
+   "Error: unable to get this object for stack frame %s on thread %d.\n Reason: %s."
    (oref this stack-frame-index)
    (oref this thread-id)
    (oref this result))))
@@ -2420,13 +2428,13 @@ the object.")
 	 (result (call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(let ((classes (car (jde-dbo-command-result-data result))))
-	  (jde-dbs-proc-display-debug-message 
+	  (jde-dbs-proc-display-debug-message
 	   process
-	   (format "Loaded classes:\n  %s." 
+	   (format "Loaded classes:\n  %s."
 		   (mapconcat (lambda (x) x) classes "\n  ")) t)
 	  t)
       (jde-dbs-proc-display-debug-message process
-             (format "Error: unable to list loaded classes.\n  Reason: %s."
+	     (format "Error: unable to list loaded classes.\n  Reason: %s."
 		     (car (jde-dbo-command-result-data result))))
       nil)))
 
@@ -2459,7 +2467,7 @@ the object.")
 	       (base-dir (nth 0 data))
 	       (boot-classpath (nth 1 data))
 	       (classpath (nth 2 data)))
-	  (jde-dbs-proc-display-debug-message 
+	  (jde-dbs-proc-display-debug-message
 	   process
 	   (format (concat
 		    "\nPath information\n\n  Base directory:\n    %s\n\n  "
@@ -2469,7 +2477,7 @@ the object.")
 		   (mapconcat (lambda (x) x) classpath "\n    ")))
 	  t)
       (jde-dbs-proc-display-debug-message process
-             (format "Error: unable to display path information.\n  Reason: %s."
+	     (format "Error: unable to display path information.\n  Reason: %s."
 		     (car (jde-dbo-command-result-data result))))
       nil)))
 
@@ -2546,26 +2554,26 @@ the object.")
 	(let* ((thread-list (car (jde-dbo-command-result-data result)))
 	       (buf (oref process threads-buf)))
 	  (set-window-configuration (oref process win-cfg))
-	  (set-window-buffer 
-	   (next-window 
+	  (set-window-buffer
+	   (next-window
 	    (if (featurep 'xemacs)
 		(frame-highest-window)
-	      (frame-first-window))) 
+	      (frame-first-window)))
 	   buf)
 	  (set-buffer buf)
 	  (kill-all-local-variables)
 	  (let ((inhibit-read-only t))
-	    (erase-buffer)) 
+	    (erase-buffer))
 	  (if (not jde-xemacsp)
-	      (let ((all (overlay-lists)))  
-		(mapcar 'delete-overlay (car all))    
+	      (let ((all (overlay-lists)))
+		(mapcar 'delete-overlay (car all))
 		(mapcar 'delete-overlay (cdr all))))
 	  (apply 'widget-create (jde-dbs-map-threads-to-tree thread-list))
 	  (use-local-map widget-keymap)
-	  (widget-setup))	    
-      (jde-dbs-proc-display-debug-message 
+	  (widget-setup))
+      (jde-dbs-proc-display-debug-message
        process
-       (format "Error: cannot get local variables.\n Reason: %s." 
+       (format "Error: cannot get local variables.\n Reason: %s."
 	       (car (jde-dbo-command-result-data result))))
       nil)))
 
@@ -2577,9 +2585,9 @@ the object.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-get-thread (jde-dbs-cmd)
   ((thread-id     :initarg :thread-id
-	          :type integer
-	          :documentation
-	          "Id of thread to be queried."))
+		  :type integer
+		  :documentation
+		  "Id of thread to be queried."))
   "Gets information about a thread, including the method call stack.")
 
 
@@ -2604,7 +2612,7 @@ the object.")
   (oset this :result (oref this :data)))
 
 (defmethod jde-dbs-cmd-failure-action ((this jde-dbs-get-thread))
- (oset this msg (format "Error: unable to get info for thread %d.\n Reason: %s." 
+ (oset this msg (format "Error: unable to get info for thread %d.\n Reason: %s."
 			(oref this thread-id)
 			(oref this result))))
 
@@ -2614,11 +2622,11 @@ the object.")
 ;; Get Object Monitors                                                        ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defclass jde-dbs-get-object-monitors (jde-dbs-cmd) 
+(defclass jde-dbs-get-object-monitors (jde-dbs-cmd)
   ((object-id     :initarg :object-id
-	          :type integer
-	          :documentation
-	          "Id of object. Required."))
+		  :type integer
+		  :documentation
+		  "Id of object. Required."))
   "Get threads that are monitoring the specified object.")
 
 
@@ -2637,7 +2645,7 @@ the object.")
   "Creates the command line for the get_object_monitors command."
 
   (format "%s %d" (call-next-method) (oref this object-id)))
- 
+
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-get-object-monitors))
   "Executes the get_object_monitors command."
   (let* ((process (oref this process))
@@ -2654,15 +2662,15 @@ the object.")
 	  (setq msg (format "\nThe following threads are monitoring <%s:%s>:\n"
 			    obj-type obj-id))
 
-	  (setq 
-	   msg 
-	   (concat 
-	    msg   
+	  (setq
+	   msg
+	   (concat
+	    msg
 	    "  Current owner:"
 	    (if (listp owner)
 		(concat
 		 "\n"
-		 "    Name:   " (nth 1 owner) "\n" 
+		 "    Name:   " (nth 1 owner) "\n"
 		 "    Id:     " (nth 2 owner) "\n"
 		 "    Status: " (nth 3 owner) "\n"
 		 "    State:  " (nth 4 owner) "\n")
@@ -2670,25 +2678,25 @@ the object.")
 		  (concat " " owner)))))
 
 	  (if waiting
-	      (setq 
-	       msg 
-	       (concat 
-		msg 
+	      (setq
+	       msg
+	       (concat
+		msg
 		"\n  Waiting threads:"
 		(if (listp waiting)
 		    (progn
 		      "\n"
 		      (mapconcat
 		      (lambda (thread)
-		        (concat 			
-			 "    Name:   " (nth 1 thread) "\n" 
+			(concat
+			 "    Name:   " (nth 1 thread) "\n"
 			 "    Id:     " (nth 2 thread) "\n"
 			 "    Status: " (nth 3 thread) "\n"
 			 "    State:  " (nth 4 thread) "\n"))
 		      waiting "\n"))
-		  (if (stringp waiting) (concat " " waiting "\n")))))))		
+		  (if (stringp waiting) (concat " " waiting "\n")))))))
       (setq msg
-	    (format "Error: cannot get object monitors for  %d.\n Reason: %s." 
+	    (format "Error: cannot get object monitors for  %d.\n Reason: %s."
 		    (oref this object-id)
 		    (car (jde-dbo-command-result-data result)))))
     (jde-dbs-proc-display-debug-message process msg)
@@ -2702,9 +2710,9 @@ the object.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-suspend-thread (jde-dbs-cmd)
   ((thread-id     :initarg :thread-id
-	          :type integer
-	          :documentation
-	          "Id of thread or thread-group to be suspended. If omitted, all threads are suspended."))
+		  :type integer
+		  :documentation
+		  "Id of thread or thread-group to be suspended. If omitted, all threads are suspended."))
   "Suspend a thread of this process.")
 
 
@@ -2731,7 +2739,7 @@ the object.")
     (oset (oref this process) suspendedp t)))
 
 (defmethod jde-dbs-cmd-failure-action ((this jde-dbs-suspend-thread))
- (oset this msg (format "Error: unable to suspend thread.\n Reason: %s." 
+ (oset this msg (format "Error: unable to suspend thread.\n Reason: %s."
 	       (oref this result))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2741,9 +2749,9 @@ the object.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-resume-thread (jde-dbs-cmd)
   ((thread-id     :initarg :thread-id
-	          :type integer
-	          :documentation
-	          "Id of thread or thread-group to be resumed. If omitted, all threads are resumed."))
+		  :type integer
+		  :documentation
+		  "Id of thread or thread-group to be resumed. If omitted, all threads are resumed."))
   "Resume a thread of this process.")
 
 
@@ -2770,8 +2778,8 @@ the object.")
     (oset (oref this process) suspendedp nil)))
 
 (defmethod jde-dbs-cmd-failure-action ((this jde-dbs-resume-thread))
-  (oset this msg 
-	(format "Error: unable to resume thread.\n Reason: %s." 
+  (oset this msg
+	(format "Error: unable to resume thread.\n Reason: %s."
 		(oref this result))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2781,13 +2789,13 @@ the object.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-stop-thread (jde-dbs-cmd)
   ((thread-id     :initarg :thread-id
-	          :type integer
-	          :documentation
-	          "Id of thread to be stopped.")
+		  :type integer
+		  :documentation
+		  "Id of thread to be stopped.")
    (exception-id  :initarg :exception-id
-	          :type integer
-	          :documentation
-	          "Id of thread to be stopped."))
+		  :type integer
+		  :documentation
+		  "Id of thread to be stopped."))
   "Stops the specified thread in the target process and throw the specified
 exception. You can use the evaluate expression command to create the exception
 object.")
@@ -2807,8 +2815,8 @@ object.")
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-stop-thread))
   "Creates the command line for the resume_thread command."
-  
-  (format "%s %d %d" (call-next-method) (oref this thread-id) 
+
+  (format "%s %d %d" (call-next-method) (oref this thread-id)
 	  (oref this exception-id)))
 
 (defmethod jde-dbs-cmd-exec ((this jde-dbs-stop-thread))
@@ -2820,7 +2828,7 @@ object.")
 	 process
 	 (if command-succeeded-p
 	     (format "Thread %d stopped." (oref this thread-id))
-	   (format "Error: unable to stop thread %d.\n Reason: %s." 
+	   (format "Error: unable to stop thread %d.\n Reason: %s."
 		   (oref this thread-id)
 		   (car (jde-dbo-command-result-data result)))))
     command-succeeded-p))
@@ -2832,9 +2840,9 @@ object.")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass jde-dbs-interrupt-thread (jde-dbs-cmd)
   ((thread-id     :initarg :thread-id
-	          :type integer
-	          :documentation
-	          "Id of thread to be interrupted."))
+		  :type integer
+		  :documentation
+		  "Id of thread to be interrupted."))
   "Interrupt a thread of this process. An interrupted thread cannot be resumed.")
 
 
@@ -2862,7 +2870,7 @@ object.")
 	 process
 	 (if command-succeeded-p
 	     (format "Thread %d interrupted." (oref this thread-id))
-	   (format "Error: unable to interrupt thread %d.\n Reason: %s." 
+	   (format "Error: unable to interrupt thread %d.\n Reason: %s."
 		   (oref this thread-id)
 		   (car (jde-dbo-command-result-data result)))))
     command-succeeded-p))
@@ -2876,7 +2884,7 @@ object.")
 (defclass jde-dbs-trace-methods (jde-dbs-cmd)
   ((trace-request  :initarg :trace-request
 		   :type jde-dbs-trace-methods-request
-		   :documentation 
+		   :documentation
 		   "Trace method request."))
   "Trace method entries or exits.")
 
@@ -2906,16 +2914,16 @@ object.")
 	(setq cmd (format "%s -sp %s" cmd (oref request suspend-policy))))
 
     (if (slot-boundp request 'inclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cf \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cf \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request inclusion-filters) " "))))
 
     (if (slot-boundp request 'exclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cef \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cef \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request exclusion-filters) " "))))
 
@@ -2932,19 +2940,19 @@ object.")
     (when command-succeeded-p
       (oset request id request-id)
       (if (slot-boundp process 'trace-req)
-	  (oset 
-	   process 
-	   trace-req 
-	   (nconc (oref process trace-req) 
+	  (oset
+	   process
+	   trace-req
+	   (nconc (oref process trace-req)
 		  (list (cons request-id request))))
 	(oset process trace-req (list (cons request-id request)))))
 
     (jde-dbs-proc-display-debug-message
 	 process
 	 (if command-succeeded-p
-	     (format "Trace method %s enabled. Use request id %s to cancel." 
-                     (oref request trace-type) request-id)
-	   (format "Error: unable to enable trace.\n Reason: %s." 
+	     (format "Trace method %s enabled. Use request id %s to cancel."
+		     (oref request trace-type) request-id)
+	   (format "Error: unable to enable trace.\n Reason: %s."
 		   (car (jde-dbo-command-result-data result)))))
     command-succeeded-p))
 
@@ -2956,7 +2964,7 @@ object.")
 (defclass jde-dbs-trace-classes (jde-dbs-cmd)
   ((trace-request  :initarg :trace-request
 		   :type jde-dbs-trace-classes-request
-		   :documentation 
+		   :documentation
 		   "Trace classes request."))
   "Trace class preparations or unloadings.")
 
@@ -2983,16 +2991,16 @@ object.")
 	(setq cmd (format "%s -sp %s" cmd (oref request suspend-policy))))
 
     (if (slot-boundp request 'inclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cf \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cf \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request inclusion-filters) " "))))
 
     (if (slot-boundp request 'exclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cef \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cef \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request exclusion-filters) " "))))
 
@@ -3009,19 +3017,19 @@ object.")
     (when command-succeeded-p
       (oset request id request-id)
       (if (slot-boundp process 'trace-req)
-	  (oset 
-	   process 
-	   trace-req 
-	   (nconc (oref process trace-req) 
+	  (oset
+	   process
+	   trace-req
+	   (nconc (oref process trace-req)
 		  (list (cons request-id request))))
 	(oset process trace-req (list (cons request-id request)))))
 
     (jde-dbs-proc-display-debug-message
 	 process
 	 (if command-succeeded-p
-	     (format "Trace class %s enabled. Use request id %s to cancel." 
-                     (oref request trace-type) request-id)
-	   (format "Error: unable to enable trace.\n Reason: %s." 
+	     (format "Trace class %s enabled. Use request id %s to cancel."
+		     (oref request trace-type) request-id)
+	   (format "Error: unable to enable trace.\n Reason: %s."
 		   (car (jde-dbo-command-result-data result)))))
     command-succeeded-p))
 
@@ -3034,7 +3042,7 @@ object.")
 (defclass jde-dbs-trace-exceptions (jde-dbs-cmd)
   ((trace-request  :initarg :trace-request
 		   :type jde-dbs-trace-exceptions-request
-		   :documentation 
+		   :documentation
 		   "Trace exceptions request."))
   "Trace exceptions.")
 
@@ -3056,8 +3064,8 @@ object.")
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-trace-exceptions))
   "Creates the command line for the trace_exceptions command."
   (let* ((request (oref this trace-request))
-	 (cmd (format "%s %s %s" 
-		      (call-next-method) 
+	 (cmd (format "%s %s %s"
+		      (call-next-method)
 		      (oref request exception-class)
 		      (oref request trace-type))))
 
@@ -3065,16 +3073,16 @@ object.")
 	(setq cmd (format "%s -sp %s" cmd (oref request suspend-policy))))
 
     (if (slot-boundp request 'inclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cf \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cf \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request inclusion-filters) " "))))
 
     (if (slot-boundp request 'exclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cef \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cef \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request exclusion-filters) " "))))
 
@@ -3091,19 +3099,19 @@ object.")
     (when command-succeeded-p
       (oset request id request-id)
       (if (slot-boundp process 'trace-req)
-	  (oset 
-	   process 
-	   trace-req 
-	   (nconc (oref process trace-req) 
+	  (oset
+	   process
+	   trace-req
+	   (nconc (oref process trace-req)
 		  (list (cons request-id request))))
 	(oset process trace-req (list (cons request-id request)))))
 
     (jde-dbs-proc-display-debug-message
 	 process
 	 (if command-succeeded-p
-	     (format "Trace exception %s enabled. Use request id %s to cancel." 
-                     (oref request exception-class) request-id)
-	   (format "Error: unable to enable trace.\n Reason: %s." 
+	     (format "Trace exception %s enabled. Use request id %s to cancel."
+		     (oref request exception-class) request-id)
+	   (format "Error: unable to enable trace.\n Reason: %s."
 		   (car (jde-dbo-command-result-data result)))))
     command-succeeded-p))
 
@@ -3115,7 +3123,7 @@ object.")
 (defclass jde-dbs-cancel-trace (jde-dbs-cmd)
   ((trace-request  :initarg :trace-request
 		   :type jde-dbs-trace-request
-		   :documentation 
+		   :documentation
 		   "Trace request."))
   "Cancel a trace request.")
 
@@ -3145,7 +3153,7 @@ object.")
 
     (if command-succeeded-p
 	(let* ((canceled-request-id (oref (oref this trace-request) id))
-	       (requests 
+	       (requests
 		(remove-if
 		 (lambda (r)
 		   (= (car r) canceled-request-id))
@@ -3157,9 +3165,9 @@ object.")
     (jde-dbs-proc-display-debug-message
 	 process
 	 (if command-succeeded-p
-	     (format "Canceled trace request %s." 
-                     (oref (oref this trace-request) id))
-	   (format "Error: unable to cancel trace %s.\n Reason: %s." 
+	     (format "Canceled trace request %s."
+		     (oref (oref this trace-request) id))
+	   (format "Error: unable to cancel trace %s.\n Reason: %s."
 		   (oref (oref this trace-request) id)
 		   (car (jde-dbo-command-result-data result)))))
 
@@ -3174,7 +3182,7 @@ object.")
 (defclass jde-dbs-watch-field (jde-dbs-cmd)
   ((watch-request  :initarg :watch-request
 		   :type jde-dbs-watch-field-request
-		   :documentation 
+		   :documentation
 		   "Watch field request."))
   "Watch a field of an object or a specified class of objects.")
 
@@ -3193,16 +3201,16 @@ object.")
 
     (assert (slot-boundp request 'object-class))
     (assert (slot-boundp request 'field-name)))
- 
+
   ;; Set command name.
   (oset this name "watch"))
 
 (defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-watch-field))
   "Creates the command line for the watch-field command."
   (let* ((request (oref this watch-request))
-	 (cmd (format 
-	       "%s %s %s %s" 
-	       (call-next-method) 
+	 (cmd (format
+	       "%s %s %s %s"
+	       (call-next-method)
 	       (oref request object-class)
 	       (oref request field-name)
 	       (concat "for_" (oref request watch-type)))))
@@ -3217,16 +3225,16 @@ object.")
 	(setq cmd (format "%s -sp %s" cmd (oref request suspend-policy))))
 
     (if (slot-boundp request 'inclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cf \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cf \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request inclusion-filters) " "))))
 
     (if (slot-boundp request 'exclusion-filters)
-	(setq cmd 
-	      (format 
-	       "%s -cef \"%s\"" 
+	(setq cmd
+	      (format
+	       "%s -cef \"%s\""
 	       cmd
 	       (mapconcat (lambda (x) x) (oref request exclusion-filters) " "))))
 
@@ -3243,24 +3251,24 @@ object.")
     (when command-succeeded-p
       (oset request id request-id)
       (if (slot-boundp process 'watch-req)
-	  (oset 
-	   process 
-	   watch-req 
-	   (nconc (oref process watch-req) 
+	  (oset
+	   process
+	   watch-req
+	   (nconc (oref process watch-req)
 		  (list (cons request-id request))))
 	(oset process watch-req (list (cons request-id request)))))
 
     (jde-dbs-proc-display-debug-message
 	 process
 	 (if command-succeeded-p
-	     (format "Watch request field for field %s of %s instance of class %s is enabled. Use request id %s to cancel." 
-                     (oref request field-name) 
+	     (format "Watch request field for field %s of %s instance of class %s is enabled. Use request id %s to cancel."
+		     (oref request field-name)
 		     (if (slot-boundp request 'object-id)
 			 (oref request object-id)
 		       "any")
 		     (oref request object-class)
 		     request-id)
-	   (format "Error: unable to enable watch request.\n Reason: %s." 
+	   (format "Error: unable to enable watch request.\n Reason: %s."
 		   (car (jde-dbo-command-result-data result)))))
     command-succeeded-p))
 
@@ -3273,7 +3281,7 @@ object.")
 (defclass jde-dbs-cancel-watch (jde-dbs-cmd)
   ((watch-request  :initarg :watch-request
 		   :type jde-dbs-watch-field-request
-		   :documentation 
+		   :documentation
 		   "Watch request."))
   "Cancel a watch request.")
 
@@ -3303,7 +3311,7 @@ object.")
 
     (if command-succeeded-p
 	(let* ((canceled-request-id (oref (oref this watch-request) id))
-	       (requests 
+	       (requests
 		(remove-if
 		 (lambda (r)
 		   (= (car r) canceled-request-id))
@@ -3315,377 +3323,22 @@ object.")
     (jde-dbs-proc-display-debug-message
 	 process
 	 (if command-succeeded-p
-	     (format "Canceled watch request %s." 
-                     (oref (oref this watch-request) id))
-	   (format "Error: unable to cancel watch request %s.\n Reason: %s." 
+	     (format "Canceled watch request %s."
+		     (oref (oref this watch-request) id))
+	   (format "Error: unable to cancel watch request %s.\n Reason: %s."
 		   (oref (oref this watch-request) id)
 		   (car (jde-dbo-command-result-data result)))))
 
     command-succeeded-p))
 
-
 (eval-when-compile
   ;; This code will not appear in the compiled (.elc) file
-  (defun jde-dbs-self-test () 
+  (defun jde-dbs-self-test ()
     "Runs jde-dbs self tests."
     (interactive)
-    (apply 'regress 
+    (apply 'regress
 	   (list test-jde-dbs-proc))))
 
-
 (provide 'jde-dbs)
-
-; $Log: jde-dbs.el,v $
-; Revision 1.101  2005/01/18 05:23:31  paulk
-; Change variables named assoc to assoc-x. This is intended to fix a "Symbol's value as variable is void: old-assoc" problem when debugging with the compiled version of JDE in xemacs/cygwin. Thanks to Henry S. Thompson.
-;
-; Revision 1.100  2004/10/18 02:54:46  paulk
-; Added self test.
-;
-; Revision 1.99  2004/10/16 04:55:56  paulk
-; Fix regression caused by refactoring.
-;
-; Revision 1.98  2004/10/09 05:26:21  paulk
-; Fix Emacs interface to JDEbug so that it handles chunked responses to debugger commands.
-;
-; Revision 1.97  2004/06/03 02:05:47  paulk
-; jde-require tree-widget.
-;
-; Revision 1.96  2004/04/29 02:42:33  paulk
-; Fix regression in jdb interface. Thanks to Jack Donohue.
-;
-; Revision 1.95  2003/05/06 05:25:05  ahyatt
-; Removing last checkin, which was a mistake
-;
-; Revision 1.94  2003/05/06 04:50:07  ahyatt
-; Fixed problem with package variable, and the function to recursively delete a directory.
-;
-; Revision 1.93  2003/03/28 05:33:29  andyp
-; XEmacs optimizations for JDEbug and efc.
-;
-; Revision 1.92  2003/02/25 06:53:29  paulk
-; Created a generalized jde-debug command and wired it up to jdb.
-; Next step is to wire it up to JDEbug.
-;
-; Revision 1.91  2002/12/06 03:47:35  ahyatt
-; Changes to support Mac OS X, which does not use tools.jar
-;
-; Revision 1.90  2002/09/26 03:55:28  paulk
-; XEmacs compatibility fix: the JDEBUG get threads command now invokes
-; frame-highest-window instead of frame-first-window on XEmacs.
-; Thanks to Michael Duvigneau.
-;
-; Revision 1.89  2002/06/12 07:04:26  paulk
-; XEmacs compatibility fix: set win32-quote-process-args wherever
-; the JDEE sets w32-quote-process-args. This allows use of spaces in
-; paths passed as arguments to processes (e.g., javac)  started by
-; the JDEE.
-;
-; Revision 1.88  2002/06/11 06:38:50  paulk
-; Provides support for paths containing spaces as JDEbug vm arguments via the following change:
-; locally set the w32-quote-process-args variable to a quotation mark when launching
-; the JDEbug vm process.
-;
-; Revision 1.87  2002/01/16 07:34:36  paulk
-; Updated JDEbug to use most of the new generalized breakpoint functionality.
-;
-; Revision 1.86  2001/12/10 04:29:55  paulk
-; Created generalized breakpoint framework. Provided initial
-; implementation for jdb. A lot of work remains.
-;
-; Revision 1.85  2001/12/07 12:31:24  jslopez
-; Fixes bug that will cause the the display loaded classes command
-; to dump the information into the *Messages* buffer.
-;
-; Revision 1.84  2001/12/04 05:30:12  paulk
-; Updated to reflect change in dialog class package name prefix from jde- to efc-.
-;
-; Revision 1.83  2001/11/29 11:14:35  paulk
-; * Fixed many references to undefined variables that were generating compiler warning messages.
-;
-; * Removed obsolete function jde-dbs-listen-for-debugger-socket.
-;
-; Revision 1.82  2001/11/26 06:26:54  paulk
-; Replaced jde-bug-jdk-directory with a call to jde-get-jdk-dir.
-;
-; Revision 1.81  2001/11/18 19:26:04  jslopez
-; Modifies jde-dbs-proc-display-debug-message
-; to take an additional argument to pop the buffer.
-; The idea is to show the message in the minibuffer whenever
-; the Process buffer is not showing up, and for methods like display
-; variables be able to bring the buffer up.
-;
-; Revision 1.80  2001/11/18 17:47:16  jslopez
-; Modifies jde-dbs-proc-display-debug-message
-; to pop the buffer when it is not showing.
-;
-; Revision 1.79  2001/11/18 14:57:18  jslopez
-; Fixes bug caused when trying to display empty
-; arrays.
-;
-; Revision 1.78  2001/11/13 05:36:29  paulk
-; Changed jde-dbs-debugger-start to use expand-file-name instead of
-; concat to build JDE java path.
-;
-; Revision 1.77  2001/10/24 20:22:57  jslopez
-; Removed the obsolete method jde-dbs-choose-vm
-; Updated the old call to jde-dbs-choose-vm for
-; a call to jde-run-get-vm.
-;
-; Revision 1.76  2001/10/01 17:37:13  jslopez
-; Fixed make error:
-; While compiling toplevel forms in file c:/cygwin/home/jslopez/emacs-20.7/site-lisp/jde/lisp/jde-bug.el:
-;   !! Symbol's function definition is void ((mapc))
-;
-; Revision 1.75  2001/10/01 12:11:15  paulk
-; Now requires jde-db.
-;
-; Revision 1.74  2001/09/29 04:38:15  paulk
-; Correct cut-and-paste error.
-;
-; Revision 1.73  2001/09/28 04:52:17  paulk
-; Made jde-db-debugger the root class for jde-dbs-debugger.
-;
-; Revision 1.72  2001/09/07 14:24:44  jslopez
-; Remove splitting the frame in 3 windows when the debugger is enable.
-;
-; Revision 1.71  2001/06/05 06:34:36  paulk
-; Fixed bug in jde-dbs-proc-set-find.
-;
-; Revision 1.70  2001/05/23 03:35:56  paulk
-; Supplied missing :documentation keywords in jde-dbs-cmd. Thanks to David Ponce.
-;
-; Revision 1.69  2001/05/19 02:30:25  paulk
-; JDEbug now reinitializes various variables whenever you start a debug session.
-; Previously restarting JDEbug after certain errors, for example, failure to launch
-; a process, would require restarting Emacs.
-;
-; Revision 1.68  2001/04/19 04:34:53  paulk
-; -- Converted local variables and thread buffers to use David Ponce's tree-widget.
-;
-; -- Fixed backslash bug in jde-dbs-extract-lisp-form.
-;
-; Revision 1.67  2001/04/16 05:51:29  paulk
-; Normalized paths. Thanks to Nick Sieger.
-;
-; Revision 1.66  2001/04/12 04:40:15  paulk
-; Normalize jde-run-working-directory.
-;
-; Revision 1.65  2001/04/02 02:47:19  paulk
-; Removed commented out function.
-;
-; Revision 1.64  2001/03/28 12:45:33  paulk
-; Fixed jde-dbs-debugger-start to use new centralized jde-build-classpath function.
-;
-; Revision 1.63  2001/01/23 07:37:43  paulk
-; Removed typo from jde-dbs-proc-set-find.
-;
-; Revision 1.62  2001/01/06 05:11:57  paulk
-; Fixed regression bug caused by reimplementation of the cygpath conversion function.
-;
-; Revision 1.61  2000/12/18 05:22:45  paulk
-; *** empty log message ***
-;
-; Revision 1.60  2000/10/25 03:04:42  paulk
-; Added a new variable, jde-bug-sio-connect-delay.
-;
-;   This variable specifies the length of time in seconds
-;   that the JDE waits before attempting to connect to the
-;   debuggee application's standard I/O. This delay
-;   is intended to give JDEbug time to create the
-;   SIO socket. Previously, the JDE would attempt to
-;   connect immediately, possibly before JDEbug had time
-;   to create a socket for the standard I/O. This might
-;   explain the launch command timeout failures that some users have
-;   experienced, especially on Windows/NT.
-;
-; Revision 1.59  2000/09/21 02:27:55  paulk
-; Now include jde-run.el when compiling to get the definition for save-w32-show-window macro.
-;
-; Revision 1.58  2000/09/05 04:58:14  paulk
-; Fixed jde-dbs-debugger-display-message.
-;
-; Revision 1.57  2000/08/14 02:31:57  paulk
-; Adds support for Step Into All command.
-;
-; Revision 1.56  2000/07/28 06:27:45  paulk
-; Committing all modified files.
-;
-; Revision 1.55  2000/06/12 08:35:38  paulk
-; Now uses the value of jde-bug-debugger-host-address as the address of the socket for the CLI channel.
-;
-; Revision 1.54  2000/04/23 06:19:29  paulk
-; Fixed some problems with the process launch command. Among others,
-; the command now uses `system-name', instead of an absolute
-; address (127.0.0.1) to refer to the local host when connecting to
-; the port used to transport the debuggee process's standard I/O.
-; This fixes the failure to start processes that occurs on some
-; Windows networks.
-;
-; Revision 1.53  2000/04/18 01:20:52  paulk
-; Fixes a bug in the jde-dbs-cmd-failure-action method for jde-dbs-get-this and a bug in the jde-dbs-cmd-success-action for jde-dbs-listen-for process.
-;
-; Revision 1.52  2000/04/13 09:20:54  paulk
-; Removed one stray reference to deleted function jde-proc-steppable-p.
-;
-; Revision 1.51  2000/04/13 09:00:09  paulk
-; Added steppablep field to process object. Set whenever process hits a breakpoint or step event.
-; Modified jde-dbs-target-process-steppable-p to test steppablep field.
-; This fixes menu enabling bug.
-; Debugger lisp output parser now suspends paren balancing in strings. This fixes Lisp eval error when a Java variable includes unbalanced parentheses.
-;
-; Revision 1.50  2000/04/10 05:22:55  paulk
-; Added command to get the this object for a specified stack frame.
-;
-; Revision 1.49  2000/04/05 05:00:02  paulk
-; Fixed thread-tree code to ignore No information Available threads.
-;
-; Revision 1.48  2000/03/27 07:31:54  paulk
-; Now sets the working directory to jde-run-working-directory (if not null) before starting the debugger.
-;
-; Revision 1.47  2000/03/17 04:19:02  paulk
-; Display threads now includes the stack for each thread. Thanks to Paul Michael Reilly <pmr@pajato.com> for implementing this.
-;
-; Revision 1.46  2000/03/16 05:05:06  paulk
-; Enabled interactive reading of vm and application arguments for JDEbug sessions. Thanks to Steve Haflich <smh@franz.com> for this enhancement.
-;
-; Revision 1.45  2000/02/17 06:36:31  paulk
-; Fixed scrolling in process debug message window. Thanks to "Martin
-; Dickau" <mdickau@byallaccounts.com> for this fix.
-;
-; Revision 1.44  2000/02/17 06:23:44  paulk
-; jde-dbs-cmd now copies and then empties the pending event queue before
-; processing the events. This fixes an infinite recursion bug that can
-; occur when stepping through code.
-;
-; Revision 1.43  2000/02/16 04:41:41  paulk
-; Implemented Cygwin/XEmacs compatiblity fixes provided by Fred Hart
-; <cfhart@Z-TEL.com>.
-;
-; Revision 1.42  2000/02/14 06:19:37  paulk
-; Implemented up and down stack commands.
-;
-; Revision 1.41  2000/02/10 02:53:38  paulk
-; Fixed bug where Display->Threads command was not enabled when debugger
-; was attached to a process.
-;
-; Revision 1.40  2000/02/01 05:59:54  paulk
-; Added commands for listening for applications needing debug services.
-;
-; Revision 1.39  2000/02/01 04:11:55  paulk
-; ReleaseNotes.txt
-;
-; Revision 1.38  2000/01/17 09:36:39  paulk
-; Implemented array and object inspectors.
-;
-; Revision 1.37  2000/01/15 08:04:08  paulk
-; Added show buffer commands.
-;
-; Revision 1.36  2000/01/02 08:07:55  paulk
-; Added attach process commands.
-;
-; Revision 1.35  1999/12/27 08:01:17  paulk
-; Added show object monitors command.
-;
-; Revision 1.34  1999/12/20 07:52:06  paulk
-; Added cancel watchpoint command.
-;
-; Revision 1.33  1999/12/19 06:54:21  paulk
-; Added watch field command.
-;
-; Revision 1.32  1999/12/14 04:46:02  paulk
-; Added JDEbug->Processes->Remove Dead Processes command.
-;
-; Revision 1.31  1999/12/13 05:54:08  paulk
-; Added jde-bug-vm-executable and jde-bug-jre-home variables.
-; Fixed jde-dbs-launch-process command so that it fails gracefully.
-;
-; Revision 1.30  1999/12/03 08:22:00  paulk
-; Updated JDEbug to run under JDK 1.3beta.
-;
-; Revision 1.29  1999/11/30 05:46:22  paulk
-; Added JDEbug->Display->Path Info command.
-;
-; Revision 1.28  1999/11/29 06:58:41  paulk
-; Added JDEbug->Display->Loaded Classes Command.
-;
-; Revision 1.27  1999/11/27 05:13:49  paulk
-; Added commands for tracing classes.
-;
-; Revision 1.26  1999/11/23 06:37:04  paulk
-; Added Trace->Cancel command.
-;
-; Revision 1.25  1999/11/16 05:58:17  paulk
-; Added trace method commands and skeletons for trace class and cancel
-; trace commands.
-;
-; Revision 1.24  1999/11/04 05:52:42  paulk
-; Added trace-mode fields to jde-dbs-proc class. Needed to support trace mode.
-; Added object-refs field to jde-dbs-proc class. Needed to support object reference management.
-;
-; Revision 1.23  1999/10/28 04:18:09  paulk
-; Added interrupt and stop thread commands.
-;
-; Revision 1.22  1999/10/14 04:59:23  paulk
-; Added Resume Process and Resume Thread commands.
-;
-; Revision 1.21  1999/10/13 08:16:43  paulk
-; Added suspend process and suspend thread commands.
-;
-; Revision 1.20  1999/10/13 06:19:00  paulk
-; Add JDEBug->Show Threads command
-;
-; Revision 1.19  1999/09/28 04:12:50  paulk
-; start debugger method now checks whether debugger actually started
-; and returns nil if the debugger did not start.
-;
-; Revision 1.18  1999/09/18 03:55:58  paulk
-; Fixed bug in the launch-process command where the command was failing
-; to convert the application arguments from a list of arguments to a
-; string of arguments. Thanks to "Matthew
-; Weymar"<mweymar@hamilton-partners.com> for reporting the bug.
-;
-; Revision 1.17  1999/09/16 05:36:59  paulk
-; Added get locals command.
-;
-; Revision 1.16  1999/09/13 05:37:33  paulk
-; Enhanced get array command.
-;
-; Revision 1.15  1999/09/10 06:41:50  paulk
-; Finished first cut at get_object command.
-;
-; Revision 1.14  1999/09/08 05:40:46  paulk
-; Updated debugger code to take advantage of new unbound slot capability
-; of eieio.
-;
-; Revision 1.13  1999/09/07 05:12:36  paulk
-; Added get array command.
-;
-; Revision 1.12  1999/09/05 04:35:34  paulk
-; Added initial implementation of evaluate and display variable commands.
-;
-; Revision 1.11  1999/08/30 07:10:41  paulk
-; Converted clear breakpoint command to OOPS.
-;
-; Revision 1.10  1999/08/28 05:34:20  paulk
-; Improved multiple process handling, window configuration.
-;
-; Revision 1.9  1999/08/27 05:27:53  paulk
-; Provided initial support for multiple processes.
-; Fixed jde-find-data-directory to work on XEmacs with a standard
-; JDE distribution.
-; Ported breakpoint highlighting code to XEmacs. Still has bugs though.
-; Now includes jde-db-option options on vm command-line for process.
-;
-; Revision 1.8  1999/08/24 06:29:43  paulk
-; Reimplemented the constructor for jde-dbs-proc the right way. Renamed
-; jde-bug-counter to jde-bug-breakpoint-counter.
-;
-; Revision 1.7  1999/08/24 03:26:39  paulk
-; Fixed a couple of NT-related problems. In particular, add an extra
-; line feed after debugger commands to force flushing of debugger output
-; buffer and modified jde-dbs-process-runnable-p to recognize an
-; "unknown" state as runnable if the process is suspended.
-;
 
 ;; End of jde-dbs.el

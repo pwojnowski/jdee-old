@@ -1,11 +1,12 @@
 ;;; jde-ejb.el -- EJB Extensions to Java Development Environment for Emacs
-;; $Revision: 1.7 $
+;; $Id$
 
 ;; Author: David T. Smith
-;; Maintainers: David T. Smith, Yoon Kyung Koo
+;; Maintainer: Paul Landes <landes <at> mailc dt net>
 ;; Keywords: java, tools, ejb
 
 ;; Copyright (C) 2002, 2003, 2004, David T. Smith
+;; Copyright (C) 2009 by Paul Landes
 
 ;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -27,7 +28,7 @@
 ;; interface (xxxHome.java), and a deployment descriptor (xxxEJB.xml).  These
 ;; files are all interrelated and therefore, changes to one should be
 ;; propagated to all.  The obvious thing is to treat it as an entity
-;; with appropriate linkages between the files.  In this version however, 
+;; with appropriate linkages between the files.  In this version however,
 ;; I will simply provide a wizard to create all three elements and
 ;; leave referential integrity alone.
 
@@ -112,7 +113,7 @@ name portion of the filename string."
 (defun jde-ejb-format-filename (fmt name &optional dir)
   (let ((thisdir (or dir default-directory)))
     (format "%s/%s" thisdir  (format fmt name))))
-  
+
 ;; (makunbound 'jde-ejb-remote-buffer-template)
 (defcustom jde-ejb-remote-buffer-template
   (list
@@ -418,7 +419,7 @@ command `jde-ejb-entity-bean', as a side-effect."
 				   "Insert a generic Entity Bean skeleton."))
 	  (set-default sym val)))
 
-	   
+
 ;; (makunbound 'jde-ejb-session-bean-template)
 (defcustom jde-ejb-session-bean-template
   (list
@@ -680,14 +681,14 @@ command `jde-ejb-session-descriptor', as a side-effect."
   "Create a new Java buffer containing an EJB session bean class of the same name.
 This command also creates buffers with the EJB Home and EJB Remote interfaces
 and the XML Deployment descriptor defined
-by the jde-ejb templates.  This includes naming the files according 
+by the jde-ejb templates.  This includes naming the files according
 to the EJB naming convention."
-  (interactive 
+  (interactive
    (let* ((insert-default-directory t)
 	  (file (read-file-name "EJB Name (no extension): ")))
      (setq jde-ejb-dir  (file-name-directory file))
      (list (file-name-sans-extension (file-name-nondirectory file)))))
-			       
+
   ;; Find the package name
   (setq jde-current-ejb-name ejb-name)
   (jde-ejb-gen-bean 'session))
@@ -697,14 +698,14 @@ to the EJB naming convention."
   "Create a new Java buffer containing an EJB entity bean class of the same name.
 This command also creates buffers with the EJB Home and EJB Remote interfaces
 and the XML Deployment descriptor defined
-by the jde-ejb templates.  This includes naming the files according 
+by the jde-ejb templates.  This includes naming the files according
 to the EJB naming convention."
   (interactive
    (let* ((insert-default-directory t)
 	  (file (read-file-name "EJB Name (no extension): ")))
      (setq jde-ejb-dir  (file-name-directory file))
      (list (file-name-sans-extension (file-name-nondirectory file)))))
-			       
+
   ;; Find the package name
   (setq jde-current-ejb-name ejb-name)
   (jde-ejb-gen-bean 'entity))
@@ -717,7 +718,7 @@ Bean-specific interactive function"
 (let* ((jde-ejb-package (jde-gen-get-package-statement))
        (jde-bean (format "jde-ejb-%s-bean" beantype))
        (jde-desc (format "jde-ejb-%s-descriptor" beantype)))
-  
+
 ;; We use the package to generate a default directory
   (setq jde-current-ejb-package   (cadr (split-string jde-ejb-package "[ ;]+")))
   (find-file (jde-ejb-format-filename jde-ejb-remote-format jde-current-ejb-name jde-ejb-dir))
@@ -732,45 +733,12 @@ Bean-specific interactive function"
   (funcall (intern-soft jde-desc))
   (find-file (jde-ejb-format-filename jde-ejb-class-format jde-current-ejb-name jde-ejb-dir))
   (funcall (intern-soft jde-bean))
-  (beginning-of-buffer)
+  (goto-char (point-min))
   (search-forward "{")
   (backward-char 1)
   (c-indent-exp)
   (tempo-forward-mark)))
 
-(provide 'jde-ejb)  
-
-;;; Change History: 
-
-;; $Log: jde-ejb.el,v $
-;; Revision 1.7  2004/07/06 04:03:40  paulk
-;; Replace calls to template aliases to the actual template function
-;; names. This is intended to eliminate undefined function messages when
-;; byte-compiling this library.
-;;
-;; Revision 1.6  2004/07/06 03:43:56  paulk
-;; Provide defvars and jde- prefixes for global variables used in
-;; templates, e.g., jde-current-ejb-name. This eliminates
-;; byte-compilation warnings about undefined variables. Also, replace
-;; references to functions that get the values of these variables with
-;; the values themselves as this eliminates a function evaluation that
-;; seems to serve no useful purpose.
-;;
-;; Revision 1.5  2003/03/28 05:33:29  andyp
-;; XEmacs optimizations for JDEbug and efc.
-;;
-;; Revision 1.4  2003/01/19 05:11:36  paulk
-;; Updated to reflect EJB 2.x. Thanks to Yoon Kyung Koo.
-;;
-;; Revision 1.3  2002/12/02 14:38:17  jslopez
-;; Changes current-ejb-name to a function from a macro to fix byte-compilation.
-;;
-;; Revision 1.2  2002/09/30 04:40:23  paulk
-;; Made jde-ejb commands autoloadable.
-;;
-;; Revision 1.1  2002/09/26 06:12:27  paulk
-;; Initial revision.
-;;
-
+(provide 'jde-ejb)
 
 ;; End of jde-ejb.el

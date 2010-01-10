@@ -1,11 +1,12 @@
 ;;; efc.el -- Emacs Foundation Classes
-;; $Revision: 1.18 $ $Date: 2005/03/19 03:50:31 $ 
+;; $Id$
 
 ;; Author: Paul Kinnucan <paulk@mathworks.com>
-;; Maintainer: Paul Kinnucan
+;; Maintainer: Paul Landes <landes <at> mailc dt net>
 ;; Keywords: lisp, tools, classes
 
 ;; Copyright (C) 2001, 2002, 2003, 2004, 2005 Paul Kinnucan.
+;; Copyright (C) 2009 by Paul Landes
 
 ;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,22 +27,45 @@
 ;; This package contains a set of eieio-based foundation classes
 ;; for Emacs.
 
-;; Please send bug reports and enhancement suggestions
-;; to Paul Kinnucan at <paulk@mathworks.com>
-
-;; See end of this file for change history.
-
 ;;; Code:
 
 (require 'eieio)
 (require 'wid-edit)
 
-(defvar efc-query-options-function nil
+(defcustom efc-query-options-function 'efc-query-options-function-dialog
   "If non-nil the function to use for interactively querying options.
-If nil then the default efc custom-based dialogs will be used.")
+If nil then the default efc custom-based dialogs will be used."
+  :type '(choice :tag "Options Query Function"
+		 (const :tag "Dialog" efc-query-options-function-dialog)
+		 (const :tag "Mini-Buffer" efc-query-options-function-minibuf)
+		 (function :tag "Specify Function"
+			   efc-query-options-function-dialog))
+  :group 'jde)
+
+(defun efc-query-options-function-dialog (options prompt title history default)
+  (let ((dialog
+	 (efc-option-dialog
+	  (or title "option dialog")
+	  :text (or prompt "Select option:")
+	  :options options)))
+    (efc-dialog-show dialog)
+    (oref dialog selection)))
+
+(defun efc-query-options-function-minibuf (options prompt title history default)
+  (let (sel)
+    ;; efc doesn't add the end colon
+    (setq prompt (format "%s%s" 
+			 (or prompt "Select option")
+			 (if default
+			     (format " (default %s): " default)
+			   ": ")))
+    (setq sel (completing-read prompt options nil t nil history default))
+    (if (= (length sel) 0) (error "Input required"))
+    sel))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Dialog Class                                                               ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,9 +118,9 @@ default method kills the dialog buffer."
   (efc-dialog-create this)
 
   (widget-put
-   (widget-create 
+   (widget-create
     'push-button
-    :notify 
+    :notify
     (lambda (button &rest ignore) (efc-dialog-ok (widget-get button :dialog)))
     "Ok")
    :dialog this)
@@ -104,33 +128,35 @@ default method kills the dialog buffer."
   (widget-insert "  ")
 
   (widget-put
-   (widget-create 
+   (widget-create
     'push-button
     :notify (lambda (button &rest ignore) (efc-dialog-cancel (widget-get button :dialog)))
     "Cancel")
    :dialog this)
 
-   (use-local-map widget-keymap)
-   (widget-setup)
+  (use-local-map widget-keymap)
+  (widget-setup)
 
-  ;; Position cursor over OK button.
-  ;; (forward-line 0)
-
+  ;; Position cursor over the first choice.
   (goto-char (point-min))
+  (widget-forward 1)
 
   (pop-to-buffer (oref this buf)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Option Dialog                                                              ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; silence the compiler warnings
+(defun efc-option-dialog (&rest a))
+
 (defclass efc-option-dialog (efc-dialog)
   ((options        :initarg :options
 		   :documentation
-		   "Options from from which to choose.")		  
+		   "Options from from which to choose.")
    (radio-buttons  :initarg :radio-buttons
 		   :documentation
 		   "Buttons for selecting options.")
@@ -155,13 +181,15 @@ dialog uses recursive edit to emulate a modal dialog.")
   (widget-insert (oref this text))
   (widget-insert "\n\n")
   (oset this radio-buttons
- 	(widget-create
- 	 (list
+	(widget-create
+	 (list
 	  'radio-button-choice
 	  :value (car (oref this options))
-	  :args (mapcar 
-		 (lambda (x) 
-		   (list 'item x)) 
+	  :dialog this
+	  :notify (lambda (button &rest ignore)
+		    (efc-dialog-ok (widget-get button :dialog)))
+	  :args (mapcar
+		 (lambda (x) (list 'item x))
 		 (oref this options)))))
   (widget-insert "\n"))
 
@@ -175,13 +203,12 @@ an option or canceled the dialog. See `efc-dialog-ok' and
     (call-next-method)
     (recursive-edit)))
 
-
 (defmethod efc-dialog-ok ((this efc-option-dialog))
   "Invoked when the user selects the OK button on the options
 dialog. Sets the :selection field of THIS to the option chosen by the
 user, kills the dialog buffer, and exits recursive-edit mode."
-  (oset this 
-	selection 
+  (oset this
+	selection
 	(widget-value (oref this radio-buttons)))
   (delete-window)
   (set-buffer (oref this initbuf))
@@ -197,146 +224,12 @@ and then exits recursive edit mode."
   (oset this selection nil)
   (exit-recursive-edit))
 
-(defun efc-query-options (options &optional prompt title)
+(defun efc-query-options (options &optional prompt title history default)
   "Ask user to choose among a set of options."
-  (if efc-query-options-function
-      (funcall efc-query-options-function options prompt title)
-    (let ((dialog
-	   (efc-option-dialog
-	    (or title "option dialog")
-	    :text (or prompt "Select option:")
-	    :options options)))
-      (efc-dialog-show dialog)
-      (oref dialog selection))))
-
-;; The following code is a patch that implements Richard Stallman's fix
-;; for the following error that occurs only in Emacs 21.1.1.
-;;
-;; Debugger entered--Lisp error: (wrong-type-argument window-live-p #<window 66>)
-;;      select-window(#<window 66>)
-;;      exit-recursive-edit()
-;; This replacement macro fixes the problem with exit-recursive-edit on Emacs 21.
-;; You'll have to recompile wid-edit.el with it.
-;; (defmacro save-selected-window (&rest body)
-;;   "Execute BODY, then select the window that was selected before BODY.
-;; However, if that window has become dead, don't get an error,
-;; just refrain from switching to it."
-;;   `(let ((save-selected-window-window (selected-window)))
-;;      (unwind-protect
-;; 	 (progn ,@body)
-;;        (if (window-live-p save-selected-window-window)
-;; 	   (select-window save-selected-window-window)))))
-
-
-(if (and (not (featurep 'xemacs))
-	 (or
-	  (string-match "21\\.1" (emacs-version))
-	  (string-match "21\\.2" (emacs-version))))
-    (progn
-      ;; Need to load wid-edit first to ensure that
-      ;; it does not get loaded after this patch and
-      ;; hence override the patch.
-      (require 'wid-edit)
-
-      ;; Patched version of save-selected-window.
-      (defmacro save-selected-window (&rest body)
-	"Execute BODY, then select the window that was selected before BODY.
-However, if that window has become dead, don't get an error,
-just refrain from switching to it."
-	`(let ((save-selected-window-window (selected-window)))
-	   (unwind-protect
-	       (progn ,@body)
-	     (if (window-live-p save-selected-window-window)
-		 (select-window save-selected-window-window)))))
-
-      ;; Redefine widget-button-click to use the patched 
-      ;; version of save-selected-window
-      (defun widget-button-click (event)
-	"Invoke the button that the mouse is pointing at."
-	(interactive "@e")
-	(if (widget-event-point event)
-	    (let* ((pos (widget-event-point event))
-		   (button (get-char-property pos 'button)))
-	      (if button
-		  ;; Mouse click on a widget button.  Do the following
-		;; in a save-excursion so that the click on the button
-		  ;; doesn't change point.
-		  (save-selected-window
-		    (save-excursion
-		      (mouse-set-point event)
-		      (let* ((overlay (widget-get button :button-overlay))
-			     (face (overlay-get overlay 'face))
-			     (mouse-face (overlay-get overlay 'mouse-face)))
-			(unwind-protect
-		       ;; Read events, including mouse-movement events
-		      ;; until we receive a release event.  Highlight/
-		     ;; unhighlight the button the mouse was initially
-			    ;; on when we move over it.
-			    (let ((track-mouse t))
-			      (save-excursion
-				(when face ; avoid changing around image
-				  (overlay-put overlay
-					       'face widget-button-pressed-face)
-				  (overlay-put overlay
-					       'mouse-face widget-button-pressed-face))
-				(unless (widget-apply button :mouse-down-action event)
-				  (while (not (widget-button-release-event-p event))
-				    (setq event (read-event)
-					  pos (widget-event-point event))
-				    (if (and pos
-					     (eq (get-char-property pos 'button)
-						 button))
-					(when face
-					  (overlay-put overlay
-						       'face
-						       widget-button-pressed-face)
-					  (overlay-put overlay
-						       'mouse-face
-						       widget-button-pressed-face))
-				      (overlay-put overlay 'face face)
-				      (overlay-put overlay 'mouse-face mouse-face))))
-
-			;; When mouse is released over the button, run
-				;; its action function.
-				(when (and pos
-					   (eq (get-char-property pos 'button) button))
-				  (widget-apply-action button event))))
-			  (overlay-put overlay 'face face)
-			  (overlay-put overlay 'mouse-face mouse-face))))
-
-		    (unless (pos-visible-in-window-p (widget-event-point event))
-		      (mouse-set-point event)
-		      (beginning-of-line)
-		      (recenter)))
-
-		(let ((up t) command)
-	       ;; Mouse click not on a widget button.  Find the global
-		;; command to run, and check whether it is bound to an
-		  ;; up event.
-		  (mouse-set-point event)
-		  (if (memq (event-basic-type event) '(mouse-1 down-mouse-1))
-		      (cond ((setq command ;down event
-				   (lookup-key widget-global-map [down-mouse-1]))
-			     (setq up nil))
-			    ((setq command ;up event
-				   (lookup-key widget-global-map [mouse-1]))))
-		    (cond ((setq command ;down event
-				 (lookup-key widget-global-map [down-mouse-2]))
-			   (setq up nil))
-			  ((setq command ;up event
-				 (lookup-key widget-global-map [mouse-2])))))
-		  (when up
-		    ;; Don't execute up events twice.
-		    (while (not (widget-button-release-event-p event))
-		      (setq event (read-event))))
-		  (when command
-		    (call-interactively command)))))
-	  (message "You clicked somewhere weird.")))
-      ))
-
+  (funcall efc-query-options-function options prompt title history default))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Multiple Option Dialog                                                     ;;
 ;;                                                                            ;;
 ;; Contributed by Philip Lord.                                                ;;
@@ -344,10 +237,10 @@ just refrain from switching to it."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defclass efc-multi-option-dialog (efc-option-dialog)
   ((build-message :initarg :text
-                  :type string
-                  :initform "Building Dialog"
-                  :documentation
-                  "Warning message while building dialog, as this can be slow"))
+		  :type string
+		  :initform "Building Dialog"
+		  :documentation
+		  "Warning message while building dialog, as this can be slow"))
   "Provides a dialog with several sets of OPTIONS.
 The dialog sets SELECTION to the options selected by the user.")
 
@@ -361,31 +254,31 @@ The dialog sets SELECTION to the options selected by the user.")
   (widget-insert "\n\n")
   ;; use radio buttons slot as list of radio buttons rather than.
   (oset this radio-buttons
- 	(mapcar
-         (lambda(list)
-           (prog1
-               (widget-create
-                (list
-                 'radio-button-choice
-                 :value
-                 (efc-multi-option-dialog-default this list)
-                 :args (mapcar
-                        (lambda (x)
-                          (list 'item x))
-                        list)))
-             (widget-insert "\n")))
-         (efc-multi-option-dialog-sort this
-                                       (oref this options))))
+	(mapcar
+	 (lambda(list)
+	   (prog1
+	       (widget-create
+		(list
+		 'radio-button-choice
+		 :value
+		 (efc-multi-option-dialog-default this list)
+		 :args (mapcar
+			(lambda (x)
+			  (list 'item x))
+			list)))
+	     (widget-insert "\n")))
+	 (efc-multi-option-dialog-sort this
+				       (oref this options))))
   (widget-insert "\n")
   (message "%s...done" (oref this text)))
 
 (defmethod efc-dialog-ok((this efc-multi-option-dialog))
   ;; set the selection up as a list rather a simple result
   (oset this selection
-        (mapcar
-         (lambda(widget)
-           (widget-value widget))
-         (oref this radio-buttons)))
+	(mapcar
+	 (lambda(widget)
+	   (widget-value widget))
+	 (oref this radio-buttons)))
   (delete-window)
   (set-buffer (oref this initbuf))
   (pop-to-buffer (oref this initbuf))
@@ -402,13 +295,13 @@ The dialog sets SELECTION to the options selected by the user.")
   "Sort the options."
   ;; sort the ones with the most options first...
   (sort list
-        (lambda(a b)
-          (> (length a)
-             (length b)))))
+	(lambda(a b)
+	  (> (length a)
+	     (length b)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Compiler Class                                                             ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -418,9 +311,9 @@ The dialog sets SELECTION to the options selected by the user.")
 		     :type string
 		     :documentation "Compiler name.")
    (buffer           :initarg :buffer
-	             :type buffer
-	             :documentation
-	             "Compilation buffer")
+		     :type buffer
+		     :documentation
+		     "Compilation buffer")
    (window           :initarg :window
 		     :type window
 		     :documentation
@@ -430,7 +323,10 @@ The dialog sets SELECTION to the options selected by the user.")
 		     :documentation "Path of compiler executable.")
    (comp-finish-fcn  :initarg :comp-finish-fcn
 		     :type function
-		     :documentation "Function to invoke at end of compilation."))
+		     :documentation "\
+A list of function to invoke at end of compilation.  Each
+function is called with two arguments: the compilation buffer,
+and a string describing how the process finished."))
   "Class of compiler-like applications.")
 
 (defmethod create-buffer ((this efc-compiler))
@@ -438,13 +334,16 @@ The dialog sets SELECTION to the options selected by the user.")
   (save-excursion
     (let ((buf (get-buffer-create (format "*%s*" (oref this name))))
 	  (error-regexp-alist compilation-error-regexp-alist)
-	  (enter-regexp-alist (if (boundp 'compilation-enter-directory-regexp-alist) 
-                                  compilation-enter-directory-regexp-alist))
+	  (enter-regexp-alist (if (boundp 'compilation-enter-directory-regexp-alist)
+				  compilation-enter-directory-regexp-alist))
 	  (leave-regexp-alist (if (boundp 'compilation-leave-directory-regexp-alist)
-                                  compilation-leave-directory-regexp-alist))
+				  compilation-leave-directory-regexp-alist))
 	  (file-regexp-alist (if (boundp 'compilation-file-regexp-alist)
-                                 compilation-file-regexp-alist))
-	  (nomessage-regexp-alist (if (not jde-xemacsp) compilation-nomessage-regexp-alist))
+				 compilation-file-regexp-alist))
+	  (nomessage-regexp-alist
+	   ;; silence the compiler warnings
+	   (if (boundp 'compilation-nomessage-regexp-alist)
+	       (if (not jde-xemacsp) compilation-nomessage-regexp-alist)))
 	  (parser compilation-parse-errors-function)
 	  (error-message "No further errors")
 	  (thisdir default-directory))
@@ -474,34 +373,39 @@ The dialog sets SELECTION to the options selected by the user.")
       (kill-all-local-variables)
 
       ;; Clear out the compilation buffer and make it writable.
-      (setq buffer-read-only nil)
       (buffer-disable-undo (current-buffer))
       (erase-buffer)
       (buffer-enable-undo (current-buffer))
 
       (compilation-mode (oref this name))
+      (setq buffer-read-only nil)
 
-      (set (make-local-variable 'compilation-parse-errors-function) parser)
-      (set (make-local-variable 'compilation-error-message) error-message)
+      (if (boundp 'compilation-parse-errors-function)
+	  (set (make-local-variable 'compilation-parse-errors-function) parser))
+      (if (boundp 'compilation-error-message)
+	  (set (make-local-variable 'compilation-error-message) error-message))
       (set (make-local-variable 'compilation-error-regexp-alist)
-	     error-regexp-alist)
-      (if (not jde-xemacsp)
-	  (progn
-	    (set (make-local-variable 'compilation-enter-directory-regexp-alist)
-		 enter-regexp-alist)
-	    (set (make-local-variable 'compilation-leave-directory-regexp-alist)
-		 leave-regexp-alist)
-	    (set (make-local-variable 'compilation-file-regexp-alist)
-		 file-regexp-alist)
-	    (set (make-local-variable 'compilation-nomessage-regexp-alist)
-	      nomessage-regexp-alist)))
+	   error-regexp-alist)
+
+      (when (not (featurep 'xemacs))
+	(dolist (elt `((compilation-enter-directory-regexp-alist
+			,enter-regexp-alist)
+		       (compilation-leave-directory-regexp-alist
+			,leave-regexp-alist)
+		       (compilation-file-regexp-alist
+			,file-regexp-alist)
+		       (compilation-nomessage-regexp-alist
+			,nomessage-regexp-alist)))
+	  (if (boundp (car elt))
+	      (set (make-local-variable (car elt)) (second elt)))))
 
       (if (slot-boundp this 'comp-finish-fcn)
-	  (set (make-local-variable 'compilation-finish-function)
+	  (set (make-local-variable 'compilation-finish-functions)
 	       (oref this comp-finish-fcn)))
 
-      (setq default-directory thisdir
-	    compilation-directory-stack (list default-directory)))))
+      (if (boundp 'compilation-directory-stack)
+	  (setq default-directory thisdir
+		compilation-directory-stack (list default-directory))))))
 
 (defmethod get-args ((this efc-compiler))
   "Get a list of command-line arguments to pass to the
@@ -520,7 +424,7 @@ compiler process.")
 
   (if (not (featurep 'xemacs))
       (if compilation-process-setup-function
-	  (funcall compilation-process-setup-function)))     
+	  (funcall compilation-process-setup-function)))
 
   (let* ((outbuf (oref this :buffer))
 	 (executable-path (oref this exec-path))
@@ -534,13 +438,13 @@ compiler process.")
       (insert (concat
 	       executable-path
 	       " "
-               (mapconcat 'identity args " ")
+	       (mapconcat 'identity args " ")
 	       "\n\n"))
 
       (let* ((process-environment (cons "EMACS=t" process-environment))
 	     (w32-quote-process-args ?\")
 	     (win32-quote-process-args ?\") ;; XEmacs
-	     (proc (apply 'start-process 
+	     (proc (apply 'start-process
 			  (downcase mode-name)
 			  outbuf
 			  executable-path
@@ -556,7 +460,7 @@ compiler process.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Collection Class                                                           ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -594,7 +498,7 @@ is an object of efc-visitor class."
   (error "Abstract method."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Iterator Class                                                             ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -613,7 +517,7 @@ is an object of efc-visitor class."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Visitor Class                                                              ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -627,7 +531,7 @@ is an object of efc-visitor class."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; List Class                                                                 ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -660,10 +564,13 @@ is an object of efc-visitor class."
   (member item (oref this items)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; List Iterator Class                                                        ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; silence the compiler warnings
+(defun efc-list-iterator (&rest a))
 
 (defclass efc-list-iterator (efc-iterator)
   ((list-obj :initarg :list-obj
@@ -672,7 +579,7 @@ is an object of efc-visitor class."
    (list     :type list
 	     :documentation "Lisp list."))
   "Iterates over a list.")
-		     
+
 (defmethod initialize-instance ((this efc-list-iterator) &rest fields)
   "Iterator constructor."
   (call-next-method)
@@ -693,7 +600,7 @@ is an object of efc-visitor class."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; List Set Class                                                             ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -712,7 +619,7 @@ already contain the item."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Association Class                                                          ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -730,7 +637,7 @@ already contain the item."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Association Set Class                                                      ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -747,7 +654,7 @@ already contain the item."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                            ;; 
+;;                                                                            ;;
 ;; Hash Table Class                                                           ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -756,7 +663,7 @@ already contain the item."
 	  :documentation "Lisp table object."))
   "Hash table.")
 
-  
+
 (defmethod initialize-instance ((this efc-hash-table) &rest fields)
   "Hash table constructor."
   (call-next-method)
@@ -765,7 +672,7 @@ already contain the item."
 (defmethod efc-coll-put ((this efc-hash-table) key value)
   "Put an item into the table."
   (if (efc-coll-type-compatible-p this value)
-      (puthash key value (oref this table))      
+      (puthash key value (oref this table))
     (error "Tried to add an item of type %s to a hash table of items of type %s"
 	   (type-of value) (oref this elem-type))))
 
@@ -783,8 +690,8 @@ of efc-visitor class."
 
 (defmethod efc-coll-iterator ((this efc-hash-table))
   "Return an iterator for this hash table."
-  (efc-list-iterator 
-   "hash table iterator" 
+  (efc-list-iterator
+   "hash table iterator"
    :list-obj (let (values)
 	       (maphash
 		(lambda (key value)
@@ -792,82 +699,6 @@ of efc-visitor class."
 		(oref this table))
 	       values)))
 
-
-
 (provide 'efc)
-
-
-;; Change History
-;; $Log: efc.el,v $
-;; Revision 1.18  2005/03/19 03:50:31  paulk
-;; Define an association set.
-;;
-;; Revision 1.17  2005/03/18 04:53:14  paulk
-;; Define a set of collection classes.
-;;
-;; Revision 1.16  2004/12/10 03:38:04  paulk
-;; Fix efc-compiler to make and set a buffer-local version of compilation-finish-function.
-;; Thanks To David Evers.
-;;
-;; Revision 1.15  2004/07/01 14:04:39  jslopez
-;; Compatibility fix for emacs in CVS. Replaces jde-xemacsp check for boundp for
-;; the following variables: compilation-nomessage-regexp-alist,
-;; compilation-file-regexp-alist, compilation-leave-directory-regexp-alist,
-;; compilation-enter-directory-regexp-alist. Uses the compilation-mode without a
-;; parameter. The emacs in CVS does not contain the variables, or the parameter
-;; for compilation mode.
-;;
-;; Revision 1.14  2004/03/16 07:42:09  paulk
-;; Define new efc-multi-option-dialog. Thanks to Philip Lord.
-;;
-;; Revision 1.13  2003/11/29 05:50:18  paulk
-;; The efc-dialog-show method ofr efc-option-dialog now uses save-window-excursion
-;; to restore the user's original window conversion after showing the selection
-;; buffer.
-;;
-;; Revision 1.12  2003/08/25 04:57:30  paulk
-;; Adds efc-compiler class. This class implements an Emacs interface to an external process
-;; that generates compiler-like output.
-;;
-;; Revision 1.11  2003/06/07 04:04:10  paulk
-;; Fix regexp for matching Emacs versions. Thanks to David Ponce.
-;;
-;; Revision 1.10  2003/03/28 05:33:29  andyp
-;; XEmacs optimizations for JDEbug and efc.
-;;
-;; Revision 1.9  2002/03/29 12:40:27  paulk
-;; Adds efc-query-option function.
-;;
-;; Revision 1.8  2002/03/19 12:24:47  paulk
-;; Updated live-window error patch to work for Emacs 21.2.
-;;
-;; Revision 1.7  2002/02/21 05:35:39  paulk
-;; efc-dialog class now creates the dialog buffer in
-;; the efc-dialog-show method instead of in the
-;; intialize-instance method. This permits reuse
-;; of the dialog buffer object and hence persistance
-;; of user settings in the dialog.
-;;
-;; Revision 1.6  2002/01/25 10:41:55  paulk
-;; Fixes Lisp error: (wrong-type-argument window-live-p #<window 66>) that
-;; occurs in Emacs 21.1.1 when the user clicks an efc dialog box button.
-;;
-;; Revision 1.5  2002/01/06 06:54:06  paulk
-;; Finally found a fix for the efc dialog class that works around
-;; the delete-other-windows bug in Emacs 21.
-;;
-;; Revision 1.4  2001/12/04 14:45:55  jslopez
-;; Change jde-xemacs for (featurep 'xemacs).
-;;
-;; Revision 1.3  2001/12/04 12:32:34  jslopez
-;; Fixes typo (efc-xemacsp to jde-xemacsp).
-;;
-;; Revision 1.2  2001/12/04 06:06:34  paulk
-;; Remove carriage returns.
-;;
-;; Revision 1.1  2001/12/04 05:23:20  paulk
-;; Initial revision.
-;;
-;;
 
 ;; End of efc.el

@@ -1,11 +1,11 @@
 ;;; jde-custom.el -- Integrated Development Environment for Java.
-;; $Revision: 1.2 $ $Date: 2004/03/21 03:08:45 $ 
+;; $Id$
 
 ;; Author: Paul Kinnucan <paulk@mathworks.com>
-;; Maintainer: Paul Kinnucan
 ;; Keywords: java, tools
 
 ;; Copyright (C) 2004 Paul Kinnucan.
+;; Copyright (C) 2009 by Paul Landes
 
 ;; GNU Emacs is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -24,15 +24,9 @@
 
 ;;; Commentary:
 
-;; This is one of a set of packages that make up the 
+;; This is one of a set of packages that make up the
 ;; Java Development Environment (JDE) for Emacs. See the
 ;; JDE User's Guide for more information.
-
-;; The latest version of the JDE is available at
-;; <URL:http://jdee.sunsite.dk>.
-
-;; Please send any comments, bugs, or upgrade requests to
-;; Paul Kinnucan at paulk@mathworks.com.
 
 ;;; Code:
 
@@ -151,7 +145,7 @@ Optional EVENT is the location for the menu."
 JDEE groups from `custom-variable' to `jde-custom-variable'.
 This causes the save-to-project-file menu item to appear
 for JDEE variables in group customization buffers."
-  (flet ((adjust-group 
+  (flet ((adjust-group
 	  (group)
 	  (let ((symbol-specs (get group 'custom-group)))
 	    (dolist (spec symbol-specs)
@@ -161,20 +155,8 @@ for JDEE variables in group customization buffers."
 		    (adjust-group symbol)
 		  (setcdr spec (list 'jde-custom-variable))))))))
     (adjust-group 'jde)))
-      
+
 
 (provide 'jde-custom)
 
-;; Change History
-;;
-;; $Log: jde-custom.el,v $
-;; Revision 1.2  2004/03/21 03:08:45  paulk
-;; Get rid of DOS line endings.
-;;
-;; Revision 1.1  2004/02/24 05:43:11  paulk
-;; Initial revision.
-;;
-;;
-;;
-;;
-
+;; End of jde-custom.el
