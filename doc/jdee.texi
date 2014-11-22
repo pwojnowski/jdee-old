@@ -1,0 +1,927 @@
+\input texinfo  @c -*- coding: utf-8 -*-
+@c %**start of header
+@setfilename jdee.info
+@settitle JDEE Manual
+@c %**end of header
+
+@documentencoding UTF-8
+
+@titlepage
+@title JDEE Manual
+@page JDEE Manual
+@end titlepage
+
+@c Output the table of contents at the beginning.
+@contents
+
+@ifnottex
+@node Top, User's Guide, (dir), (dir)
+@top The Java Development Environment for Emacs (JDEE)
+
+@end ifnottex
+
+@menu
+* User's Guide::
+* Developer's Guide::
+* Index::
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+User's Guide
+
+* Introduction::
+* Registering and Selecting a JDK::
+* Editing Java Source Files::
+* Documenting Code::
+* Abbreviations::
+* Completing Expressions::
+* Dynamic Keyword Completion::
+
+Introduction
+
+* About::
+* JDEE Requirements::
+* Latest Version::
+* Installing the JDEE::
+* Reporting bugs::
+
+Registering and Selecting a JDK
+
+* Registering a JDK::
+* Selecting a JDK::
+
+Documenting Code
+
+* Inserting Javadoc Comments::
+* Generating the Documentation::
+
+Abbreviations
+
+* Keyword Abbreviations::
+* Control Flow Abbreviations::
+
+Control Flow Abbreviations
+
+* Left Brace Placement::
+* Customizing the Control Flow Templates::
+* Adding Your Own Control Flow Templates::
+* Enabling Variable Content::
+* Disabling the Control Flow Abbreviations::
+
+Completing Expressions
+
+* Completing Method and Field Names::
+* Selecting a Completion Method::
+* Using Menu-Based Completion::
+* Using In-Line Completion::
+* Speeding Up Completion::
+
+Dynamic Keyword Completion
+
+* Dynamic Completion Commands::
+* Electric Return::
+
+Developer's Guide
+
+* JDEE Components::             Describes parts of JDEE
+
+@end detailmenu
+@end menu
+
+@node User's Guide, Developer's Guide, Top, Top
+@chapter User's Guide
+Welcome to the JDEE User's Guide. This guide explains how to use the
+JDEE to develop Java applications. The guide assumes that you are
+familiar with Emacs, the Java programming language, and Java
+development tools provided by Oracle.
+
+@menu
+* Introduction::
+* Registering and Selecting a JDK::
+* Editing Java Source Files::
+* Documenting Code::
+* Abbreviations::
+* Completing Expressions::
+* Dynamic Keyword Completion::
+@end menu
+
+@node Introduction, Registering and Selecting a JDK, User's Guide, User's Guide
+@section Introduction
+
+@menu
+* About::
+* JDEE Requirements::
+* Latest Version::
+* Installing the JDEE::
+* Reporting bugs::
+@end menu
+
+@node About, JDEE Requirements, Introduction, Introduction
+@subsection About
+The Java Development Environment for Emacs (@abbr{JDEE}) is an Emacs Lisp
+package that interfaces Emacs to third-party Java application
+development tools, such as those provided by Oracle as part of its
+JDK. The result is an integrated development environment (@abbr{IDE})
+comparable in power to many commercial Java IDEs. Features include:
+
+@itemize
+@item source code editing with syntax highlighting and auto indentation
+
+@item automatic completion of class fields and methods
+
+@item compilation with automatic jump from error messages to responsible line in the source code.
+
+@item generates class and method skeletons automatically
+
+@item run Java application in an interactive (comint) Emacs buffer
+
+@item integrated debugging with interactive debug command buffer and automatic display of current source file/line when stepping through code
+
+@item browse JDK doc, using the browser of your choice
+
+@item browse your source code, using the Emacs etags facility or a tree-structured speedbar.
+
+@item supports latest version of JDK
+
+@item runs on any platform supported by Emacs and JDK (e.g., Linux, Windows and Solaris)
+
+@item easily and infinitely customizable
+
+@item works with FSF Emacs and XEmacs
+@end itemize
+
+@node JDEE Requirements, Latest Version, About, Introduction
+@subsection JDEE Requirements
+The JDEE requires the following software:
+@itemize
+
+@item
+FSF Emacs or XEmacs on Unix platforms; the 23.4 or later version
+of Emacs on Windows platforms, for general source file editing
+and tool integration functions
+
+@item
+Java Development Kit (@abbr{JDK}) or compatible set of Java development tools
+(compiler, virtual machine, debugger, class libraries, etc.)
+
+@item
+Web browser for viewing documentation
+
+@item
+Latest versions of Eric Ludlam's Speedbar, Semantic, and EIEIO
+packages available for download from the CEDET home page
+
+@item
+The elib package available from the JDEE web site
+
+@item
+Bash or another Unix-style shell highly recommended for Windows
+environments. The cygwin Unix emulation package for Windows from Red
+Hat includes Bash
+@end itemize
+
+@node Latest Version, Installing the JDEE, JDEE Requirements, Introduction
+@subsection Latest Version
+See @uref{Downloading the JDEE} on the JDEE website for instructions
+on downloading the most recent version of the JDEE.
+
+@node Installing the JDEE, Reporting bugs, Latest Version, Introduction
+@subsection Installing the JDEE
+See the JDEE Installation Guide on the JDEE website for information on
+installing the JDEE on your system.
+
+@node Reporting bugs,  , Installing the JDEE, Introduction
+@subsection Reporting bugs, enhancement suggestions
+Please send bug reports and enhancement suggestions to
+@email{jdee-users@@lists.sourceforge.net}.
+
+@node Registering and Selecting a JDK, Editing Java Source Files, Introduction, User's Guide
+@section Registering and Selecting a JDK
+
+The JDEE relies on command-line Java development tools, such as those
+supplied by Oracle as part of its Java Development Kit (JDK). Before
+you can use the JDEE to compile, debug, or run an application, you
+must tell it where the Java compiler, debugger, and virtual machine
+are located on your system. The JDEE assumes that the compiler,
+debugger, and vm are named javac, jdb, and java, respectively, and
+that they are located on your system's command path. If these tools
+are not located on the system command path or have different names,
+you must tell the JDEE where they are located. The JDEE provides
+customization variables for specifying the locations of individual
+tools.
+
+However, if you are using one or more versions of Oracle's JDK or a
+clone of the JDK, the easiest way to specify the location of the
+external development tools is to register the version of the JDK that
+you intend to use. It is especially advantageous to register a JDK, if
+you intend to use multiple versions of the JDK. The reason?
+Registering each version of the JDK allows you to change JDKs by
+changing a single customization variable. The following sections
+explain how to register and select JDKs.
+
+@menu
+* Registering a JDK::
+* Selecting a JDK::
+@end menu
+
+@node Registering a JDK, Selecting a JDK, Registering and Selecting a JDK, Registering and Selecting a JDK
+@subsection Registering a JDK
+
+To register a version of the JDK with the JDEE:
+
+@enumerate
+@item
+Type M-x customize-variable RET jde-jdk-registry RET.
+
+The jde-jdk-registry customization buffer appears.
+
+@item
+Click the INS button.
+
+Enter the version number of the JDK and the path of the directory in
+which the JDK is installed.
+
+@item
+Repeat the preceding steps until you have entered the versions and
+paths of all versions of the JDK that you wish to use with the JDEE.
+
+@item
+Click the @samp{Save for Future Sessions} from the State menu.
+This saves the setting of jde-jdk-registry in your init file.
+
+@end enumerate
+
+@node Selecting a JDK,  , Registering a JDK, Registering and Selecting a JDK
+@subsection Selecting a JDK
+To select a JDK:
+
+@enumerate
+
+@item
+Type M-x customize-variable RET jde-jdk RET.
+
+The jde-jdk customization buffer appears.
+
+@item
+The buffer lists the JDKs that you have previously registered
+(@ref{Registering a JDK}).
+
+@item
+Click the radio button next to the version of the JDK you want to use.
+
+@item
+Click the @samp{Save for Future Sessions} from the State menu.
+This saves the setting of jde-jdk-registry in your init file.
+
+Note: This procedure saves your JDK selection in your init file so
+that it applies to all projects. You can configure the JDEE to use different
+JDKs for different projects by saving your customization in a project
+file. (see Using Project Files) for more information.
+
+@end enumerate
+
+@node Editing Java Source Files, Documenting Code, Registering and Selecting a JDK, User's Guide
+@section Editing Java Source Files
+
+To edit an existing Java source file, load it into an Emacs buffer by
+executing @kbd{C-x C-f}. Loading a Java source file into a buffer
+causes the buffer to enter into jde-mode, a variant of java-mode,
+which is in turn a variant of the standard Emacs cc-mode for editing
+source files written in C and related languages. jde-mode offers all
+the specialized source file editing commands of cc-mode plus functions
+for creating, compiling, building, running, and debugging Java source
+files. You can invoke the commands by selecting them from the JDE menu
+that jde-mode displays on the Emacs menu bar or by typing the commands
+in the Emacs minibuffer.
+
+@node Documenting Code, Abbreviations, Editing Java Source Files, User's Guide
+@section Documenting Code
+The JDEE provides complete support for generating HTML documentation
+for Java classes from comments inserted into the source code for those
+classes.
+
+See also Displaying Java Documentation.
+
+@menu
+* Inserting Javadoc Comments::
+* Generating the Documentation::
+@end menu
+
+@node Inserting Javadoc Comments, Generating the Documentation, Documenting Code, Documenting Code
+@subsection Inserting Javadoc Comments
+
+To insert a skeleton javadoc comment for a class or method, position
+point in the first line of the method or class and select
+JDE->Document from the Emacs menubar or type @kbd{C-c C-v j}.
+
+To customize the javadoc skeletons, select
+JDE->Options->Project->Javadoc from the Emacs menubar.
+
+Thanks to David Ponce for developing the JDEE's javadoc comment
+generation facility.
+
+@node Generating the Documentation,  , Inserting Javadoc Comments, Documenting Code
+@subsection Generating the Documentation
+
+To generate documentation for the current project, open any source
+file in the project and select Make Doc from the JDE menu or enter M-x
+jde-javadoc-make.
+
+The jde-javadoc-make command runs the JDK's javadoc program to
+generate the documentation. The javadoc command must be on your
+system's command path.
+
+The jde-javadoc-make command uses jde-global-classpath as the
+-classpath and jde-sourcepath as the -sourcepath option for generating
+the doc. You can specify all other javadoc options via JDEE
+customization variables. To specify the options, select
+Project->Options->Javadoc from the JDE menu. Use
+jde-javadoc-gen-packages to specify the packages, classes, or source
+files for which you want to generate javadoc. If this variable is nil,
+the jde-javadoc-make generates javadoc for the Java source file in the
+current buffer.
+
+Thanks to Sergey A Klibanov for developing the JDEE's javadoc
+generation facility.
+
+@node Abbreviations, Completing Expressions, Documenting Code, User's Guide
+@section Abbreviations
+
+The JDEE allows you to use abbreviations for Java keywords and control
+flow constructs. The following sections explain how to use these
+abbreviations.
+
+@menu
+* Keyword Abbreviations::
+* Control Flow Abbreviations::
+@end menu
+
+@node Keyword Abbreviations, Control Flow Abbreviations, Abbreviations, Abbreviations
+@subsection Keyword Abbreviations
+
+The JDEE defines a set of abbreviations for Java keywords. When you
+type one of these abbreviations followed by a space in a Java source
+buffer, the JDEE optionally expands the abbreviation into the
+keyword. For example, when the abbreviation mode is enabled, you need
+only type fa followed by a space to enter the Java keyword false.
+
+To enable or disable abbreviation mode by default for a project,
+select JDE->Project->Options ->General and toggle the boolean variable
+jde-enable-abbrev-mode.
+
+To toggle abbreviation mode on or off during a session, select
+JDE->Code Generation->Modes->Abbrev.
+
+To change, remove, or add an abbreviation, edit the variable
+jde-mode-abbreviations in the project customization buffer.
+
+@indentedblock
+Note: The JDEE's Java keyword expansion facility is based on the Emacs
+abbrev-mode facility. For more information, see the Emacs user
+manual.
+@end indentedblock
+
+@node Control Flow Abbreviations,  , Keyword Abbreviations, Abbreviations
+@subsection Control Flow Abbreviations
+
+The JDEE defines abbreviations for Java control flow structures, such
+as @code{if-then-else}. When you enter the abbreviation followed by a
+space, the JDEE expands the abbreviation into a corresponding control
+structure template.
+
+Example: expanding the @code{if-then-else} abbreviation:
+
+@example
+ife
+@end example
+
+expands to the control flow structure:
+
+@example
+if ( ) @{ @} // end of if () else @} // end of if () else
+@end example
+
+The JDEE defines the following abbreviations for control structures:
+@indentedblock
+@multitable @columnfractions .70 .14
+@headitem Statement @tab Abbreviation
+@item if-then @tab if
+@item else @tab else
+@item if-then-else @tab ife
+@item else-if @tab eif
+@item while @tab while
+@item for @tab for
+@item for (int I=0;I<UL;I++) @tab fori
+@item for (Iterator i = c.iterator(); i.hasNext();) @tab foriter
+@item main method @tab main
+@item switch @tab switch
+@item case @tab case
+@item try @tab try
+@item catch @tab catch
+@item try finally @tab tryf
+@item finally @tab finally
+@end multitable
+@end indentedblock
+
+@indentedblock
+Note: You must enable the JDEE's Java keyword abbreviation mode to use
+the control flow abbreviations. See Java Keyword Completion for more
+information.
+@end indentedblock
+
+Thanks to Eric D. Friedman for contributing the control flow templates.
+
+@menu
+* Left Brace Placement::
+* Customizing the Control Flow Templates::
+* Adding Your Own Control Flow Templates::
+* Enabling Variable Content::
+* Disabling the Control Flow Abbreviations::
+@end menu
+
+@node Left Brace Placement, Customizing the Control Flow Templates, Control Flow Abbreviations, Control Flow Abbreviations
+@subsubsection Left Brace Placement
+The JDEE's Java control flow templates support two options for opening
+brace placement: placement on the first line of the template
+(Kerningham & Ritchie Style, the default) and placement on a separate
+line.
+
+Type M-x customize-variable jde-gen-k&r to specify the style you prefer.
+
+@node Customizing the Control Flow Templates, Adding Your Own Control Flow Templates, Left Brace Placement, Control Flow Abbreviations
+@subsubsection Customizing the Control Flow Templates
+You can customize the templates to suit any indentation style. To
+customize the templates, select Project->Options->Autocode from the
+JDE menu.
+
+@node Adding Your Own Control Flow Templates, Enabling Variable Content, Customizing the Control Flow Templates, Control Flow Abbreviations
+@subsubsection Adding Your Own Control Flow Templates
+Use the jde-gen-define-abbrev-template function to define your own
+control flow abbreviation in your .emacs file. For example, the
+following code defines an abbreviation for an else clause.
+
+@example
+(jde-gen-define-abbrev-template "melse" '('> "else @{" '> 'n
+'> 'r 'n "@}"))
+@end example
+
+The jde-gen-define-abbrev-template function takes two arguments. The
+first argument is a string that specifies the abbreviation. The
+section argument is a list defining the text that replaces the
+abbreviation. The list can contain any of the following elements.
+
+Template Elements and their usage:
+
+@table @asis
+@item A string.
+The string is inserted into the buffer at point.
+
+@item The symbol 'p.
+This position is saved in tempo-marks.
+
+@item The symbol 'r.
+If tempo-insert is called with ON-REGION non-nil the current region is
+placed here. Otherwise it works like 'p.
+
+@item (p PROMPT <NAME> <NOINSERT>)
+If tempo-interactive is non-nil, the user is prompted in the minbuffer
+with PROMPT for a string to be inserted. If the optional parameter
+NAME is non-nil, the text is saved for later insertion with the s
+tag. If there already is something saved under NAME that value is used
+instead and no prompting is made. If NOINSERT is provided and non-nil,
+nothing is inserted, but text is still saved when a NAME is
+provided. For clarity, the symbol 'noinsert should be used as
+argument.
+
+@item (P PROMPT <NAME> <NOINSERT>)
+Works just like the previous element, but forces tempo-interactive to
+be true.
+
+@item (r PROMPT <NAME> <NOINSERT>)
+Like the previous, but if tempo-interactive is nil and tempo-insert is
+called with ON-REGION non-nil, the current region is placed here. This
+usually happens when you call the template function with a prefix
+argument.
+
+@item (s NAME)
+Inserts text previously read with the (p ..) construct. Finds the
+insertion saved under NAME and inserts it. Acts like 'p if
+tempo-interactive is nil.
+
+@item '&
+If there is only whitespace between the line start and point, nothing
+happens. Otherwise a newline is inserted.
+
+@item '%
+If there is only whitespace between point and end-of-line nothing
+happens. Otherwise a newline is inserted.
+
+@item 'n
+Inserts a newline.
+
+@item '>
+The line is indented using indent-according-to-mode. Note that you
+often should place this item after the text you want on the line.
+
+@item 'n>
+Inserts a newline and indents line.
+
+@item 'r>
+Like r, but it also indents the region.
+
+@item 'o
+Like '% but leaves the point before the new line.
+
+@item Anything else.
+It is evaluated and the result is treated as an element to be
+inserted. One additional tag is useful for these cases. If an
+expression returns a list '(l foo bar), the elements after 'l will be
+inserted according to the usual rules. This makes it possible to
+return several elements from one expression.
+@end table
+
+@node Enabling Variable Content, Disabling the Control Flow Abbreviations, Adding Your Own Control Flow Templates, Control Flow Abbreviations
+@subsubsection Enabling Variable Content
+Some templates optionally prompt you for items to insert into the
+template. To enable prompting, set the variable tempo-interactive to a
+non-nil value in your .emacs file.
+
+@node Disabling the Control Flow Abbreviations,  , Enabling Variable Content, Control Flow Abbreviations
+@subsubsection Disabling the Control Flow Abbreviations
+To disable the control flow abbreviations, set the variable
+jde-gen-cflow-enable off.
+
+@node Completing Expressions, Dynamic Keyword Completion, Abbreviations, User's Guide
+@section Completing Expressions
+
+Both Emacs and the JDEE provide commands for completing incomplete
+expressions. Emacs provides commands that work for any expression but
+only if the completions exist in an open buffer. The JDEE provides
+completion commands that work for any Java method or field name that
+exists on jde-global-classpath. The following sections explain how to
+use completion facilities supplied by the JDEE and by Emacs itself.
+
+@menu
+* Completing Method and Field Names::
+* Selecting a Completion Method::
+* Using Menu-Based Completion::
+* Using In-Line Completion::
+* Speeding Up Completion::
+@end menu
+
+@node Completing Method and Field Names, Selecting a Completion Method, Completing Expressions, Completing Expressions
+@subsection Completing Method and Field Names
+
+The JDEE provides comamnds that can complete an incomplete field or
+method name. All the methods determine the set of possible completions
+for an incomplete field or method name at point. They differ in how
+they present the completions to you for selection. The commands
+include:
+
+@table @code
+@item jde-complete-in-line
+This command uses the first completion that it finds to complete the
+method or field name at point. If multiple completions exist, it
+allows you to cycle through the completions, each completion replacing
+the previous in the source buffer. See Using In-Line Completion for
+more information.
+
+@item jde-complete-menu
+This command displays a menu of possible completions for the
+incomplete method or field name at point. It enters the completion
+that you select in the source buffer. See Using Menu-Based Completion
+for more information.
+
+@item jde-complete-minibuf
+This command uses the minibuffer to display possible completions for
+the incomplete method or field name at point. The comamnd enters the
+completion that you select in the source buffer. See Using
+Minibuffer-Based Completion for more information.
+
+@item jde-complete
+This is the JDEE's user-definable "standard" completion command. It
+delegates completion to one of the JDEE's other completion commands
+(jde-complete-menu by default) or to a custom completion function that
+you specify (@ref{Selecting a Completion Method} for more
+information.) The @code{jde-complete command} is bound by default to
+the key combination @kbd{C-c C-v C-.}. If you prefer another binding,
+use the customization variable @code{jde-key-bindings} to change the
+binding.
+@end table
+
+The JDEE's field and method completion commands use the Beanshell to
+run Java code that in turn uses Java's reflection (class
+introspection) capability to determine the fields and methods defined
+for the class of object at point. The commands start the Beanshell if
+it is not running. This can cause a noticeable delay in completion the
+first time it is used in a session. The response can also be slow for
+classes containing many methods and fields.
+
+@indentedblock
+Note: @ref{Speeding Up Completion} for some tips on how you can
+dramatically speed up field and method completion.
+@end indentedblock
+
+Completion works only for compiled classes that reside in the
+classpath defined by @code{jde-global-classpath}, if set, otherwise by
+the @env{CLASSPATH} environment variable when the Beanshell
+starts. Thus, if the JDEE is unable to complete a method or field,
+make sure that the class that defines the field or method is compiled
+and exists on the classpath defined by @code{jde-global-classpath}, if
+set, otherwise by the @env{CLASSPATH} environment variable.
+
+The JDEE completion commands work for all of the following cases:
+@itemize
+@item
+objects referenced by variables declared in the current buffer
+
+@item
+static fields and methods
+
+@item
+fields and methods of objects defined by the current class and its
+parent
+
+Names of fields and methods of the current class must start with this
+or . (period). Names of fields and methods declared by the parent of
+the current class must start with super.
+
+For example, this command completes:
+@example
+. ^ this. ^ super. ^
+@end example
+
+@item
+objects referenced by the fields of objects referenced by variables
+declared in the current class or its parent or by static fields
+
+For example, this command completes:
+@example
+System.out.prin ^
+@end example
+
+@item
+objects returned by methods of objects referenced by variables defined
+in the current
+
+For example, this command completes:
+@example
+Toolkit.getDefaultToolkit().get ^
+@end example
+
+@item
+objects referenced by method parameters
+
+For example, this command completes:
+@example
+void setColor(String color) @{ color.get ^ @}
+@end example
+
+@end itemize
+
+@node Selecting a Completion Method, Using Menu-Based Completion, Completing Method and Field Names, Completing Expressions
+@subsection Selecting a Completion Method
+
+The JDEE's generic completion command, @code{jde-complete} delegates
+completion to one of several specific completion commands supplied by
+the JDEE or to a custom completion method that you supply. This allows
+you to customize jde-complete to use the completion method that you
+prefer.
+
+To specify your preferred completion method:
+
+@enumerate
+@item
+Type M-x jde-complete-function RET
+
+@item
+Select the completion command that implements the completion method
+you prefer.
+
+@item
+If you selected Custom as your preferred completion function, enter
+the name of the custom completion function in the adjacent edit field,
+replacing the existing contents (ignore by default.).
+
+@item
+Save your selection in your .emacs or project file.
+@end enumerate
+
+@node Using Menu-Based Completion, Using In-Line Completion, Selecting a Completion Method, Completing Expressions
+@subsection Using Menu-Based Completion
+
+The jde-complete-menu displays a popup menu of completions for the
+method or field name at point. Selecting a completion from the menu
+causes the command to use it to complete the method or field at
+point. This section assumes that you have selected jde-complete-menu
+as your standard completion command.
+
+To select completions from a menu:
+
+@enumerate
+@item
+Position point immediately following the partially complete field or
+method name.
+
+@item
+Type the @kbd{C-c C-v C-.} key combination.
+
+@item
+Select the desired completion from the menu.
+
+@item
+The JDEE inserts the completion at point in the buffer.
+@end enumerate
+
+@node Using In-Line Completion, Speeding Up Completion, Using Menu-Based Completion, Completing Expressions
+@subsection Using In-Line Completion
+
+The jde-complete-in-line command allows you to select completions at
+the point of insertion in the source buffer. The command finds all the
+fields and methods that complete the name at point. It then inserts
+the first potential completion in the buffer at point. Repeatedly
+executing the command causes the JDEE to cycle through the other
+potential completions. If the completion is a method name, the command
+completes the method name and displays the method signature in the
+minibuffer.
+
+The @code{jde-complete-in-line} command is bound to @kbd{C-c C-v
+.}. You can use this combination to invoke the command or @kbd{C-c C-v
+C-.}, if you have selected this command as your preferred completion
+method. The following examples use the @kbd{C-c C-v .} combination.
+
+Example: completing a String Method Name
+
+Typing @kbd{C-c-C-v-.}
+
+@example
+String s; s.get ^
+@end example
+
+completes the method name at point as follows
+
+@example
+String s; s.getClass( ^
+@end example
+
+and displays
+
+@example
+java.lang.Class getClass()
+@end example
+
+in the minibuffer. Repeatedly typing @kbd{C-c-C-v-.} cycles through
+all the other get methods for the Java String class.
+
+@node Speeding Up Completion,  , Using In-Line Completion, Completing Expressions
+@subsection Speeding Up Completion
+
+Here are two ways you can significantly speed up field and method
+completion:
+@itemize
+
+@item
+Byte-compile the EIEIO and JDEE packages.
+
+@item
+The beanshell package, the Emacs interface to the BeanShell, is based
+on the EIEIO object-oriented Lisp package for Emacs. Completion uses
+the BeanShell heavily to determine the class of the field or method at
+point. Thus compiling EIEIO and @file{beanshell.el} improves
+completion's performance, dramatically in my tests.
+
+@item
+Import by class, not by package, in your Java files.
+
+Every package import, e.g., @code{java.util.*}, requires invoking the
+BeanShell to determine the fully qualified name of the class at point
+(see jde-parse-get-qualified-name). A Beanshell invocation is by far
+the most time-consuming operation required for completion. Thus
+eliminating the use of package-level imports can significantly speed
+up completion.
+@end itemize
+
+@node Dynamic Keyword Completion,  , Completing Expressions, User's Guide
+@section Dynamic Keyword Completion
+
+Emacs provides dynamic completion commands that attempt to find
+completions for the word at point in the current buffer or other
+buffers.
+
+Example: Using Dynamic Completion
+
+Suppose that the current source buffer contains the class names
+Component and Container. Now suppose you enter Co somewhere in the
+buffer and type @kbd{M-/}. The text Component replaces Co in the
+buffer.
+
+Typing @kbd{M-/} again changes Component to Container. In this way,
+you can cycle through all the possible completions for Co in the
+current buffer.
+
+@menu
+* Dynamic Completion Commands::
+* Electric Return::
+@end menu
+
+@node Dynamic Completion Commands, Electric Return, Dynamic Keyword Completion, Dynamic Keyword Completion
+@subsection Dynamic Completion Commands
+
+Emacs provides two dynamic completion commands.
+
+The @code{dabbrev-expand} command is bound to the key combination
+@kbd{M-/} by default. It searches the current buffer for completions
+of the word at point and, if none are found, other buffers of the same
+type. For example, if the current buffer is a Java source buffer, it
+searches other Java source buffers for completions if none are found
+in the active buffer.
+
+The @code{hippie-expand} command provides more extensive search
+capabilities. See the docstrings for these functions for more
+information.
+
+@node Electric Return,  , Dynamic Completion Commands, Dynamic Keyword Completion
+@subsection Electric Return
+
+In electric return mode, pressing the @kbd{Enter} key causes the JDEE
+to close open braces at the end of a line. To enable or disable this
+mode by default, customize jde-electric-return-p.
+
+To turn the mode on or off during a session, select JDE->Code
+Generation->Modes->Electric Return.
+
+@c @node Generating Code goes here:
+
+
+@node Developer's Guide, Index, User's Guide, Top
+@chapter Developer's Guide
+
+@menu
+* JDEE Components::             Describes parts of JDEE
+@end menu
+
+@node JDEE Components,  , Developer's Guide, Developer's Guide
+@section JDEE Components
+
+@cindex chapter, first
+
+The JDEE distribution includes the following files:
+@itemize
+
+@item
+@file{jde.el} Defines jde-mode, a major Emacs mode for developing Java code.
+
+@item
+@file{jde-run.el} Runs Java applications and applets
+
+@item
+@file{jde-db.el} Interfaces Emacs to jdb, the command-line debugger that comes with the JDK.
+
+@item
+@file{jde-gen.el} Contains code generation templates.
+
+@item
+@file{bsh.jar} Compiled files for the BeanShell, a Java source code interpreter developed by Pat Neimeyer.
+
+@item
+@file{beanshell.el} Provides an Emacs interface to the BeanShell interpreter.
+
+@item
+@file{jde-wiz.el} Provides "wizards" that generate skeleton implementations of interfaces and skeleton overrides of methods declared by superclasses.
+
+@item
+@file{jde-complete.el} Automatic field and method completion package.
+
+@item
+@file{jde-parse.el} Java parser package.
+
+@item
+@file{java.bnf} Java grammar used to generate the JDEE's lisp-based Java parser.
+
+@item
+@file{jde-bug.el} JDEbug user interface package.
+
+@item
+@file{jde-dbs.el} JDEbug low-level command interface package.
+
+@item
+@file{jde-dbo.el} JDEbug output processing functions.
+
+@item
+source code, jar files, and documentation for the Java components of the JDEE.
+
+@item
+@file{jtags} is a bash shell script that tags Java source hierarchies.
+
+@item
+@file{jtags.csh} is a c shell script that tags Java source heierarchies.
+
+@end itemize
+
+@node Index,  , Developer's Guide, Top
+@unnumbered Index
+
+@printindex cp
+
+@bye
