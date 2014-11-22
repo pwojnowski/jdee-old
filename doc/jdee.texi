@@ -37,6 +37,8 @@ User's Guide
 * Abbreviations::
 * Completing Expressions::
 * Dynamic Keyword Completion::
+* Generating Code::
+* Checking Coding Style::
 
 Introduction
 
@@ -82,6 +84,40 @@ Dynamic Keyword Completion
 * Dynamic Completion Commands::
 * Electric Return::
 
+Generating Code
+
+* Generating Import Statements::
+* Code Wizards::
+* Code Templates::
+
+Generating Import Statements
+
+* Importing Classes::           Generate an import statement for the class at point
+* Importing All Classes::       Generate import statements for all classes in the current buffer that need import statements
+* Expanding Package Imports::   Expand a package import statement into specific class imports
+* Collapsing Class Imports::    Collapse class imports into a package import statement
+* Grouping Imports::            Group import statements
+* Deleting Unneeded Imports::   Delete superfluous import statements
+
+Code Wizards
+
+* Method Override Wizard::
+* Interface Wizard::
+* Delegate Wizard::
+* Get/Set Wizard::
+
+Code Templates
+
+* Buffer Templates::
+* Specifying Boilerplate Text::
+* Customization Variables::
+* Point Templates::
+* Customizing Templates::
+* Creating Templates::
+* Defining a Template and Template Insertion Function::
+* Registering Custom Templates::
+* Assigning Keys to Templates::
+
 Developer's Guide
 
 * JDEE Components::             Describes parts of JDEE
@@ -104,6 +140,8 @@ development tools provided by Oracle.
 * Abbreviations::
 * Completing Expressions::
 * Dynamic Keyword Completion::
+* Generating Code::
+* Checking Coding Style::
 @end menu
 
 @node Introduction, Registering and Selecting a JDK, User's Guide, User's Guide
@@ -802,7 +840,7 @@ eliminating the use of package-level imports can significantly speed
 up completion.
 @end itemize
 
-@node Dynamic Keyword Completion,  , Completing Expressions, User's Guide
+@node Dynamic Keyword Completion, Generating Code, Completing Expressions, User's Guide
 @section Dynamic Keyword Completion
 
 Emacs provides dynamic completion commands that attempt to find
@@ -851,7 +889,741 @@ mode by default, customize jde-electric-return-p.
 To turn the mode on or off during a session, select JDE->Code
 Generation->Modes->Electric Return.
 
-@c @node Generating Code goes here:
+@node Generating Code, Checking Coding Style, Dynamic Keyword Completion, User's Guide
+@section Generating Code
+
+The JDEE provides the following code generation capabilities.
+    Code wizards
+    Code templates
+
+@menu
+* Generating Import Statements::
+* Code Wizards::
+* Code Templates::
+@end menu
+
+@node Generating Import Statements, Code Wizards, Generating Code, Generating Code
+@subsection Generating Import Statements
+
+The JDEE provides a set of commands that generate and organize import
+statements in the current buffer. The commands automate the following
+tasks:
+
+@menu
+* Importing Classes::           Generate an import statement for the class at point
+* Importing All Classes::       Generate import statements for all classes in the current buffer that need import statements
+* Expanding Package Imports::   Expand a package import statement into specific class imports
+* Collapsing Class Imports::    Collapse class imports into a package import statement
+* Grouping Imports::            Group import statements
+* Deleting Unneeded Imports::   Delete superfluous import statements
+@end menu
+
+@node Importing Classes, Importing All Classes, Generating Import Statements, Generating Import Statements
+@subsubsection Importing Classes
+
+The JDE->Import->Class  (jde-import-find-and-import, C-c C-v C-z)
+command generates an import statement for the class at point in the
+current buffer. It inserts the import statement at the head of the
+buffer.
+
+This command uses the BeanShell to search the classpath of the current
+project for classes that match the name of the class at point. The
+class name may be unqualified.
+
+@indentedblock
+Note: The classpath that the import wizard searches for import
+candidates is the classpath specified by the value of
+jde-global-classpath for the current project.
+@end indentedblock
+
+If the command finds more than one class of the same unqualified name
+on the current classpath, it prompts you to select one of the classes
+to import.
+
+The customization variable jde-import-excluded-classes allows you to
+specify rules for excluding classes from consideration for import into
+the current source file. If the import command finds any classes on
+the classpath that belong to the list of prohibited classes, it
+removes them from the list of classes considered for import into the
+current buffer.
+
+You can use either regular expressions or Lisp functions to specify
+class exclusion rules. For each rule, you can also specify that all
+classes whose unqualified names match the rule be excluded from
+consideration for import. This is useful for preventing the JDEE from
+importing alternate implementations of standard Java classes that do
+not need to be imported.
+
+For example, the default setting for jde-import-excluded-classes
+includes a rule to exclude all classes belonging to the java.lang
+package because every Java class implicitly imports this package. The
+default setting for jde-import-excluded-classes also excludes all
+unqualified synonyms of classes belonging to the java.lang
+package. This prevents importation of alternate implementations of
+these classes, e.g., alternate implementations of java.lang.String,
+included in some commonly used class libraries and intended for
+internal use. See the docstring for jde-import-excluded-classes for
+more information.
+
+Thanks to Len Trigg for contributing the initial implementation of the
+import wizard and to Martin Schwarmberger for significantly enhancing
+the import wizard.
+
+@node Importing All Classes, Expanding Package Imports, Importing Classes, Generating Import Statements
+@subsubsection Importing All Classes
+
+The JDE->Code Generation->Import->All (jde-import-all, C-c C-v z)
+imports all the classes that need to be imported into the current
+buffer.
+
+The command imports all classes that meet the following conditions:
+@itemize
+@item
+The class's base name begins with an uppercase letter.
+
+@item
+The class's base name contains at least one noninitial lowercase
+letter.
+
+@item
+The class is not already imported into the buffer.
+
+@item
+The class is not in jde-import-excluded-classes.
+
+@item
+The class exists on the current classpath.
+@end itemize
+
+If more than one import candidate with the same base name exists on
+the classpath, the JDEE displays a dialog that allows you to select
+one of the candidates.
+
+@indentedblock
+Note: You can use the JDE->Code Generation->Import->Import All Unique
+(jde-import-all-unique ) command to avoid the dialog box. This command
+imports all classes whose unqualified names appear only once on the
+classpath.
+@end indentedblock
+
+Thanks to Phillip Lord for contributing the initial implementation of
+the Import All Wizard.
+
+@node Expanding Package Imports, Collapsing Class Imports, Importing All Classes, Generating Import Statements
+@subsubsection Expanding Package Imports
+
+To expand a package import statement, select JDE->Code
+Generation->Import->Expand Package Imports
+(jde-import-expand-imports). This command replaces a package import
+statement, e.g.:
+
+@example
+import java.io.*;
+@end example
+
+with import statements for the members of that package referenced by
+the current buffer, e.g.:
+
+@example
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+@end example
+
+@node Collapsing Class Imports, Grouping Imports, Expanding Package Imports, Generating Import Statements
+@subsubsection Collapsing Class Imports
+
+To collapse class import statements in the current buffer into package
+imports, select JDE->Code Generation->Import->Collapse Class Imports
+(jde-import-collapse-imports). This command collapses imports for any
+package that contains as many as or more than the number of imports
+specified by jde-import-collapse-imports-threshhold. The default value
+of this variable is 2. This causes this command to collapse imports
+for any package from which the current buffer imports two or more
+classes. For example, this command, by default, collapses:
+
+@example
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+@end example
+
+to
+
+@example
+import java.io.*;
+@end example
+
+@node Grouping Imports, Deleting Unneeded Imports, Collapsing Class Imports, Generating Import Statements
+@subsubsection Grouping Imports
+
+To organize import statements into groups of related imports, select
+JDE->Code Generation->Import->Organize Imports
+(jde-import-organize). By default this command groups import
+statements into two groups separated by a blank line. The first group
+contains all imports from the java and javax packages. The other group
+contains imports from all other packages. The imports are sorted
+alphabetically in ascending order in each group, e.g.:
+
+@example
+import java.io.InputStreamReader;
+import java.util.Hashtable;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+
+import jmath.LinearSystem;
+import jmath.Test;
+@end example
+
+The following variables allow you to customize the organization of
+imports into groups:
+
+@table @code
+@item jde-import-group-function
+This variable allows you to specify a function that assigns imports to
+groups. The default group function is jde-import-group-of, which uses
+rules specified by the following variable to assign imports to
+groups.
+
+@item jde-import-group-rules
+This variable specifies a list of rules for assigning import
+statements to group, e.g., '(("^javax\\." . "Swing")), Each rule
+consists of two parts: a regular expression and an optional group name
+specifier. The jde-import-group-of function assigns an import
+statement to the group if it matches the regular expression. The group
+name specifier is either a string that specifies the name or an index
+to a component of the regular expression to be used as the group
+name.
+
+@item jde-import-insert-group-names
+Specifies whether to insert an import group's name in the buffer.
+
+@item jde-import-default-group-name
+Specifies the default name for an import group.
+
+@item jde-import-blank-line-between-groups
+Specifies whether to insert a blank line between import groups.
+
+@item jde-import-sorted-groups
+Specifies whether and how to sort groups of packages. Options include
+no sorting, in the order specified by grouping rules, or in ascending
+or descending alphabetical order.
+@end table
+
+@node Deleting Unneeded Imports,  , Grouping Imports, Generating Import Statements
+@subsubsection Deleting Unneeded Imports
+
+To delete superfluous import statements from the current buffer,
+select JDE->Code Generation->Import->Delete Unneeded
+(jde-import-kill-extra-imports). This command deletes all import
+statements for classes that are not actually referenced by the class
+in the current buffer.
+
+@node Code Wizards, Code Templates, Generating Import Statements, Generating Code
+@subsection Code Wizards
+
+The JDEE provides a set of procedural code generators called code
+wizards. They include:
+
+
+Method Override Wizard
+A method that overrides a method inherited by the class containing point.
+
+Interface Wizard
+Implementation of an interface in the class containing point.
+
+Delegate Wizard
+Methods that delegate tasks to a specified class.
+
+Abstract Class Wizard
+Implementations of the abstract methods inherited by the class containing point.
+
+Get/Set Wizard
+Get and set methods for the private fields of the class containing point.
+
+@indentedblock
+Note: Some of the wizards use the BeanShell to run Java code. A wizard
+starts the Beanshell interpreter if it is not already running. Thus,
+you may experience a slight delay when invoking a wizard for the first
+time in a session.
+@end indentedblock
+
+@menu
+* Method Override Wizard::
+* Interface Wizard::
+* Delegate Wizard::
+* Get/Set Wizard::
+@end menu
+
+@node Method Override Wizard, Interface Wizard, Code Wizards, Code Wizards
+@subsubsection Method Override Wizard
+The method override wizard generates a skeleton method that overrides
+a similarly named method defined by a superclass.
+
+To override a method of a superclass:
+@enumerate
+@item
+Position the Emacs point at the location in the buffer where you want
+the generated method to appear.
+
+The point must be within the class that is overriding the method.
+
+@item
+Select Wizards->Override Method from the JDEE menu or enter M-x
+jde-wiz-overrided-method.
+
+The JDEE prompts you to enter the name of the method to be overridden
+in the minibuffer.
+
+The name must be the name of a method defined by an ancestor of the
+class in which the Emacs point is located. The compiled class of the
+ancestor must be on the classpath specified by jde-global-classpath.
+
+@item
+Enter the name of the method to be overridden.
+
+If the ancestors of the class in which you are overriding the method
+define more than one method of the same name, the wizard displays a
+dialog buffer that lists the methods. For example, Java's awt class
+hierarchy defines several variants of the method repaint. If you
+specify repaint as the method to override, the JDEE displays a dialog
+buffer.
+
+The dialog buffer lists the signature of each variant of the method
+you specified. Next to each signature is a radio button. The radio
+button of the currently selected signature contains an asterisk. To
+select another signature, right-click the radio button next to the
+variant. To confirm your selection and dismiss the dialog, right-click
+the [Ok] button.
+
+@item
+Select the method variant you want to override and click the [Ok]
+button.
+
+The wizard inserts a skeleton implementation of the selected method at
+the current point in the Java source buffer.
+
+The wizard also inserts import statements for any classes referenced
+by the method that are not already imported by the containing class
+either explicitly or implicitly. The wizard inserts the import
+statements at the head of the source buffer after any existing import
+statements, or any package statement, or the first blank line in the
+buffer.
+@end enumerate
+
+@indentedblock
+Note: The method override wizard uses the BeanShell to create the
+interface implementation. If the BeanShell is not currently running,
+the wizard starts the BeanShell. Thus, if the BeanShell is not already
+running, you may experience a short pause the first time you override
+a method.
+@end indentedblock
+
+@node Interface Wizard, Delegate Wizard, Method Override Wizard, Code Wizards
+@subsubsection Interface Wizard
+
+This wizard creates a skeleton implementation of any interface defined
+on the classpath specified by jde-global-classpath.
+
+To create an implementation of an interface:
+@enumerate
+@item
+If the interface is to be implemented by a new class, create the class
+in a buffer.
+
+@item
+Position the Emacs point at the point in the class where you want the
+implementation of the interface's methods to appear.
+
+@item
+Select JDE->Wizards->Implement Interface or enter M-x
+jde-wiz-implement-interface.
+
+The JDEE prompts you to enter the name of the interface to be
+implemented.
+
+@item
+Enter the fully qualified name of the interface, for example,
+java.awt.Event.MouseListener.
+
+The wizard inserts skeleton implementations of the methods declared by
+the interface at the current point in the current buffer. It inserts
+import statements for any classes required by the interface at the
+head of the current buffer (only if import statements do not already
+exist for the required classes). It also updates or creates an
+implements clause for the class.
+@end enumerate
+
+@indentedblock
+Note: The interface wizard uses the BeanShell to create the interface
+implementation. If the BeanShell is not currently running, it starts
+the BeanShell. Thus, if the BeanShell is not already running, you may
+experience a short pause the first time you use the wizard.
+@end indentedblock
+
+Thanks to Eric Friedman for creating the framework for the interface,
+method override, and abstract class wizards and for contributing the
+initial implementation of the interface wizard.
+
+@node Delegate Wizard, Get/Set Wizard, Interface Wizard, Code Wizards
+@subsubsection Delegate Wizard
+
+This wizard generates methods that delegate calls to a class in the
+current buffer to an attribute of the class, i.e., to an object that
+is a field of the current class. For example, if the current buffer
+contains class A and A has an attribute, A.b, that is an instance of
+class B, this wizard generates all the public methods of class B in A
+and delegates handling of those methods to b.
+
+Thanks to Charles Hart for contributing this wizard.
+
+@node Get/Set Wizard,  , Delegate Wizard, Code Wizards
+@subsubsection Get/Set Wizard
+
+This wizard generates get and set methods for the private fields of
+the class at point, but only if the fields do not already have get or
+set methods. To generate the methods, move point to the point in the
+class where you want the get and set methods to appear. Then select
+JDE->Code Generation->Wizards->Generate Get/Set Methods... or enter
+M-x jde-wiz-get-set-methods
+
+Thanks to Javier Lopez and Sandip Chitale for contributing this
+wizard.
+
+@node Code Templates,  , Code Wizards, Generating Code
+@subsection Code Templates
+
+@menu
+* Buffer Templates::
+* Specifying Boilerplate Text::
+* Customization Variables::
+* Point Templates::
+* Customizing Templates::
+* Creating Templates::
+* Defining a Template and Template Insertion Function::
+* Registering Custom Templates::
+* Assigning Keys to Templates::
+@end menu
+
+@node Buffer Templates, Specifying Boilerplate Text, Code Templates, Code Templates
+@subsubsection Buffer Templates
+
+These commands create buffers containing a skeleton Java class. Each
+command prompts you to enter the path to a new Java source file. They
+then create a buffer for the new file and insert a template for a
+class of the same name as the newly created file. In particular, the
+command:
+
+@table @code
+@item Files->JDE New->Class
+creates a buffer containing a generic Java public class
+
+@item Files->JDE New->Console
+creates a buffer containing the main class of a Java console
+application
+
+@item Files->JDE New->Other
+prompts you to create any of the above buffers or a custom
+(user-defined) buffer.
+@end table
+
+You can create an empty Java class buffer by selecting Files->Open
+(C-x f) and entering the path for a new file whose root name is the
+same as the class you want to create and whose extension is .java.
+
+@node Specifying Boilerplate Text, Customization Variables, Buffer Templates, Code Templates
+@unnumberedsubsubsec Specifying Boilerplate Text
+
+You can specify boilerplate text (for example, a copyright notice) to
+be inserted at the head of class source files created by the JDE. The
+JDEE provides two ways to specify the boilerplate text. The simplest
+way is to enter the lines of boilerplate text as the value of the
+customization variable jde-gen-buffer-boilerplate. Another way to
+specify the text is to set the value of the customization variable
+jde-gen-boilerplate-functionto a function that generates the
+boilerplate text. (The default value of this variable is
+jde-gen-create-buffer-boilerplate, which returns the value of the
+boilerplate variable, jde-gen-buffer-boilerplate). The functional
+approach allows you to generate boilerplate text dynamically by
+evaluating the appropriate Lisp code. By saving the values of
+boilerplate variables in project files, you can specify different
+boilerplate text for each project.
+
+@node Customization Variables, Point Templates, Specifying Boilerplate Text, Code Templates
+@unnumberedsubsubsec Customization Variables
+
+The following JDEE customization variables control creation of
+autocoded Java source buffers:
+
+@multitable @columnfractions .45 .15 .40
+@headitem Variable @tab Group @tab Usage
+@item jde-gen-class-buffer-template @tab Autocode @tab Template for a generic public class buffer.
+@item jde-gen-console-buffer-template @tab Autocode @tab Template for a console application buffer.
+@item jde-gen-jfc-app-buffer-template @tab Autocode @tab Template for a JFC (Swing) application.
+@item jde-gen-junit-test-class-buffer-template @tab Autocode @tab Template for a JUnit test case class. This template requires the JUnit test framework.
+@item jde-gen-buffer-templates @tab Autocode @tab Specifies templates available to create Java buffers.
+@item jde-gen-buffer-boilerplate @tab Autocode @tab Specifies lines of text to be inserted at the head of class files.
+@item jde-gen-boilerplate-function @tab Autocode @tab Specifies a function that returns a string of boilerplate text. The default value is jde-gen-create-buffer-boilerplate, which returns the value of jde-gen-buffer-boilerplate.
+@end multitable
+
+See Customizing Templates for information on how to customize the
+class creation templates.
+
+@node Point Templates, Customizing Templates, Customization Variables, Code Templates
+@subsubsection Point Templates
+
+The following commands insert templates at the current point in the
+buffer:
+
+@table @asis
+@item JDE->Generate->Get/Set Pair
+generates an instance variable and a get and set method for that
+variable
+
+@item JDE->Generate->Println
+generates a @code{System.out.println(...);} statement.
+
+@item JDE->Generate->Action
+generates and registers an action listener for a specified component.
+
+@item JDE->Generate->Listener->Window
+generates and registers a window listener for a specified window.
+
+@item JDE->Generate->Listener->Mouse
+generates and registers a mouse listener for a specified component.
+
+@item JDE->Generate->Other
+allows you to select any of the above templates or a custom
+(user-defined) template.
+@end table
+
+The following variables control generation of code at point:
+
+@multitable @columnfractions .45 .15 .40
+@headitem Variable @tab Group @tab Usage
+@item jde-gen-get-set-var-template @tab Autocode @tab Defines a get/set method pair template.
+@item jde-gen-listener-action-template @tab Autocode @tab Defines an action listener template.
+@item jde-gen-listener-window-template @tab Autocode @tab Defines a window listener template.
+@item jde-gen-listener-mouse-template @tab Autocode @tab Defines a mouse listener template.
+@item jde-gen-inner-class-template @tab Autocode @tab Defines a template for creating a class inside another class or inside an existing source buffer.
+@item jde-gen-code-templates @tab Autocode @tab Specifies available code templates.
+@end multitable
+
+See @ref{Customizing Templates} for information on how to customize
+templates provided by the JDEE.
+
+@ref{Creating Templates} for information on how to create templates
+from scratch.
+
+@node Customizing Templates, Creating Templates, Point Templates, Code Templates
+@subsubsection Customizing Templates
+
+You can customize the JDEE's standard code templates, using the Emacs
+customization feature.
+
+To customize an autocode template:
+@enumerate
+@item
+Select JDE->Options->Autocode
+
+The JDEE displays a customization buffer containing the autocode
+templates.
+
+@item
+Edit the template to suit your needs.
+
+The JDEE uses the template format defined by tempo.el to represent
+class templates. Each template consists of a list of strings, symbols,
+and functions, each of which represents content to be inserted
+successively into the buffer at the current point. The strings
+represent fixed content. The symbols and functions represent variable
+content. See the docstring for the function tempo-define-template for
+more information, including the meaning of special symbols such as
+@code{'n}.
+
+@item
+Select the state button associated with the template.
+
+A menu pops up with a list of options for saving your changes.
+
+@item
+Save your changes.
+@end enumerate
+
+Select Save for Future Sessions if you want your changes to apply to
+all projects. If you want your changes to apply only to the current
+projects, select Set for Current Session. Then select
+JDE->Options->Save Project to save your changes in the current
+project's project file.
+
+@node Creating Templates, Defining a Template and Template Insertion Function, Customizing Templates, Code Templates
+@subsubsection Creating Templates
+
+The JDEE considers any command (interactive function) that inserts
+code into a buffer at point to be a template. The JDEE uses the Emacs
+tempo library to create built-in templates. You can use tempo to
+create your own, add-on templates (see below and the doc for the
+tempo-define-template for more information) or create templates from
+scratch. In either case, once you have created a template, you can add
+it to the JDE's lists of available code and/or buffer templates, using
+the JDEE's jde-gen-code-templates and/or jde-gen-buffer-templates
+variables, respectively. Adding a template to these lists enables you
+to invoke the templates from the JDEE menus. When adding a template,
+you need to specify a unique title for the template. These titles
+enable you to specify the templates when invoking them, using the
+JDE's custom code template commands (Files->JDE New->Custom and
+JDE->Generate->Custom). You can use auto completion to enter a
+template title when invoking a custom code generation command. Note
+that you can specify different sets of templates for different
+projects, by setting and saving the template list variables in project
+files. See the following sections for more information:
+
+@node Defining a Template and Template Insertion Function, Registering Custom Templates, Creating Templates, Code Templates
+@unnumberedsubsubsec Defining a Template and Template Insertion Function
+
+The tempo-define-template macro enables you to define a template and a
+function that inserts that template at the current point in the
+current buffer. You specify the template as a list oftemplate elements
+where each element is text, a special symbol, or a Lisp
+expression. The function inserts each text element exactly as
+specified in the buffer; it replaces special symbols with some text
+(e.g., user input), and it replaces Lisp expressions with the text
+that results from evaluating them.
+
+For example, the following Lisp code:
+
+@example
+(tempo-define-template "foo"
+;; template name
+'("System.out.println(\"foo\");")
+;;template definition "f"
+;; abbreviation "Inserts a print foo message")
+;; template documentation
+@end example
+
+defines a template for Java code that always prints "foo" to standard
+out:
+
+@example
+System.out.println("foo");
+@end example
+
+Notice that the template definition uses the Lisp string escape
+character to specify the string "foo". This is necessary when you want
+to include quoted strings in a template definition.
+
+The sample Lisp form also defines an interactive template function
+tempo-template-foo. Now suppose you insert the sample code in your
+.emacs file. After Emacs starts up, whenever you enter the command M-x
+tempo-template-foo, Emacs inserts:
+
+@example
+System.out.println("foo");
+@end example
+
+at the current point in your Java source buffer (or any buffer, tempo
+doesn't care).
+
+The preceding example is admittedly not vary useful because it always
+prints the same text. You can create more useful templates, using
+special tempo template symbols and lisp forms. This approach, for
+example, allows you to create a template that can print any
+user-defined text to standard out:
+
+@example
+(tempo-define-template "debug"
+;; template name '("if (debug)" n>
+;; insert new line plus indent
+"System.out.println(" (p "Enter debug message:")       ;; Prompts for debug message
+");") "d"
+;; abbreviation "Inserts a print debug message")
+;; template documentation
+@end example
+
+The template function produced by this example prompts you to enter
+the text to be printed when inserting the function into a buffer. In
+particular, it inserts:
+
+@example
+if (debug) System.out.println(DEBUG-MESSAGE);
+@end example
+
+where DEBUG-MESSAGE is any text that you enter. For example, suppose
+you enter:
+
+@example
+"Selected color = " + color
+@end example
+
+at the prompt. The template function inserts:
+
+@example
+if (debug) System.out.println("Selected color = " + color);
+@end example
+
+at the current point in the buffer.
+
+See the documentation for tempo-define-template (type c-h f
+tempo-define-template) for more information on creating templates.
+
+@node Registering Custom Templates, Assigning Keys to Templates, Defining a Template and Template Insertion Function, Code Templates
+@unnumberedsubsubsec Registering Custom Templates
+
+You can register templates that you create with the JDEE. When you
+register a template with the JDEE, it appears among the list of
+templates that you can select when you select
+JDE->Generate->Other.....
+
+You register a template by customizing the JDEE variable
+jde-gen-code-templates. The value of this variable is a list of the
+template functions that the JDEE command JDE->Generate->Other.... can
+invoke.
+
+To register a custom template, add its name to the list.
+
+To insert a template that you have registered:
+
+@enumerate
+@item
+Select JDE->Generate->Other....
+
+The JDEE displays the prompt @code{Enter template:} in the
+minibuffer.
+
+@item
+Enter the template's name and press Enter or press the Tab key to
+display a list of templates in a completion buffer:
+
+@item
+Select the template you want by double-clicking its name.
+@end enumerate
+
+@node Assigning Keys to Templates,  , Registering Custom Templates, Code Templates
+@unnumberedsubsubsec Assigning Keys to Templates
+
+You can assign templates to keyboard keys to speed use of frequently
+used templates. For example, insert this form:
+
+@example
+(global-set-key [f9] 'jde-gen-to-string-method)
+@end example
+
+in your .emacs file to assign the @kbd{F9} function key to the JDEE
+template that generates a skeleton toString method.
+
+@node Checking Coding Style,  , Generating Code, User's Guide
+@section Checking Coding Style
+
+The JDE->Check Style command (M-x jde-checkstyle) command checks the
+current buffer for conformity to a Java coding standard. The default
+standard is that specified by Oracle. Execute jde-checkstyle-customize
+to customize the command to support your own coding standard.
+
+The command displays a list of stylistic faults in a popup
+buffer. Click the error message to display the line that violates the
+standard.
+
+@c @node Compiling
 
 
 @node Developer's Guide, Index, User's Guide, Top
