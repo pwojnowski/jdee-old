@@ -163,7 +163,7 @@ HTML pages."
 
 (defmethod jde-url-parse ((this jde-url) &optional field)
   (with-slots (protocol host file) this
-    (let ((name (object-name-string this)))
+    (let ((name (eieio-object-name-string this)))
       (if (null name) (error "No URL given in `jde-url' instance"))
       (when (null protocol)
 	(if (string-match "^\\(.+\\)://\\(.*?\\)\\(\\/.*\\)?$" name)
@@ -181,7 +181,7 @@ HTML pages."
 				      " "))
 	       strings)))
 
-(defmethod jde-url-name ((this jde-url)) (object-name-string this))
+(defmethod jde-url-name ((this jde-url)) (eieio-object-name-string this))
 (defmethod jde-url-protocol ((this jde-url)) (jde-url-parse this 'protocol))
 (defmethod jde-url-host ((this jde-url)) (jde-url-parse this 'host))
 (defmethod jde-url-file ((this jde-url)) (jde-url-parse this 'file))
@@ -246,10 +246,10 @@ This defaults to false."
   (let ((file (jde-url-parse this 'file)))
     (concat file
 	    (if (string-equal "/" (substring file -1)) "" "/")
-	    (concat (substitute ?/ ?. (oref this :class)) ".html"))))
+	    (concat (cl-substitute ?/ ?. (oref this :class)) ".html"))))
 
 (defmethod jde-url-docset-url-name ((this jde-jdurl))
-  (object-name-string this))
+  (eieio-object-name-string this))
 
 (defmethod jde-url-append-file-name ((this jde-jdurl) filename)
   (let ((urlname (jde-url-docset-url-name this)))
@@ -262,7 +262,7 @@ This defaults to false."
 (defmethod jde-url-class-url-name ((this jde-jdurl))
   (jde-url-append-file-name
    this
-   (concat (substitute ?/ ?. (oref this :class)) ".html")))
+   (concat (cl-substitute ?/ ?. (oref this :class)) ".html")))
 
 (defmethod jde-url-member-url-name ((this jde-jdurl))
   (if (oref this :member)
@@ -372,7 +372,7 @@ try {
 (defmethod jde-jdurl-resolver-urls ((this jde-jdurl-stack-resolver)
 				    class docset)
   ;; we inherit from a class we know always gets only one url
-  (let* ((url (car (call-next-method this class docset)))
+  (let* ((url (car (cl-call-next-method this class docset)))
 	 (resolvers (jde-jdurl-resolver-matching-resolvers this url))
 	 urls)
     (dolist (resolver resolvers)
@@ -438,11 +438,11 @@ try {
 
 (defmethod jde-jdhelper-urls-for-class ((this jde-jdhelper) class)
   (with-slots (docsets resolver) this  
-    (mapcan #'(lambda (docset)
-		(let ((ver (oref docset :version)))
-		  (if (or (not ver) (equal ver (car jde-jdk)))
-		      (jde-jdurl-resolver-urls resolver class docset))))
-	    docsets)))
+    (cl-mapcan #'(lambda (docset)
+		   (let ((ver (oref docset :version)))
+		     (if (or (not ver) (equal ver (car jde-jdk)))
+			 (jde-jdurl-resolver-urls resolver class docset))))
+	       docsets)))
 
 (defmethod jde-jdhelper-jdk-url ((this jde-jdhelper))
   (with-slots (docsets resolver) this  

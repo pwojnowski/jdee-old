@@ -666,9 +666,9 @@ function uses the same rules as `jde-ant-build' for finding the buildfile."
 (defun jde-ant-find-build-file (dir)
   "Find the next Ant build file upwards in the directory tree from DIR.
 Returns nil if it cannot find a project file in DIR or an ascendant directory."
-  (let ((file (find (cond ((string= jde-ant-buildfile "") "build.xml")
-			  (t jde-ant-buildfile))
-		    (directory-files dir) :test 'string=)))
+  (let ((file (cl-find (cond ((string= jde-ant-buildfile "") "build.xml")
+			     (t jde-ant-buildfile))
+		       (directory-files dir) :test 'string=)))
 
     (if file
 	(setq file (expand-file-name file dir))

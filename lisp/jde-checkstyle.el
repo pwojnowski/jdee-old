@@ -403,7 +403,6 @@ history enabled."
 	     '(jde-checkstyle-interactive-arg-history . 1))))
 
   (let ((checker (jde-checkstyle-checker
-		  "checker"
 		  :interactive-args (if jde-checkstyle-read-args
 					jde-checkstyle-interactive-args))))
 

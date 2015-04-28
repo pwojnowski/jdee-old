@@ -434,7 +434,7 @@ uses overlays as markers in Emacs and extents in XEmacs.")
   "Create a breakpoint overlay at LINE in FILE."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this marker
 	(if (featurep 'xemacs)
@@ -521,13 +521,13 @@ uses overlays as markers in Emacs and extents in XEmacs.")
   "Constructor for a breakpoint specification."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (assert (oref this file))
 
   (oset this
 	marker
-	(jde-db-breakpoint-marker "breakpoint marker"))
+	(jde-db-breakpoint-marker))
 
   (jde-db-breakpoint-marker-set-face
    (oref this marker) 'jde-db-spec-breakpoint-face))
@@ -590,7 +590,7 @@ and sets the status of all breakpoints to `specified'."
 	;; bp will be in the list so don't run the risk of using a
 	;; deleted extent.
 	(let ((bpline (jde-db-breakpoint-get-line bp)))
-	  (remove-if
+	  (cl-remove-if
 	   (lambda (assoc-x)
 	     (let* ((xbp (cdr assoc-x))
 		    (xfile (oref xbp file))
@@ -721,7 +721,7 @@ particular breakpoint and to select breakpoints to be clear."
 
 (defun jde-db-find-breakpoint-by-id (id)
   "Finds the breakpoint object with ID"
-  (cdr (find-if
+  (cdr (cl-find-if
 	(lambda (assoc-x)
 	  (let ((bp (cdr assoc-x)))
 	    (= (oref bp id) id)))
@@ -729,11 +729,11 @@ particular breakpoint and to select breakpoints to be clear."
 
 (defun jde-db-find-breakpoint (file line)
   "Finds the breakpoint object for the breakpoint at FILE and LINE."
-  (cdr (find-if
+  (cdr (cl-find-if
 	(lambda (assoc-x)
 	  (let ((bp (cdr assoc-x)))
-	       (and (string= (oref bp file) file)
-		    (equal (jde-db-breakpoint-get-line bp) line))))
+	    (and (string= (oref bp file) file)
+		 (equal (jde-db-breakpoint-get-line bp) line))))
 	jde-db-breakpoints)))
 
 
@@ -768,7 +768,7 @@ already highlighted."
 		  (forward-line (1- line))
 		  (oset bp
 			marker
-			(jde-db-breakpoint-marker "breakpoint marker"))
+			(jde-db-breakpoint-marker))
 		  (cond
 		   ((eq status 'specified)
 		    (jde-db-mark-breakpoint-specified file line))
@@ -870,7 +870,7 @@ class. Otherwise, it returns nil."
 
 (defmethod initialize-instance ((this jde-db-debuggee-status) &rest fields)
   "Status of debuggee process."
-  (call-next-method))
+  (cl-call-next-method))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
@@ -947,7 +947,7 @@ class. Otherwise, it returns nil."
 
 (defmethod initialize-instance ((this jde-db-debuggee) &rest fields)
   "Constructs an instance of a debuggee."
-  (call-next-method))
+  (cl-call-next-method))
 
 
 (defclass jde-db-debuggee-app (jde-db-debuggee)
@@ -989,7 +989,7 @@ class. Otherwise, it returns nil."
 
 (defmethod initialize-instance ((this jde-db-cmd) &rest fields)
   "Constructor for debugger commands."
-  (call-next-method))
+  (cl-call-next-method))
 
 (defmethod jde-db-cmd-init ((this jde-db-cmd))
   "The debugger invokes this method before executing the
@@ -1028,7 +1028,7 @@ response to this command."
    "Launch an application in debug mode.")
 
 (defmethod initialize-instance ((this jde-db-cmd-launch-app) &rest fields)
-  (call-next-method)
+  (cl-call-next-method)
   (oset this name "launch application"))
 
 (defclass jde-db-cmd-launch-applet (jde-db-cmd-launch)
@@ -1039,7 +1039,7 @@ response to this command."
    "Launch an applet in debug mode.")
 
 (defmethod initialize-instance ((this jde-db-cmd-launch-applet) &rest fields)
-  (call-next-method)
+  (cl-call-next-method)
   (oset this name "launch applet"))
 
 ;; Generic Debugger Command Set.
@@ -1194,7 +1194,7 @@ response to this command."
 (defmethod initialize-instance ((this jde-db-debugger) &rest fields)
   "Constructor for generic debugger."
   (oset this cmd-set
-	(jde-db-cmd-set "Generic commands" :debugger this))
+	(jde-db-cmd-set :debugger this))
   (oset this last-cmd nil))
 
 
@@ -1236,14 +1236,14 @@ ready to accept the next command."
   "Adds LISTENER to the list of listeners listening for response
 from the debugger. LISTENER must be an object of type
 `jde-db-listener'."
-  (assert (typep listener jde-db-listener))
+  (assert (cl-typep listener jde-db-listener))
   (oset this listeners (cons listener (oref this listeners))))
 
 (defmethod jde-db-remove-listener ((this jde-db-debugger) listener)
   "Removes LISTENER from the list of listeners listening for a
 response from the debugger.  LISTENER must be an object of type
 `jde-db-listener'."
-  (assert (typep listener jde-db-listener))
+  (assert (cl-typep listener jde-db-listener))
   (oset this listeners (remove listener (oref this listeners))))
 
 (defmethod jde-db-set-process-filter ((this jde-db-debugger))
@@ -1998,12 +1998,12 @@ name, e.g. A$B if point is in inner class B of A."
   "Return true if one of `jde-sourcepath'
 matches FILE."
   (let* ((directory-sep-char ?/)
-		 (filename (jde-normalize-path file)))
-    (find-if
+	 (filename (jde-normalize-path file)))
+    (cl-find-if
      (lambda (dir-x)
        (string-match
-		(concat "^" dir-x)
-		filename))
+	(concat "^" dir-x)
+	filename))
      (jde-expand-wildcards-and-normalize jde-sourcepath 'jde-sourcepath))))
 
 

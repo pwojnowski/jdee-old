@@ -981,19 +981,19 @@ If t (or other non-nil non-number) then kill in 2 secs."
 (defmethod jde-compile-compile ((this jde-compile-compiler))
 
   (if (oref this :use-server-p)
-      (oset this buffer (jde-compile-server-buffer "compilation buffer"))
-    (oset this buffer (jde-compile-exec-buffer "compilation buffer")))
+      (oset this buffer (jde-compile-server-buffer))
+    (oset this buffer (jde-compile-exec-buffer)))
 
 
   ;; Pop to compilation buffer.
   (let* ((outbuf (oref (oref this buffer) buffer))
-	  (outwin (display-buffer outbuf)))
+	 (outwin (display-buffer outbuf)))
     (compilation-set-window-height outwin)
     (oset this :window outwin)
 
     (if (not jde-xemacsp)
 	(if compilation-process-setup-function
-	  (funcall compilation-process-setup-function)))
+	    (funcall compilation-process-setup-function)))
 
     (jde-compile-launch this)
 
@@ -1007,7 +1007,7 @@ If t (or other non-nil non-number) then kill in 2 secs."
 (defmethod initialize-instance ((this jde-compile-javac) &rest fields)
  ;; Call parent initializer.
 
-  (call-next-method)
+  (cl-call-next-method)
 
   ;; Set compiler name.
   (oset this name "javac")
@@ -1026,7 +1026,7 @@ If t (or other non-nil non-number) then kill in 2 secs."
 (defmethod initialize-instance ((this jde-compile-javac-11) &rest fields)
  ;; Call parent initializer.
 
-  (call-next-method)
+  (cl-call-next-method)
 
   ;; Set compiler version.
   (oset this version "1.1"))
@@ -1072,7 +1072,7 @@ If t (or other non-nil non-number) then kill in 2 secs."
 (defmethod initialize-instance ((this jde-compile-javac-12) &rest fields)
  ;; Call parent initializer.
 
-  (call-next-method)
+  (cl-call-next-method)
 
   ;; Set compiler version.
   (oset this version "1.2"))
@@ -1095,7 +1095,7 @@ If t (or other non-nil non-number) then kill in 2 secs."
 (defmethod initialize-instance ((this jde-compile-javac-13) &rest fields)
  ;; Call parent initializer.
 
-  (call-next-method)
+  (cl-call-next-method)
 
   ;; Set compiler version.
   (oset this version "1.3"))
@@ -1113,7 +1113,7 @@ If t (or other non-nil non-number) then kill in 2 secs."
 (defmethod initialize-instance ((this jde-compile-javac-14) &rest fields)
  ;; Call parent initializer.
 
-  (call-next-method)
+  (cl-call-next-method)
 
   ;; Set compiler version.
   (oset this version "1.4"))
@@ -1131,7 +1131,7 @@ If t (or other non-nil non-number) then kill in 2 secs."
 (defmethod initialize-instance ((this jde-compile-javac-15) &rest fields)
  ;; Call parent initializer.
 
-  (call-next-method)
+  (cl-call-next-method)
 
   ;; Set compiler version.
   (oset this version "1.5"))
@@ -1147,9 +1147,9 @@ If t (or other non-nil non-number) then kill in 2 secs."
   "Class of JDK 1.6 javac compilers.")
 
 (defmethod initialize-instance ((this jde-compile-javac-16) &rest fields)
- ;; Call parent initializer.
+  ;; Call parent initializer.
 
-  (call-next-method)
+  (cl-call-next-method)
 
   ;; Set compiler version.
   (oset this version "1.6"))
@@ -1297,12 +1297,12 @@ If t (or other non-nil non-number) then kill in 2 secs."
 
 (defvar jde-compile-javac-compilers
   (list
-   (jde-compile-javac-11 "javac 1.1.x")
-   (jde-compile-javac-12 "javac 1.2.x")
-   (jde-compile-javac-13 "javac 1.3.x")
-   (jde-compile-javac-14 "javac 1.4.x")
-   (jde-compile-javac-15 "javac 1.5.x")
-   (jde-compile-javac-16 "javac 1.6.x"))
+   (jde-compile-javac-11)
+   (jde-compile-javac-12)
+   (jde-compile-javac-13)
+   (jde-compile-javac-14)
+   (jde-compile-javac-15)
+   (jde-compile-javac-16))
   "List of supported javac compilers.")
 
 (defun jde-compile-get-javac ()
@@ -1354,7 +1354,6 @@ If t (or other non-nil non-number) then kill in 2 secs."
     (if (string= compiler-path "")
         (error "Cannot find jdt core jar"))
     (jde-compile-ejc-server
-     "Eclipse java compiler server"
      :use-server-p t
      :path compiler-path)))
 
