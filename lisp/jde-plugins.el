@@ -90,10 +90,10 @@ a file named jde-PLUGIN.el. This function loads jde-PLUGIN.el."
 	     (delq
 	      nil
 	      (mapcar
-	       (lambda (file)
-		 (let ((file-name (file-name-nondirectory file)))
+	       (lambda (dirfile)
+		 (let ((file-name (file-name-nondirectory dirfile)))
 		   (if (and
-			(file-directory-p file)
+			(file-directory-p dirfile)
 			(not (string= file-name "."))
 			(not (string= file-name ".."))
 			(not (string= file-name "CVS"))
@@ -101,7 +101,7 @@ a file named jde-PLUGIN.el. This function loads jde-PLUGIN.el."
 		       file-name)))
 	       (directory-files jde-plugins-directory t)))))
 	(loop for plugin in plugins do
-	  (jde-pi-load-plugin plugin)))))
+	      (jde-pi-load-plugin plugin)))))
 
 (jde-pi-load-plugins)
 
@@ -152,7 +152,7 @@ jar program is on the system path."
        (list "JDEpi")
        (delq
 	nil
-	(mapcan
+	(cl-mapcan
 	 (lambda (plugin)
 	   (oref plugin menu-spec))
 	 (oref-default 'jde-plugin plugins))))))
