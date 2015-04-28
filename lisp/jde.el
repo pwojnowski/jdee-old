@@ -506,8 +506,8 @@ system command path."
 		      (jde-jeval-r "jde.util.JdeUtilities.getJavaVersion();"))
 		(setq java-version jde-java-version-cache))
 	    (setq java-version (jde-java-version-via-java)))))
-    (if (interactive-p)
-      (message java-version)
+    (if (called-interactively-p 'interactive)
+	(message java-version)
       java-version)))
 
 (defun jde-java-major-version ()
@@ -2021,17 +2021,17 @@ for insertion of the .emacs file"
 	    (keymapp (symbol-value var))))
 
 (defun jde-describe-map (map)          ; display map binding
- "Display binding for MAP which must be a quoted keymap variable"
+  "Display binding for MAP which must be a quoted keymap variable"
   (interactive
-       (let ((map (intern (completing-read "Key map: " obarray 'jde-keymap-test 1))))
-	   (list map)))
-       (let ((val (symbol-value map)))
-	   (or (keymapp val)
-	       (error "%s is not a keymap !" (symbol-name map)))
-	   (with-output-to-temp-buffer "*Help*"
-	       (princ (format "Binding for keymap %s is:\n" (symbol-name map)))
-	       (princ (substitute-command-keys "\\{val}" ))
-	       (print-help-return-message))))
+   (let ((map (intern (completing-read "Key map: " obarray 'jde-keymap-test 1))))
+     (list map)))
+  (let ((val (symbol-value map)))
+    (or (keymapp val)
+	(error "%s is not a keymap !" (symbol-name map)))
+    (with-output-to-temp-buffer "*Help*"
+      (princ (format "Binding for keymap %s is:\n" (symbol-name map)))
+      (princ (substitute-command-keys "\\{val}" ))
+      (help-print-return-message))))
 
 (defun jde-keys ()
   "Displays JDE key bindings. Use `jde-bug-keys' to display JDEbug
@@ -2155,7 +2155,7 @@ supported by the -name option of the GNU find command."
 (defmethod initialize-instance ((this jde-find-dialog) &rest fields)
   "Find options dialog constructor."
   (oset this title "Find Dialog")
-  (call-next-method))
+  (cl-call-next-method))
 
 (defmethod efc-dialog-create ((this jde-find-dialog))
 
@@ -2227,7 +2227,7 @@ this method invokes recursive-edit to emulate the behavior of a modal
 dialog. This suspends the current command until the user has selected
 an option or canceled the dialog. See `efc-dialog-ok' and
 `efc-dialog-cancel' for more information."
-  (call-next-method)
+  (cl-call-next-method)
   (recursive-edit))
 
 
@@ -2269,7 +2269,7 @@ user, kills the dialog buffer, and exits recursive-edit mode."
   "Invoked when the user clicks the dialog's Cancel button.  Invokes
 the default cancel method, sets the :selection field of THIS to nil,
 and then exits recursive edit mode."
-  (call-next-method)
+  (cl-call-next-method)
   (oset this ok nil)
   (exit-recursive-edit))
 
@@ -2396,7 +2396,7 @@ minibuffer."
   (let ((dialog
 	 (progn
 	   (if (not (oref 'jde-find-dialog the-dialog))
-	       (oset-default 'jde-find-dialog the-dialog (jde-find-dialog "find dialog")))
+	       (oset-default 'jde-find-dialog the-dialog (jde-find-dialog)))
 	   (oref 'jde-find-dialog the-dialog))))
     (efc-dialog-show dialog)
     (when (oref dialog ok)
