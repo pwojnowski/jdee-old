@@ -2152,12 +2152,12 @@ supported by the -name option of the GNU find command."
 		   "The only instance of the find expression dialog buffer."))
   "Dialog displayed by `jde-find' command.")
 
-(defmethod initialize-instance ((this jde-find-dialog) &rest fields)
+(cl-defmethod initialize-instance ((this jde-find-dialog) &rest fields)
   "Find options dialog constructor."
   (oset this title "Find Dialog")
   (cl-call-next-method))
 
-(defmethod efc-dialog-create ((this jde-find-dialog))
+(cl-defmethod efc-dialog-create ((this jde-find-dialog))
 
   (widget-insert "Find Expression Options\n\n")
 
@@ -2221,7 +2221,7 @@ supported by the -name option of the GNU find command."
   (widget-insert "\n"))
 
 
-(defmethod efc-dialog-show ((this jde-find-dialog))
+(cl-defmethod efc-dialog-show ((this jde-find-dialog))
   "Shows the options dialog buffer. After showing the dialog buffer,
 this method invokes recursive-edit to emulate the behavior of a modal
 dialog. This suspends the current command until the user has selected
@@ -2231,7 +2231,7 @@ an option or canceled the dialog. See `efc-dialog-ok' and
   (recursive-edit))
 
 
-(defmethod efc-dialog-ok ((this jde-find-dialog))
+(cl-defmethod efc-dialog-ok ((this jde-find-dialog))
   "Invoked when the user selects the OK button on the options
 dialog. Sets the :dirs field of THIS to the search paths chosen by the
 user, kills the dialog buffer, and exits recursive-edit mode."
@@ -2265,7 +2265,7 @@ user, kills the dialog buffer, and exits recursive-edit mode."
 
   (exit-recursive-edit))
 
-(defmethod efc-dialog-cancel ((this jde-find-dialog))
+(cl-defmethod efc-dialog-cancel ((this jde-find-dialog))
   "Invoked when the user clicks the dialog's Cancel button.  Invokes
 the default cancel method, sets the :selection field of THIS to nil,
 and then exits recursive edit mode."

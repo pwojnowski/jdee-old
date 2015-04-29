@@ -56,8 +56,7 @@
   "Process thread.")
 
 (defun jde-dbo-make-thread-obj (thread-spec)
-  (jde-dbo-thread "thread"
-		  :id     (nth 1 thread-spec)
+  (jde-dbo-thread :id     (nth 1 thread-spec)
 		  :name   (nth 2 thread-spec)
 		  :state  (nth 3 thread-spec)
 		  :status (nth 4 thread-spec)))
@@ -360,7 +359,7 @@ used in the last breakpoint hit event, and watch point hit event.")
 	     :type string))
   "Method")
 
-(defmethod jde-dbo-to-string ((this jde-dbo-method))
+(cl-defmethod jde-dbo-to-string ((this jde-dbo-method))
   (format "<%s %s.%s(%s)>"
 	  (oref this :returns)
 	  (oref this :class)

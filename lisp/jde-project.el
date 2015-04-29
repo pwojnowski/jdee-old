@@ -101,7 +101,7 @@
 	      "Field for entering project root directory."))
  "Dialog for entering information required to create a project.")
 
-(defmethod efc-dialog-create ((this jde-project-create-dialog))
+(cl-defmethod efc-dialog-create ((this jde-project-create-dialog))
 
   (widget-insert "Create Project\n\n")
 
@@ -132,7 +132,7 @@
   ()
  "Create a jde-project-app-create-dialog.")
 
-(defmethod efc-dialog-ok ((this jde-project-application-create-dialog))
+(cl-defmethod efc-dialog-ok ((this jde-project-application-create-dialog))
   "Callback function executed when the user presses the OK button in
 the Application Project Creation dialog."
   (let* ((project (oref this :project))
@@ -156,7 +156,7 @@ the Application Project Creation dialog."
   "Class of JDE application projects")
 
 
-(defmethod jde-project-create ((this jde-project-application))
+(cl-defmethod jde-project-create ((this jde-project-application))
     (if (not (file-exists-p (oref this dir)))
 	(if (yes-or-no-p
 	      (format "%s does not exist. Should I create it?" (oref this dir)))
@@ -173,7 +173,7 @@ the Application Project Creation dialog."
 )
 
 
-(defmethod jde-project-show-creation-dialog ((this jde-project-application))
+(cl-defmethod jde-project-show-creation-dialog ((this jde-project-application))
   "Shows the dialog for creating a Java application project."
   (let ((dialog
 	 (jde-project-application-create-dialog :project this)))

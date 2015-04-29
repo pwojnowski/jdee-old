@@ -105,14 +105,14 @@ debugger is starting and nil when it is quitting.")
 		   "List of active debugee processes"))
   "Class of debuggee process sets.")
 
-(defmethod jde-dbs-proc-set-add ((this jde-dbs-proc-set) process)
+(cl-defmethod jde-dbs-proc-set-add ((this jde-dbs-proc-set) process)
   "Adds a process to this debuggee process set."
   (oset this :proc-alist
 	(cons
 	 (cons (oref process :id) process)
 	 (oref this :proc-alist))))
 
-(defmethod jde-dbs-proc-set-remove ((this jde-dbs-proc-set) process)
+(cl-defmethod jde-dbs-proc-set-remove ((this jde-dbs-proc-set) process)
   (oset this :proc-alist
 	(cl-remove-if
 	 (lambda (assoc-x)
@@ -122,10 +122,10 @@ debugger is starting and nil when it is quitting.")
 	     (equal xid id)))
 	 (oref this proc-alist))))
 
-(defmethod jde-dbs-proc-set-get-proc ((this jde-dbs-proc-set) id)
+(cl-defmethod jde-dbs-proc-set-get-proc ((this jde-dbs-proc-set) id)
   (cdr (assq id (oref this :proc-alist))))
 
-(defmethod jde-dbs-proc-set-find ((this jde-dbs-proc-set) field value)
+(cl-defmethod jde-dbs-proc-set-find ((this jde-dbs-proc-set) field value)
   "Finds the process in the set whose FIELD is equal to VALUE."
   (if (slot-boundp this :proc-alist)
       (cdr (cl-find-if
@@ -134,10 +134,10 @@ debugger is starting and nil when it is quitting.")
 		(equal (eieio-oref process-x field) value)))
 	    (oref this :proc-alist)))))
 
-(defmethod jde-dbs-proc-set-contains-p ((this jde-dbs-proc-set) process)
+(cl-defmethod jde-dbs-proc-set-contains-p ((this jde-dbs-proc-set) process)
   (assq (oref process :id) (oref this :proc-alist)))
 
-(defmethod jde-dbs-proc-set-get-size ((this jde-dbs-proc-set))
+(cl-defmethod jde-dbs-proc-set-get-size ((this jde-dbs-proc-set))
   "Gets the number of processes in this set."
   (if (slot-boundp this 'proc-alist)
       (length (oref this proc-alist))
@@ -157,7 +157,7 @@ debugger is starting and nil when it is quitting.")
   "Class of process registries.")
 
 
-(defmethod jde-dbs-proc-registry-set-target-proc ((this jde-dbs-proc-registry) &optional id)
+(cl-defmethod jde-dbs-proc-registry-set-target-proc ((this jde-dbs-proc-registry) &optional id)
   "Sets process specified by ID to be the target process. If ID is not specified, the first
 registered process becomes the target process"
   (let ((target-process
@@ -199,7 +199,7 @@ registered process becomes the target process"
 Their carcasses must be kept around until the debugger stops sending messages
 concerning them." )
 
-(defmethod jde-dbs-proc-morgue-bury-the-dead ((this jde-dbs-proc-morgue))
+(cl-defmethod jde-dbs-proc-morgue-bury-the-dead ((this jde-dbs-proc-morgue))
   (mapc
    (lambda (dead-proc-assoc)
      (let* ((dead-proc (cdr dead-proc-assoc))
@@ -247,7 +247,7 @@ and then in the process morgue for the process."
   "Class of process state information objects.")
 
 
-(defmethod jde-dbs-proc-state-info-set ((this jde-dbs-proc-state-info)
+(cl-defmethod jde-dbs-proc-state-info-set ((this jde-dbs-proc-state-info)
 					state reason thread-id thread-name)
   (oset this reason reason)
   (oset this state state)
@@ -342,7 +342,7 @@ process-specific information about a breakpoint")
    "Trace methods request."
 )
 
-(defmethod initialize-instance ((this jde-dbs-trace-methods-request) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-trace-methods-request) &rest fields)
   "Constructor for objects of `jde-dbs-trace-methods-request' class."
   (cl-call-next-method)
   (oset this cancel-command "cancel_trace_methods"))
@@ -362,7 +362,7 @@ process-specific information about a breakpoint")
    "Trace classes request."
 )
 
-(defmethod initialize-instance ((this jde-dbs-trace-classes-request) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-trace-classes-request) &rest fields)
   "Constructor for objects of `jde-dbs-trace-classes-request' class."
   (cl-call-next-method)
   (oset this cancel-command "cancel_trace_classes"))
@@ -386,7 +386,7 @@ process-specific information about a breakpoint")
    "Trace exceptions request."
 )
 
-(defmethod initialize-instance ((this jde-dbs-trace-exceptions-request) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-trace-exceptions-request) &rest fields)
   "Constructor for objects of `jde-dbs-trace-exceptions-request' class."
   (cl-call-next-method)
   (oset this cancel-command "clear"))
@@ -532,7 +532,7 @@ process-specific information about a breakpoint")
   (:allow-nil-initform t)
   "Class of debuggee processes.")
 
-(defmethod initialize-instance ((this jde-dbs-proc) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-proc) &rest fields)
   "Constructor for objects of `jde-dbs-proc' class."
   (cl-call-next-method)
 
@@ -567,21 +567,21 @@ process-specific information about a breakpoint")
 				  (oref this id)))))
 
 
-(defmethod jde-dbs-proc-set-state ((this jde-dbs-proc) state)
+(cl-defmethod jde-dbs-proc-set-state ((this jde-dbs-proc) state)
   (let ((state-info (oref this state-info)))
     (oset state-info state state)))
 
-(defmethod jde-dbs-proc-set-state-reason ((this jde-dbs-proc) reason)
+(cl-defmethod jde-dbs-proc-set-state-reason ((this jde-dbs-proc) reason)
   (let ((state-info (oref this state-info)))
     (oset state-info reason reason)))
 
-(defmethod jde-dbs-proc-get-state ((this jde-dbs-proc))
+(cl-defmethod jde-dbs-proc-get-state ((this jde-dbs-proc))
   (oref (oref this state-info) state))
 
-(defmethod jde-dbs-proc-get-state-reason ((this jde-dbs-proc))
+(cl-defmethod jde-dbs-proc-get-state-reason ((this jde-dbs-proc))
   (oref (oref this state-info) reason))
 
-(defmethod jde-dbs-proc-display-debug-message ((this jde-dbs-proc)
+(cl-defmethod jde-dbs-proc-display-debug-message ((this jde-dbs-proc)
 					       message
 					       &optional pop-buffer)
   (let ((buffer
@@ -608,18 +608,18 @@ process-specific information about a breakpoint")
 	      (if (not currbuffp)
 		  (message message))))))))
 
-(defmethod jde-dbs-proc-move-to-morgue ((this jde-dbs-proc))
+(cl-defmethod jde-dbs-proc-move-to-morgue ((this jde-dbs-proc))
   "Moves this process from the process registry to the process morgue."
   (jde-dbs-proc-set-remove jde-dbs-the-process-registry this)
   (jde-dbs-proc-set-add jde-dbs-the-process-morgue this))
 
-(defmethod jde-dbs-proc-move-to-registry ((this jde-dbs-proc))
+(cl-defmethod jde-dbs-proc-move-to-registry ((this jde-dbs-proc))
   "Moves this process from the registry to the morgue."
   (jde-dbs-proc-set-remove jde-dbs-the-process-morgue this)
   (jde-dbs-proc-set-add jde-dbs-the-process-registry this))
 
 
-(defmethod jde-dbs-proc-get-bpspec ((this jde-dbs-proc) bp)
+(cl-defmethod jde-dbs-proc-get-bpspec ((this jde-dbs-proc) bp)
   "Gets the process specification for a breakpoint. BP may be either
 an instance of `jde-db-breakpoint' or the debugger-assigned id
 for the breakpoint."
@@ -635,7 +635,7 @@ for the breakpoint."
 		bpspecs)))
 	  (cdr (assoc bp bpspecs))))))
 
-(defmethod jde-dbs-proc-runnable-p ((this jde-dbs-proc))
+(cl-defmethod jde-dbs-proc-runnable-p ((this jde-dbs-proc))
   (or
    (oref this startupp)
    (oref this suspendedp)
@@ -691,7 +691,7 @@ for the breakpoint."
 	  "Type of this object."))
   "Superclass of Java objects.")
 
-(defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-obj))
+(cl-defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-obj))
   "")
 
 
@@ -702,13 +702,13 @@ for the breakpoint."
 	  "Value of this primitive object."))
   "Class of Java primitives.")
 
-(defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-primitive))
+(cl-defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-primitive))
   (format "%s" (oref this value)))
 
 (defclass jde-dbs-java-null (jde-dbs-java-obj) ()
   "Java null object.")
 
-(defmethod initialize-instance ((this jde-dbs-java-null) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-java-null) &rest fields)
   "Constructor for run process command."
 
   ;; Call parent initializer.
@@ -717,7 +717,7 @@ for the breakpoint."
   (oset this jtype "null"))
 
 
-(defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-null))
+(cl-defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-null))
   "null")
 
 
@@ -741,7 +741,7 @@ for the breakpoint."
 		 "Value of this variable."))
   "Class that defines the JDE's representation of a Java variable.")
 
-(defmethod jde-dbs-java-variable-to-string ((this jde-dbs-java-variable))
+(cl-defmethod jde-dbs-java-variable-to-string ((this jde-dbs-java-variable))
   (format "%s %s = %s"
 	  (oref this jtype)
 	  (oref this name)
@@ -784,7 +784,7 @@ for the breakpoint."
 
 
 
-(defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-array))
+(cl-defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-array))
   (let ((str (format "<%s:%d%s> %d"
 		     (if (slot-boundp this :jtype)
 			 (oref this jtype))
@@ -824,12 +824,12 @@ for the breakpoint."
   "Class of Lisp objects representing instances of user-defined Java classes.")
 
 
-(defmethod jde-dbs-java-udci-add-field ((this jde-dbs-java-udci) field)
+(cl-defmethod jde-dbs-java-udci-add-field ((this jde-dbs-java-udci) field)
   (oset this fields
 	(nconc (oref this fields) (list (cons (oref field name) field)))))
 
 
-(defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-udci))
+(cl-defmethod jde-dbs-java-obj-to-string ((this jde-dbs-java-udci))
   (let ((str (format "<%s:%d%s>"
 		     (oref this jtype)
 		     (oref this id)
@@ -861,18 +861,18 @@ for the breakpoint."
 		  "True if debugger started successfully."))
   "Class of JDEbug debuggers.")
 
-(defmethod initialize-instance ((this jde-dbs-debugger) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-debugger) &rest fields)
   "Constructor for JDEbug."
   (oset this :name "JDEbug")
   (oset this :buffer-name "*JDEbug*"))
 
 
-(defmethod jde-dbs-debugger-register-process-filter ((debugger jde-dbs-debugger) filter)
+(cl-defmethod jde-dbs-debugger-register-process-filter ((debugger jde-dbs-debugger) filter)
   "Set the process filter for the debugger to FILTER."
   (set-process-filter  (oref debugger process) filter))
 
 
-(defmethod jde-dbs-debugger-display-message ((debugger jde-dbs-debugger) message)
+(cl-defmethod jde-dbs-debugger-display-message ((debugger jde-dbs-debugger) message)
   "Displays message in the debugger process buffer."
  (let ((buffer
 	 (oref debugger buffer)))
@@ -881,7 +881,7 @@ for the breakpoint."
 	  (goto-char (process-mark (get-buffer-process buffer)))
 	  (insert-before-markers (concat message "\n"))))))
 
-(defmethod jde-dbs-debugger-start ((this jde-dbs-debugger))
+(cl-defmethod jde-dbs-debugger-start ((this jde-dbs-debugger))
   "Starts the debugger."
   (if (jde-dbs-debugger-running-p)
       (progn
@@ -994,7 +994,7 @@ for the breakpoint."
 
 
 
-(defmethod jde-dbs-debugger-quit ((debugger jde-dbs-debugger))
+(cl-defmethod jde-dbs-debugger-quit ((debugger jde-dbs-debugger))
   (jde-dbs-do-command -1 "quit")
   (run-hook-with-args 'jde-dbs-debugger-hook nil)
   (slot-makeunbound debugger :process)
@@ -1007,7 +1007,7 @@ for the breakpoint."
        (oref jde-dbs-the-debugger started-p)
        (comint-check-proc (oref jde-dbs-the-debugger buffer))))
 
-(defmethod jde-db-debugger-launch ((this jde-dbs-debugger) main-class)
+(cl-defmethod jde-db-debugger-launch ((this jde-dbs-debugger) main-class)
   "Launch the application whose main class is MAIN-CLASS in debug mode."
   )
 
@@ -1046,13 +1046,13 @@ for the breakpoint."
   "Super class of debugger commands.")
 
 
-(defmethod initialize-instance ((this jde-dbs-cmd) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-cmd) &rest fields)
   "Constructor for debugger commands. Generates a unique id for this command."
   (cl-call-next-method)
   (setq jde-dbs-cmd-counter (+ jde-dbs-cmd-counter 1))
   (oset this id jde-dbs-cmd-counter))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-cmd))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-cmd))
   "Creates the command line for this command by concatentating
 the process id, command id, and command name. If there is no
 process, specifies the process id as -1. Derived classes can
@@ -1312,19 +1312,19 @@ debugger output following the Lisp form."
 "Number of socket used to communicate with debugger.")
 
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-cmd)))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-cmd)))
 
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-cmd)))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-cmd)))
 
 
-(defmethod jde-dbs-cmd-display-response ((this jde-dbs-cmd))
+(cl-defmethod jde-dbs-cmd-display-response ((this jde-dbs-cmd))
   (if (slot-boundp this 'msg)
       (jde-dbs-proc-display-debug-message
        (oref this process)
        (oref this msg))))
 
-(defmethod jde-dbs-cmd-execute-pending-events ((this jde-dbs-cmd))
+(cl-defmethod jde-dbs-cmd-execute-pending-events ((this jde-dbs-cmd))
   "Evaluate any events that occurred between issuance and
    acknowledgement of this command"
   (let ((events jde-dbs-pending-event-queue))
@@ -1335,7 +1335,7 @@ debugger output following the Lisp form."
 		events)))
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-cmd))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-cmd))
   "Posts the specified command to the debugger and returns its response."
   (let* ((debugger-process
 	  (oref jde-dbs-the-debugger process))
@@ -1417,7 +1417,7 @@ debugger output following the Lisp form."
 (defun jde-dbs-get-app-buffer-name ()
   (concat "*" (jde-run-get-main-class) "*"))
 
-(defmethod initialize-instance ((this jde-dbs-launch-process) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-launch-process) &rest fields)
   "Constructor for debugger commands. Generates a unique id for this command."
 
   ;; Call parent initializer.
@@ -1455,7 +1455,7 @@ debugger output following the Lisp form."
 
 
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-launch-process))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-launch-process))
   "Creates the command line for the launch command."
   (let ((cmd (format "-1 %s %s %s -vmexec %s"
 		     (oref this id)                    ;; cid
@@ -1481,7 +1481,7 @@ debugger output following the Lisp form."
 		  (oref this app-args)))         ;; command line args
     cmd))
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-launch-process))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-launch-process))
   (cl-call-next-method)
   (delete-other-windows)
   (let* ((process (oref this process))
@@ -1515,7 +1515,7 @@ debugger output following the Lisp form."
     (pop-to-buffer source-buffer)
     (oset process win-cfg (current-window-configuration))))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-launch-process))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-launch-process))
   (delete-other-windows)
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
@@ -1541,7 +1541,7 @@ debugger output following the Lisp form."
 		  "Name of process to attach."))
   "Attach debugger to a running process via shared memory.")
 
-(defmethod initialize-instance ((this jde-dbs-attach-shmem) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-attach-shmem) &rest fields)
   "Constructor for attach_shmem command."
 
   ;; Call parent initializer.
@@ -1554,7 +1554,7 @@ debugger output following the Lisp form."
   ;; Set command name.
   (oset this name "attach_shmem"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-attach-shmem))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-attach-shmem))
   "Creates the command line for the attach_shmem command."
   (format "-1 %s %s %s %s"
 	  (oref this id)
@@ -1562,7 +1562,7 @@ debugger output following the Lisp form."
 	  (oref (oref this process) id)    ;; process id
 	  (oref this process-name)))       ;; process name
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-attach-shmem))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-attach-shmem))
   (cl-call-next-method)
   (delete-other-windows)
   (let* ((process (oref this process))
@@ -1576,7 +1576,7 @@ debugger output following the Lisp form."
     (pop-to-buffer source-buffer)
     (oset process win-cfg (current-window-configuration))))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-attach-shmem))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-attach-shmem))
   (delete-other-windows)
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
@@ -1606,7 +1606,7 @@ debugger output following the Lisp form."
 	  "Name of host on which existing process is listening."))
   "Attach debugger to a running process via a socket connection.")
 
-(defmethod initialize-instance ((this jde-dbs-attach-socket) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-attach-socket) &rest fields)
   "Constructor for attach_socket command."
 
   ;; Call parent initializer.
@@ -1619,7 +1619,7 @@ debugger output following the Lisp form."
   ;; Set command name.
   (oset this name "attach_socket"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-attach-socket))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-attach-socket))
   "Creates the command line for the attach_socket command."
   (let ((cmd
 	 (format "-1 %s %s %s -port %s"
@@ -1631,7 +1631,7 @@ debugger output following the Lisp form."
 	(setq cmd (format "%s -host %s" cmd (oref this host))))
     cmd))
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-attach-socket))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-attach-socket))
   (cl-call-next-method)
   (delete-other-windows)
   (let* ((process (oref this process))
@@ -1648,7 +1648,7 @@ debugger output following the Lisp form."
     (pop-to-buffer source-buffer)
     (oset process win-cfg (current-window-configuration))))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-attach-socket))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-attach-socket))
   (delete-other-windows)
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
@@ -1681,7 +1681,7 @@ debugger output following the Lisp form."
 	      "Transport mechanism used to interact with debuggee process."))
   "Listen for a process requesting debugger services.")
 
-(defmethod initialize-instance ((this jde-dbs-listen-for-process) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-listen-for-process) &rest fields)
   "Constructor for listen command."
 
   ;; Call parent initializer.
@@ -1701,7 +1701,7 @@ debugger output following the Lisp form."
 	(concat "listen_"
 		(oref this transport))))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-listen-for-process))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-listen-for-process))
   "Creates the command line for the listen command."
   (format "-1 %s %s %s %s"
 	  (oref this id)
@@ -1709,7 +1709,7 @@ debugger output following the Lisp form."
 	  (oref (oref this process) id)    ;; process id
 	  (oref this address)))            ;; process address
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-listen-for-process))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-listen-for-process))
   (cl-call-next-method)
   (delete-other-windows)
   (let* ((process (oref this process))
@@ -1724,7 +1724,7 @@ debugger output following the Lisp form."
     (pop-to-buffer source-buffer)
     (oset process win-cfg (current-window-configuration))))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-listen-for-process))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-listen-for-process))
   (delete-other-windows)
   (let* ((process (oref this process))
 	 (source-buffer (current-buffer)))
@@ -1749,7 +1749,7 @@ debugger output following the Lisp form."
 (defclass jde-dbs-run-process (jde-dbs-cmd) ()
   "Run process command.")
 
-(defmethod initialize-instance ((this jde-dbs-run-process) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-run-process) &rest fields)
   "Constructor for run process command."
 
   ;; Call parent initializer.
@@ -1761,12 +1761,12 @@ debugger output following the Lisp form."
   (oset this name "run"))
 
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-run-process))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-run-process))
   (cl-call-next-method)
   (oset this msg (format "Running %s."
 			 (oref (oref this process)  main-class))))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-run-process))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-run-process))
   (oset this msg
 	(format "Error: unable to run %s..\n  Reason: %s."
 		(oref (oref this process) main-class)
@@ -1781,7 +1781,7 @@ debugger output following the Lisp form."
 (defclass jde-dbs-finish-process (jde-dbs-cmd) ()
   "Finish process command.")
 
-(defmethod initialize-instance ((this jde-dbs-finish-process) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-finish-process) &rest fields)
   "Constructor for finish process command."
 
   ;; Call parent initializer.
@@ -1792,11 +1792,11 @@ debugger output following the Lisp form."
   ;; Set command name.
   (oset this name "finish"))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-finish-process))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-finish-process))
   "Executes the finish process command."
   (let* ((process (oref this :process))
 	 (main-class (oref process :main-class))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(progn
 	  (jde-dbs-proc-display-debug-message process
@@ -1821,7 +1821,7 @@ debugger output following the Lisp form."
 		  "Breakpoint specification."))
   "Set breakpoint command.")
 
-(defmethod initialize-instance ((this jde-dbs-set-breakpoint) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-set-breakpoint) &rest fields)
   "Constructor for set breakpoint command."
 
   ;; Call parent initializer.
@@ -1833,17 +1833,17 @@ debugger output following the Lisp form."
   ;; Set command name.
   (oset this name "break absolute"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-set-breakpoint))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-set-breakpoint))
   "Creates the command line for the set breakpoint command."
   (let* ((bp-spec (oref this breakpoint))
 	 (file (file-name-nondirectory (oref bp-spec file)))
 	 (line (jde-db-breakpoint-get-line bp-spec)))
     (format "%s %s %s"
-	    (call-next-method)
+	    (cl-call-next-method)
 	    file     ;; File
 	    line)))  ;; Line number
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-set-breakpoint))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-set-breakpoint))
   (cl-call-next-method)
   (let*  ((process (oref this process))
 	  (bp-procid (oref this data))
@@ -1858,7 +1858,7 @@ debugger output following the Lisp form."
     (oset this msg (format "Setting breakpoint at line %s in %s." line file))))
 
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-set-breakpoint))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-set-breakpoint))
   (let* ((bp-spec (oref this breakpoint))
 	 (file (oref bp-spec file))
 	 (line (jde-db-breakpoint-get-line bp-spec)))
@@ -1877,7 +1877,7 @@ debugger output following the Lisp form."
 		  "Breakpoint specification."))
   "Set breakpoint command.")
 
-(defmethod initialize-instance ((this jde-dbs-clear-breakpoint) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-clear-breakpoint) &rest fields)
   "Constructor for clear breakpoint command."
 
   ;; Call parent initializer.
@@ -1889,18 +1889,18 @@ debugger output following the Lisp form."
   ;; Set command name.
   (oset this name "clear"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-clear-breakpoint))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-clear-breakpoint))
   "Creates the command line for the clear breakpoint command."
   (let* ((process (oref this process))
 	 (breakpoint (oref this breakpoint))
 	 (bpspec (jde-dbs-proc-get-bpspec process breakpoint))
 	 (bp-procid (oref bpspec id)))
     (format "%s %s"              ;; PID CID clear BPID
-	    (call-next-method)
+	    (cl-call-next-method)
 	    bp-procid)))         ;; Id assigned by debugger to this breakpoint
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-clear-breakpoint))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-clear-breakpoint))
   "Execute clear breakpoint command."
   (let* ((process (oref this process))
 	 (breakpoint (oref this breakpoint))
@@ -1910,7 +1910,7 @@ debugger output following the Lisp form."
 	 (bpspec (jde-dbs-proc-get-bpspec process breakpoint)))
     (if bpspec
 	(let ((bp-procid (oref bpspec id))
-	      (result (call-next-method)))
+	      (result (cl-call-next-method)))
 	  (if (jde-dbo-command-succeeded-p result)
 	      (let ((bpspecs (oref process bpspecs)))
 		(oset process bpspecs
@@ -1938,7 +1938,7 @@ debugger output following the Lisp form."
 	      "Type of step operation: over, into, into-all, out"))
   "Step command.")
 
-(defmethod initialize-instance ((this jde-dbs-step) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-step) &rest fields)
   "Constructor for step command."
 
   ;; Call parent initializer.
@@ -1950,13 +1950,13 @@ debugger output following the Lisp form."
   ;; Set command name.
   (oset this name (concat "step " (oref this step-type))))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-step))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-step))
   "Creates the command line for the step command."
-  (format "%s %d" (call-next-method)
+  (format "%s %d" (cl-call-next-method)
 	  (oref (oref (oref this process) state-info) thread-id)))
 
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-step))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-step))
   (oset this msg
 	(format "Error: unable to step %s.\n Reason: %s"
 		(oref this step-type) (oref this data))))
@@ -1968,7 +1968,7 @@ debugger output following the Lisp form."
 ;; Step Into Command Class                                                    ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defmethod jde-dbs-proc-step-into ((this jde-dbs-proc))
+(cl-defmethod jde-dbs-proc-step-into ((this jde-dbs-proc))
   (let* ((proc-id (oref this id))
 	 (thread-id
 	  (oref (oref this state-info) thread-id))
@@ -1984,7 +1984,7 @@ debugger output following the Lisp form."
 ;; Step Out Command Class                                                     ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defmethod jde-dbs-proc-step-out ((this jde-dbs-proc))
+(cl-defmethod jde-dbs-proc-step-out ((this jde-dbs-proc))
   (let* ((proc-id (oref this id))
 	 (thread-id
 	  (oref (oref this state-info) thread-id))
@@ -2011,7 +2011,7 @@ debugger output following the Lisp form."
 		  "Id of thread that scopes this expression. Required."))
   "Evaluate expression command.")
 
-(defmethod initialize-instance ((this jde-dbs-evaluate) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-evaluate) &rest fields)
   "Constructor for evaluate command."
 
   ;; Call parent initializer.
@@ -2024,21 +2024,21 @@ debugger output following the Lisp form."
   ;; Set command name.
   (oset this name "evaluate"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-evaluate))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-evaluate))
   "Creates the command line for the clear breakpoint command."
     (format "%s %s 0 \"%s\""         ;; PID CID evaluate THREAD-ID 0 "EXPRESSION"
-	    (call-next-method)       ;; PID CID evaluate
+	    (cl-call-next-method)       ;; PID CID evaluate
 	    (oref this thread-id)    ;; thread id
 	    (oref this expression))) ;; expression to be evaluated.
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-evaluate))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-evaluate))
   "Execute evaluate expression command. Returns
 (TYPE VALUE GCFLAG) where TYPE is the type of the result,
 VALUE is the value, and GCFLAG is t if the result has been
 garbage collected."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(car (jde-dbo-command-result-data result))
       (jde-dbs-proc-display-debug-message
@@ -2072,7 +2072,7 @@ the length of the first slice of the array. Note that each element of this array
 can be another array or some other object.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-array) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-array) &rest fields)
   "Constructor for get array command."
 
   ;; Call parent initializer.
@@ -2087,10 +2087,10 @@ can be another array or some other object.")
   ;; Set command name.
   (oset this name "get_array"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-array))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-array))
   "Creates the command line for the get-object command."
   (let ((cl
-	 (format "%s %d" (call-next-method) (oref (oref this array) id)))
+	 (format "%s %d" (cl-call-next-method) (oref (oref this array) id)))
 	(index (if (slot-boundp this :index) (oref this :index))))
     (if index
 	(setq cl
@@ -2101,12 +2101,12 @@ can be another array or some other object.")
     cl))
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-array))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-array))
   "Executes the get-array command. If a slice is specified,
 returns the slice as a list of elements. Otherwise, return
 the length of the array."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(let* ((array (oref this array))
 	       (data   (nth 0 (jde-dbo-command-result-data result)))
@@ -2148,7 +2148,7 @@ the length of the array."
   "Parent class of get object commands.")
 
 
-(defmethod initialize-instance ((this jde-dbs-abstract-get-object) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-abstract-get-object) &rest fields)
   "Constructor for get-object command."
 
   ;; Call parent initializer.
@@ -2157,10 +2157,10 @@ the length of the array."
   (assert (slot-boundp this :process))
   (assert (slot-boundp this :object-id)))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-abstract-get-object))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-abstract-get-object))
   "Creates the command line for the get-object command."
 
-  (format "%s %d" (call-next-method) (oref this object-id)))
+  (format "%s %d" (cl-call-next-method) (oref this object-id)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                            ;;
@@ -2172,7 +2172,7 @@ the length of the array."
 the object.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-object) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-object) &rest fields)
   "Constructor for get-object command."
 
   ;; Call parent initializer.
@@ -2216,11 +2216,11 @@ the object.")
      :jtype (mapconcat (lambda (x) x) (nreverse var-type) " ")
      :value value)))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-object))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-object))
   "Executes the get-object command. Returns a Lisp object of type
 `jde-dbs-java-class-instance' that represents the Java object."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(let* ((obj     (car (jde-dbo-command-result-data result)))
 	       (type    (nth 0 obj))
@@ -2257,7 +2257,7 @@ the object.")
   "Get the value of a string object.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-string) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-string) &rest fields)
   "Constructor for get-string command."
 
   ;; Call parent initializer.
@@ -2266,10 +2266,10 @@ the object.")
   ;; Set command name.
   (oset this name "get_string"))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-string))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-string))
   "Executes the get_string command. Returns the string."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(nth 3 (car (jde-dbo-command-result-data result)))
       (jde-dbs-proc-display-debug-message
@@ -2297,7 +2297,7 @@ the object.")
   "Get variables local to a specified thread and stack frame.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-locals) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-locals) &rest fields)
   "Constructor for get-string command."
 
   ;; Call parent initializer.
@@ -2309,19 +2309,19 @@ the object.")
   (oset this name "get_locals"))
 
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-locals))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-locals))
   "Creates the command line for the get-locals command."
   (format "%s %d %d"
-	  (call-next-method)
+	  (cl-call-next-method)
 	  (oref this thread-id)
 	  (oref this stack-frame-index)))
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-locals))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-locals))
   "Executes the get-locals command. Returns a list of Lisp objects of type
 `jde-dbs-java-variable' that represents the local variables."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(let* ((variable-forms (car (jde-dbo-command-result-data result)))
 	       (variables      (if variable-forms
@@ -2355,7 +2355,7 @@ the object.")
   "Get this object of a specified stack frame.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-this) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-this) &rest fields)
   "Constructor for get_this command."
 
   ;; Call parent initializer.
@@ -2368,14 +2368,14 @@ the object.")
   ;; Set command name.
   (oset this name "get_this"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-this))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-this))
   "Creates the command line for the get_this command."
   (format "%s %d %d"
-	  (call-next-method)
+	  (cl-call-next-method)
 	  (oref this thread-id)
 	  (oref this stack-frame-index)))
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-get-this))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-get-this))
   (cl-call-next-method)
   (let ((this-obj (oref this :data)))
     (oset
@@ -2387,7 +2387,7 @@ the object.")
 	:jtype (nth 0 this-obj)
 	:id (nth 1 this-obj))))))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-get-this))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-get-this))
  (oset
   this
   msg
@@ -2406,7 +2406,7 @@ the object.")
 (defclass jde-dbs-get-loaded-classes (jde-dbs-cmd) ()
   "Gets the classes loaded by a specified process.")
 
-(defmethod initialize-instance ((this jde-dbs-get-loaded-classes) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-loaded-classes) &rest fields)
   "Constructor for get_loaded_classes command."
 
   ;; Call parent initializer.
@@ -2417,10 +2417,10 @@ the object.")
   ;; Set command name.
   (oset this name "get_loaded_classes"))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-loaded-classes))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-loaded-classes))
   "Executes the get_loaded_classes command."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(let ((classes (car (jde-dbo-command-result-data result))))
 	  (jde-dbs-proc-display-debug-message
@@ -2442,7 +2442,7 @@ the object.")
 (defclass jde-dbs-get-path-info (jde-dbs-cmd) ()
   "Gets the base directory, boot classpath, and classpath of the specified process.")
 
-(defmethod initialize-instance ((this jde-dbs-get-path-info) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-path-info) &rest fields)
   "Constructor for get_path_information command."
 
   ;; Call parent initializer.
@@ -2453,10 +2453,10 @@ the object.")
   ;; Set command name.
   (oset this name "get_path_information"))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-path-info))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-path-info))
   "Executes the get_path_info command."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(let* ((data (jde-dbo-command-result-data result))
 	       (base-dir (nth 0 data))
@@ -2487,7 +2487,7 @@ the object.")
   "Get all the threads for this process.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-threads) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-threads) &rest fields)
   "Constructor for suspend-thread command."
 
   ;; Call parent initializer.
@@ -2541,10 +2541,10 @@ the object.")
 	 threads)))
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-threads))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-threads))
   "Executes the get-threads command. Returns a list of thread information."
   (let* ((process (oref this process))
-	 (result (call-next-method)))
+	 (result (cl-call-next-method)))
     (if (jde-dbo-command-succeeded-p result)
 	(let* ((thread-list (car (jde-dbo-command-result-data result)))
 	       (buf (oref process threads-buf)))
@@ -2586,7 +2586,7 @@ the object.")
   "Gets information about a thread, including the method call stack.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-thread) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-thread) &rest fields)
   "Constructor for suspend-thread command."
 
   ;; Call parent initializer.
@@ -2598,15 +2598,15 @@ the object.")
   ;; Set command name.
   (oset this name "get_thread"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-thread))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-thread))
   "Creates the command line for the get_thread command."
-  (format "%s %d" (call-next-method) (oref this thread-id)))
+  (format "%s %d" (cl-call-next-method) (oref this thread-id)))
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-get-thread))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-get-thread))
   (cl-call-next-method)
   (oset this :result (oref this :data)))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-get-thread))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-get-thread))
  (oset this msg (format "Error: unable to get info for thread %d.\n Reason: %s."
 			(oref this thread-id)
 			(oref this result))))
@@ -2625,7 +2625,7 @@ the object.")
   "Get threads that are monitoring the specified object.")
 
 
-(defmethod initialize-instance ((this jde-dbs-get-object-monitors) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-get-object-monitors) &rest fields)
   "Constructor for get_object_monitors command."
 
   ;; Call parent initializer.
@@ -2636,15 +2636,15 @@ the object.")
   ;; Set command name.
   (oset this name "get_object_monitors"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-object-monitors))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-get-object-monitors))
   "Creates the command line for the get_object_monitors command."
 
-  (format "%s %d" (call-next-method) (oref this object-id)))
+  (format "%s %d" (cl-call-next-method) (oref this object-id)))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-get-object-monitors))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-get-object-monitors))
   "Executes the get_object_monitors command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 msg)
     (if (jde-dbo-command-succeeded-p result)
 	(let* ((data (car (jde-dbo-command-result-data result)))
@@ -2711,7 +2711,7 @@ the object.")
   "Suspend a thread of this process.")
 
 
-(defmethod initialize-instance ((this jde-dbs-suspend-thread) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-suspend-thread) &rest fields)
   "Constructor for suspend-thread command."
 
   ;; Call parent initializer.
@@ -2720,20 +2720,20 @@ the object.")
   ;; Set command name.
   (oset this name "suspend"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-suspend-thread))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-suspend-thread))
   "Creates the command line for the suspend_thread command."
     (if (slot-boundp this 'thread-id)
-	(format "%s %d" (call-next-method) (oref this thread-id))
-      (call-next-method)))
+	(format "%s %d" (cl-call-next-method) (oref this thread-id))
+      (cl-call-next-method)))
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-suspend-thread))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-suspend-thread))
   (cl-call-next-method)
   (if (slot-boundp this 'thread-id)
 	(oset this msg (format "Thread %d suspended." (oref this thread-id)))
     (oset this msg "All threads suspended.")
     (oset (oref this process) suspendedp t)))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-suspend-thread))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-suspend-thread))
  (oset this msg (format "Error: unable to suspend thread.\n Reason: %s."
 	       (oref this result))))
 
@@ -2750,7 +2750,7 @@ the object.")
   "Resume a thread of this process.")
 
 
-(defmethod initialize-instance ((this jde-dbs-resume-thread) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-resume-thread) &rest fields)
   "Constructor for resume-thread command."
 
   ;; Call parent initializer.
@@ -2759,20 +2759,20 @@ the object.")
   ;; Set command name.
   (oset this name "resume"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-resume-thread))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-resume-thread))
   "Creates the command line for the resume_thread command."
     (if (slot-boundp this 'thread-id)
-	(format "%s %d" (call-next-method) (oref this thread-id))
-      (call-next-method)))
+	(format "%s %d" (cl-call-next-method) (oref this thread-id))
+      (cl-call-next-method)))
 
-(defmethod jde-dbs-cmd-success-action ((this jde-dbs-resume-thread))
+(cl-defmethod jde-dbs-cmd-success-action ((this jde-dbs-resume-thread))
   (cl-call-next-method)
   (if (slot-boundp this 'thread-id)
 	(oset this msg (format "Thread %d resumed." (oref this thread-id)))
     (oset this msg "All threads resumed.")
     (oset (oref this process) suspendedp nil)))
 
-(defmethod jde-dbs-cmd-failure-action ((this jde-dbs-resume-thread))
+(cl-defmethod jde-dbs-cmd-failure-action ((this jde-dbs-resume-thread))
   (oset this msg
 	(format "Error: unable to resume thread.\n Reason: %s."
 		(oref this result))))
@@ -2796,7 +2796,7 @@ exception. You can use the evaluate expression command to create the exception
 object.")
 
 
-(defmethod initialize-instance ((this jde-dbs-stop-thread) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-stop-thread) &rest fields)
   "Constructor for stop-thread command."
 
   ;; Call parent initializer.
@@ -2808,16 +2808,16 @@ object.")
   ;; Set command name.
   (oset this name "stop"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-stop-thread))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-stop-thread))
   "Creates the command line for the resume_thread command."
 
-  (format "%s %d %d" (call-next-method) (oref this thread-id)
+  (format "%s %d %d" (cl-call-next-method) (oref this thread-id)
 	  (oref this exception-id)))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-stop-thread))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-stop-thread))
   "Executes the stop_thread command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result)))
     (jde-dbs-proc-display-debug-message
 	 process
@@ -2841,7 +2841,7 @@ object.")
   "Interrupt a thread of this process. An interrupted thread cannot be resumed.")
 
 
-(defmethod initialize-instance ((this jde-dbs-interrupt-thread) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-interrupt-thread) &rest fields)
   "Constructor for suspend-thread command."
 
   ;; Call parent initializer.
@@ -2852,14 +2852,14 @@ object.")
   ;; Set command name.
   (oset this name "interrupt"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-interrupt-thread))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-interrupt-thread))
   "Creates the command line for the interrupt_thread command."
-  (format "%s %d" (call-next-method) (oref this thread-id)))
+  (format "%s %d" (cl-call-next-method) (oref this thread-id)))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-interrupt-thread))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-interrupt-thread))
   "Executes the interrupt_thread command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result)))
     (jde-dbs-proc-display-debug-message
 	 process
@@ -2884,7 +2884,7 @@ object.")
   "Trace method entries or exits.")
 
 
-(defmethod initialize-instance ((this jde-dbs-trace-methods) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-trace-methods) &rest fields)
   "Constructor for trace_methods command."
 
   ;; Call parent initializer.
@@ -2897,10 +2897,10 @@ object.")
   ;; Set command name.
   (oset this name "trace_methods"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-trace-methods))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-trace-methods))
   "Creates the command line for the trace_methods command."
   (let* ((request (oref this trace-request))
-	 (cmd (format "%s %s" (call-next-method) (oref request trace-type))))
+	 (cmd (format "%s %s" (cl-call-next-method) (oref request trace-type))))
 
     (if (slot-boundp request 'thread-restriction)
 	(setq cmd (format "%s -tname %s" cmd (oref request thread-restriction))))
@@ -2924,10 +2924,10 @@ object.")
 
     cmd))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-trace-methods))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-trace-methods))
   "Executes the trace_methods command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result))
 	 (request (oref this trace-request))
 	 (request-id (car (jde-dbo-command-result-data result))))
@@ -2964,7 +2964,7 @@ object.")
   "Trace class preparations or unloadings.")
 
 
-(defmethod initialize-instance ((this jde-dbs-trace-classes) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-trace-classes) &rest fields)
   "Constructor for trace_classes command."
 
   ;; Call parent initializer.
@@ -2977,10 +2977,10 @@ object.")
   ;; Set command name.
   (oset this name "trace_classes"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-trace-classes))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-trace-classes))
   "Creates the command line for the trace_methods command."
   (let* ((request (oref this trace-request))
-	 (cmd (format "%s %s" (call-next-method) (oref request trace-type))))
+	 (cmd (format "%s %s" (cl-call-next-method) (oref request trace-type))))
 
     (if (slot-boundp request 'suspend-policy)
 	(setq cmd (format "%s -sp %s" cmd (oref request suspend-policy))))
@@ -3001,10 +3001,10 @@ object.")
 
     cmd))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-trace-classes))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-trace-classes))
   "Executes the trace_classes command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result))
 	 (request (oref this trace-request))
 	 (request-id (car (jde-dbo-command-result-data result))))
@@ -3042,7 +3042,7 @@ object.")
   "Trace exceptions.")
 
 
-(defmethod initialize-instance ((this jde-dbs-trace-exceptions) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-trace-exceptions) &rest fields)
   "Constructor for trace_exceptions command."
 
   ;; Call parent initializer.
@@ -3056,11 +3056,11 @@ object.")
   ;; Set command name.
   (oset this name "trace_exceptions"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-trace-exceptions))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-trace-exceptions))
   "Creates the command line for the trace_exceptions command."
   (let* ((request (oref this trace-request))
 	 (cmd (format "%s %s %s"
-		      (call-next-method)
+		      (cl-call-next-method)
 		      (oref request exception-class)
 		      (oref request trace-type))))
 
@@ -3083,10 +3083,10 @@ object.")
 
     cmd))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-trace-exceptions))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-trace-exceptions))
   "Executes the trace_exceptions command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result))
 	 (request (oref this trace-request))
 	 (request-id (car (jde-dbo-command-result-data result))))
@@ -3123,7 +3123,7 @@ object.")
   "Cancel a trace request.")
 
 
-(defmethod initialize-instance ((this jde-dbs-cancel-trace) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-cancel-trace) &rest fields)
   "Constructor for cancel_trace command."
 
   ;; Call parent initializer.
@@ -3135,15 +3135,15 @@ object.")
  (oset this name (oref (oref this trace-request) cancel-command)))
 
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-cancel-trace))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-cancel-trace))
   "Creates the command line for the cancel_trace command."
-  (format "%s %s" (call-next-method) (oref (oref this trace-request) id)))
+  (format "%s %s" (cl-call-next-method) (oref (oref this trace-request) id)))
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-cancel-trace))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-cancel-trace))
   "Executes the cancel_trace command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result)))
 
     (if command-succeeded-p
@@ -3182,7 +3182,7 @@ object.")
   "Watch a field of an object or a specified class of objects.")
 
 
-(defmethod initialize-instance ((this jde-dbs-watch-field) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-watch-field) &rest fields)
   "Constructor for watch field command."
 
   ;; Call parent initializer.
@@ -3200,12 +3200,12 @@ object.")
   ;; Set command name.
   (oset this name "watch"))
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-watch-field))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-watch-field))
   "Creates the command line for the watch-field command."
   (let* ((request (oref this watch-request))
 	 (cmd (format
 	       "%s %s %s %s"
-	       (call-next-method)
+	       (cl-call-next-method)
 	       (oref request object-class)
 	       (oref request field-name)
 	       (concat "for_" (oref request watch-type)))))
@@ -3235,10 +3235,10 @@ object.")
 
     cmd))
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-watch-field))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-watch-field))
   "Executes the watch-field command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result))
 	 (request (oref this watch-request))
 	 (request-id (car (jde-dbo-command-result-data result))))
@@ -3281,27 +3281,27 @@ object.")
   "Cancel a watch request.")
 
 
-(defmethod initialize-instance ((this jde-dbs-cancel-watch) &rest fields)
+(cl-defmethod initialize-instance ((this jde-dbs-cancel-watch) &rest fields)
   "Constructor for cancel_watch command."
 
   ;; Call parent initializer.
   (cl-call-next-method)
 
- (assert (slot-boundp this 'watch-request))
+  (assert (slot-boundp this 'watch-request))
 
   ;; Set command name.
- (oset this name "clear"))
+  (oset this name "clear"))
 
 
-(defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-cancel-watch))
+(cl-defmethod jde-dbs-cmd-make-command-line ((this jde-dbs-cancel-watch))
   "Creates the command line for the clear command."
-  (format "%s %s" (call-next-method) (oref (oref this watch-request) id)))
+  (format "%s %s" (cl-call-next-method) (oref (oref this watch-request) id)))
 
 
-(defmethod jde-dbs-cmd-exec ((this jde-dbs-cancel-watch))
+(cl-defmethod jde-dbs-cmd-exec ((this jde-dbs-cancel-watch))
   "Executes the cancel watch command."
   (let* ((process (oref this process))
-	 (result (call-next-method))
+	 (result (cl-call-next-method))
 	 (command-succeeded-p (jde-dbo-command-succeeded-p result)))
 
     (if command-succeeded-p

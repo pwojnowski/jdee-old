@@ -360,7 +360,7 @@ process and the output contains the end of output marker `flymake-process-server
 (defclass jde-ecj-bsh-buffer (bsh-comint-buffer) ()
   "ecj's beanshell buffer")
 
-(defmethod initialize-instance ((this jde-ecj-bsh-buffer) &rest fields)
+(cl-defmethod initialize-instance ((this jde-ecj-bsh-buffer) &rest fields)
   (oset this buffer-name "*ecj bsh*")
   (cl-call-next-method))
 
@@ -371,7 +371,7 @@ process and the output contains the end of output marker `flymake-process-server
                    "The single instance of the ecj's BeanShell."))
   "Class of ecj BeanShells. There is only one per Emacs session.")
 
-(defmethod initialize-instance ((this jde-ecj-bsh) &rest fields)
+(cl-defmethod initialize-instance ((this jde-ecj-bsh) &rest fields)
   "Constructor for the ecj BeanShell instance."
   (let ((the-jde-bsh (oref-default 'jde-bsh the-bsh)))
     (cl-call-next-method)
@@ -380,7 +380,7 @@ process and the output contains the end of output marker `flymake-process-server
     ;; to be reset so we can keep two separate instances running
     (oset-default 'jde-bsh the-bsh the-jde-bsh)))
 
-(defmethod bsh-create-buffer ((this jde-ecj-bsh))
+(cl-defmethod bsh-create-buffer ((this jde-ecj-bsh))
   "Creates the ecj's beanshell buffer."
   (oset this buffer (jde-ecj-bsh-buffer)))
 

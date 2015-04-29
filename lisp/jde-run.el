@@ -598,7 +598,7 @@ panel to specifying the applet document."
 		     "Name of main class."))
     "Class of Java virtual machines.")
 
-(defmethod jde-run-classpath-arg ((this jde-run-vm))
+(cl-defmethod jde-run-classpath-arg ((this jde-run-vm))
   "Returns the classpath argument for this vm."
   (let ((classpath
 	 (if jde-run-option-classpath
@@ -620,20 +620,20 @@ panel to specifying the applet document."
 	 (jde-build-classpath
 	  classpath symbol)))))
 
-(defmethod jde-run-classic-mode-arg ((this jde-run-vm))
+(cl-defmethod jde-run-classic-mode-arg ((this jde-run-vm))
   "Get classic-mode option>"
     (if jde-run-classic-mode-vm
 	(list "-classic")))
 
 
-(defmethod jde-run-property-args ((this jde-run-vm))
+(cl-defmethod jde-run-property-args ((this jde-run-vm))
     "Get property arguments."
     (mapcar
      (lambda (prop)
        (format "-D%s=%s" (car prop) (cdr prop)))
      jde-run-option-properties))
 
-(defmethod jde-run-heap-size-args ((this jde-run-vm))
+(cl-defmethod jde-run-heap-size-args ((this jde-run-vm))
    "Get heap size arguments."
     (let* ((memory-unit-abbrevs
 	    (list (cons "bytes" "")
@@ -654,7 +654,7 @@ panel to specifying the applet document."
        (if (not (string= max-size "16m"))
 	  (list (concat "-Xmx" max-size))))))
 
-(defmethod jde-run-stack-size-args ((this jde-run-vm))
+(cl-defmethod jde-run-stack-size-args ((this jde-run-vm))
   "Get stack size arguments."
     (let* ((memory-unit-abbrevs
 	    (list (cons "bytes" "")
@@ -676,7 +676,7 @@ panel to specifying the applet document."
 	   (list (concat "-Xoss" java-size))))))
 
 
-(defmethod jde-run-java-profile-arg ((this jde-run-vm))
+(cl-defmethod jde-run-java-profile-arg ((this jde-run-vm))
    "Get Java profile option."
     (let ((profilep (car jde-run-option-java-profile))
 	  (file (cdr jde-run-option-java-profile)))
@@ -685,7 +685,7 @@ panel to specifying the applet document."
 	      '("-Xprof")
 	    (list (concat "-Xprof:" file))))))
 
-(defmethod jde-run-heap-profile-arg ((this jde-run-vm))
+(cl-defmethod jde-run-heap-profile-arg ((this jde-run-vm))
   "Get heap profile argument."
     (let* ((profilep (car jde-run-option-heap-profile))
 	   (prof-options (cdr jde-run-option-heap-profile))
@@ -706,12 +706,12 @@ panel to specifying the applet document."
 	      file depth top sort))))))
 
 
-(defmethod jde-run-vm-args ((this jde-run-vm))
+(cl-defmethod jde-run-vm-args ((this jde-run-vm))
   "Get command line args."
   jde-run-option-vm-args)
 
 
-(defmethod jde-run-vm-launch ((this jde-run-vm))
+(cl-defmethod jde-run-vm-launch ((this jde-run-vm))
   (let ((run-buf-name (concat "*" (oref this :main-class) "*"))
 	(source-directory default-directory)
 	(working-directory (if (string= jde-run-working-directory "")
@@ -764,7 +764,7 @@ panel to specifying the applet document."
 (defclass jde-run-vm-1-1 (jde-run-vm) ()
   "Represents the JDK 1.1.x vm")
 
-(defmethod initialize-instance ((this jde-run-vm-1-1) &rest fields)
+(cl-defmethod initialize-instance ((this jde-run-vm-1-1) &rest fields)
   "Constructor for the class representing the JDK 1.1 vm."
 
   ;; Call parent initializer.
@@ -772,7 +772,7 @@ panel to specifying the applet document."
 
   (oset this :version "1.1"))
 
-(defmethod jde-run-verbose-arg ((this jde-run-vm-1-1))
+(cl-defmethod jde-run-verbose-arg ((this jde-run-vm-1-1))
   "Set the verbose options."
     (let ((print-classes-loaded
 	   (nth 0 jde-run-option-verbose))
@@ -785,7 +785,7 @@ panel to specifying the applet document."
        (if print-memory-freed (list "-verbosegc"))
        (if print-jni-info (list "-verbose")))))
 
-(defmethod jde-run-gc-args ((this jde-run-vm-1-1))
+(cl-defmethod jde-run-gc-args ((this jde-run-vm-1-1))
   "Get garbage collection arguments."
     (let ((no-gc-asynch (not
 			 (nth 0 jde-run-option-garbage-collection)))
@@ -797,7 +797,7 @@ panel to specifying the applet document."
        (if no-gc-classes
 	   '("-noclassgc")))))
 
-(defmethod jde-run-verify-args ((this jde-run-vm-1-1))
+(cl-defmethod jde-run-verify-args ((this jde-run-vm-1-1))
   "Get verify arguments."
     (let ((verify-all (nth 0 jde-run-option-verify))
 	  (verify-remote (nth 1 jde-run-option-verify)))
@@ -809,19 +809,19 @@ panel to specifying the applet document."
 	   (not verify-remote))
 	   '("-noverify")))))
 
-(defmethod jde-run-debug-args ((this jde-run-vm-1-1))
+(cl-defmethod jde-run-debug-args ((this jde-run-vm-1-1))
   "Get arguments required to allow process to connect
 to a debugger."
   (if jde-run-option-debug
       '("-debug")))
 
-(defmethod jde-run-interpret-mode-arg ((this jde-run-vm-1-1))
+(cl-defmethod jde-run-interpret-mode-arg ((this jde-run-vm-1-1))
   "Get argument required to enable interpret mode."
   (if jde-run-option-interpret-mode
       '("-nojit")))
 
 
-(defmethod jde-run-get-vm-args ((this jde-run-vm-1-1))
+(cl-defmethod jde-run-get-vm-args ((this jde-run-vm-1-1))
   (append
    (jde-run-classpath-arg this)
    (jde-run-verbose-arg this)
@@ -840,7 +840,7 @@ to a debugger."
 (defclass jde-run-vm-1-2 (jde-run-vm-1-1) ()
   "Represents the JDK 1.2.x vm")
 
-(defmethod initialize-instance ((this jde-run-vm-1-2) &rest fields)
+(cl-defmethod initialize-instance ((this jde-run-vm-1-2) &rest fields)
   "Constructor for the class representing the JDK 1.2 vm."
 
   ;; Call parent initializer.
@@ -848,7 +848,7 @@ to a debugger."
 
   (oset this :version "1.2"))
 
-(defmethod jde-run-boot-classpath-arg ((this jde-run-vm-1-2))
+(cl-defmethod jde-run-boot-classpath-arg ((this jde-run-vm-1-2))
   "Returns the boot classpath argument for this vm."
   (if jde-run-option-boot-classpath
 	(list
@@ -858,7 +858,7 @@ to a debugger."
 	   (cdr jde-run-option-boot-classpath)
 	   'jde-run-option-boot-classpath)))))
 
-(defmethod jde-run-verbose-arg ((this jde-run-vm-1-2))
+(cl-defmethod jde-run-verbose-arg ((this jde-run-vm-1-2))
   "Set the verbose options."
     (let ((print-classes-loaded
 	   (nth 0 jde-run-option-verbose))
@@ -871,7 +871,7 @@ to a debugger."
        (if print-memory-freed (list "-verbose:gc"))
        (if print-jni-info (list "-verbose:jni")))))
 
-(defmethod jde-run-gc-args ((this jde-run-vm-1-2))
+(cl-defmethod jde-run-gc-args ((this jde-run-vm-1-2))
   "Get garbage collection arguments."
     (let ((no-gc-asynch (not
 			 (nth 0 jde-run-option-garbage-collection)))
@@ -883,24 +883,24 @@ to a debugger."
        (if no-gc-classes
 	   '("-Xnoclassgc")))))
 
-(defmethod jde-run-debug-args ((this jde-run-vm-1-2))
+(cl-defmethod jde-run-debug-args ((this jde-run-vm-1-2))
   "Get arguments required to allow process to connect
 to a debugger."
   (if jde-run-option-debug
       '("-Xdebug")))
 
-(defmethod jde-run-interpret-mode-arg ((this jde-run-vm-1-2))
+(cl-defmethod jde-run-interpret-mode-arg ((this jde-run-vm-1-2))
   "Get argument required to disable use of JIT compiler."
   (if jde-run-option-interpret-mode
       '("-Djava.compiler=NONE")))
 
-(defmethod jde-run-jar-arg ((this jde-run-vm-1-2))
+(cl-defmethod jde-run-jar-arg ((this jde-run-vm-1-2))
   "Get argument that specifies use of a jar file to run an app."
   (if jde-run-option-jar
       '("-jar")))
 
 
-(defmethod jde-run-get-vm-args ((this jde-run-vm-1-2))
+(cl-defmethod jde-run-get-vm-args ((this jde-run-vm-1-2))
   (append
    ;; Classic mode argument must come first.
    (jde-run-classic-mode-arg this)
@@ -922,7 +922,7 @@ to a debugger."
 (defclass jde-run-vm-1-3 (jde-run-vm-1-2) ()
   "Represents the JDK 1.3.x vm")
 
-(defmethod initialize-instance ((this jde-run-vm-1-3) &rest fields)
+(cl-defmethod initialize-instance ((this jde-run-vm-1-3) &rest fields)
   "Constructor for the class representing the JDK 1.3 vm."
 
   ;; Call parent initializer.
@@ -931,7 +931,7 @@ to a debugger."
   (oset this :version "1.3"))
 
 
-(defmethod jde-run-boot-classpath-arg ((this jde-run-vm-1-3))
+(cl-defmethod jde-run-boot-classpath-arg ((this jde-run-vm-1-3))
   "Returns the boot classpath argument for this vm."
   (if jde-run-option-boot-classpath
       (list
@@ -952,7 +952,7 @@ to a debugger."
 	 'jde-run-option-boot-classpath)))))
 
 
-(defmethod jde-run-debug-args ((this jde-run-vm-1-3))
+(cl-defmethod jde-run-debug-args ((this jde-run-vm-1-3))
   "Get arguments required to allow process to connect
 to a debugger."
   (if jde-run-option-debug
@@ -981,7 +981,7 @@ to a debugger."
 	       (if (string= mode "Server") "y" "n")
 	       (if suspend "y" "n"))))))
 
-(defmethod jde-run-get-vm-args ((this jde-run-vm-1-3))
+(cl-defmethod jde-run-get-vm-args ((this jde-run-vm-1-3))
   (append
    ;; Classic mode argument must come first.
    (jde-run-classic-mode-arg this)
@@ -1004,7 +1004,7 @@ to a debugger."
 (defclass jde-run-vm-1-4 (jde-run-vm-1-3) ()
   "Represents the JDK 1.4.x vm")
 
-(defmethod initialize-instance ((this jde-run-vm-1-4) &rest fields)
+(cl-defmethod initialize-instance ((this jde-run-vm-1-4) &rest fields)
   "Constructor for the class representing the JDK 1.4 vm."
 
   ;; Call parent initializer.
@@ -1013,17 +1013,17 @@ to a debugger."
   (oset this :version "1.4"))
 
 
-(defmethod jde-run-hotspot-vm-type-arg ((this jde-run-vm-1-4))
+(cl-defmethod jde-run-hotspot-vm-type-arg ((this jde-run-vm-1-4))
   "Get the vm argument that specifes the Hotspot vm type."
   (if (eq jde-run-option-hotspot-type 'server)
       '("-server")))
 
-(defmethod jde-run-interpret-mode-arg ((this jde-run-vm-1-4))
+(cl-defmethod jde-run-interpret-mode-arg ((this jde-run-vm-1-4))
   "Get argument required to enable interpret mode."
   (if jde-run-option-interpret-mode
       '("-Xint")))
 
-(defmethod jde-run-enable-assertions-args ((this jde-run-vm-1-4))
+(cl-defmethod jde-run-enable-assertions-args ((this jde-run-vm-1-4))
   "Get argument(s) required to enable assertions."
   (let (args)
     (cond
@@ -1050,7 +1050,7 @@ to a debugger."
     args))
 
 
-(defmethod jde-run-disable-assertions-args ((this jde-run-vm-1-4))
+(cl-defmethod jde-run-disable-assertions-args ((this jde-run-vm-1-4))
   "Get argument(s) required to enable assertions."
   (let (args)
     (cond
@@ -1077,17 +1077,17 @@ to a debugger."
     args))
 
 
-(defmethod jde-run-enable-system-assertions-arg ((this jde-run-vm-1-4))
+(cl-defmethod jde-run-enable-system-assertions-arg ((this jde-run-vm-1-4))
   "Get argument required to enable system assertions."
   (if jde-run-option-enable-system-assertions
       '("-esa")))
 
-(defmethod jde-run-disable-system-assertions-arg ((this jde-run-vm-1-4))
+(cl-defmethod jde-run-disable-system-assertions-arg ((this jde-run-vm-1-4))
   "Get argument required to disable system assertions."
   (if jde-run-option-disable-system-assertions
       '("-dsa")))
 
-(defmethod jde-run-get-vm-args ((this jde-run-vm-1-4))
+(cl-defmethod jde-run-get-vm-args ((this jde-run-vm-1-4))
   (append
    ;; Classic mode argument must come first.
    (jde-run-classic-mode-arg this)
@@ -1113,7 +1113,7 @@ to a debugger."
 (defclass jde-run-vm-1-5 (jde-run-vm-1-4) ()
   "Represents the JDK 1.5.x vm")
 
-(defmethod initialize-instance ((this jde-run-vm-1-5) &rest fields)
+(cl-defmethod initialize-instance ((this jde-run-vm-1-5) &rest fields)
   "Constructor for the class representing the JDK 1.5 vm."
 
   ;; Call parent initializer.
@@ -1124,7 +1124,7 @@ to a debugger."
 (defclass jde-run-vm-1-6 (jde-run-vm-1-5) ()
   "Represents the JDK 1.6.x vm")
 
-(defmethod initialize-instance ((this jde-run-vm-1-6) &rest fields)
+(cl-defmethod initialize-instance ((this jde-run-vm-1-6) &rest fields)
   "Constructor for the class representing the JDK 1.6 vm."
 
   ;; Call parent initializer.

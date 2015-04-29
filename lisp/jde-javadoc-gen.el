@@ -239,7 +239,7 @@ into the javadoc command line."
 		     :documentation "Nonnil generates doc for packages."))
   "Class of Javadoc generators.")
 
-(defmethod initialize-instance ((this jde-javadoc-maker) &rest fields)
+(cl-defmethod initialize-instance ((this jde-javadoc-maker) &rest fields)
   "Initialize the Javadoc generator."
 
   (oset this name "javadoc")
@@ -264,7 +264,7 @@ into the javadoc command line."
    exec-path
    (jde-cygpath (expand-file-name "bin/javadoc" (jde-get-jdk-dir)) t)))
 
-(defmethod get-args ((this jde-javadoc-maker))
+(cl-defmethod get-args ((this jde-javadoc-maker))
   "Get the arguments to pass to the javadoc process as specified
 by the jde-javadoc-gen variables."
   (let* ((destination-directory

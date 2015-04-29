@@ -1043,11 +1043,11 @@ classpath."
 
 (defclass jde-import-all-dialog(efc-multi-option-dialog) nil)
 
-(defmethod initialize-instance ((this jde-import-all-dialog) &rest fields)
+(cl-defmethod initialize-instance ((this jde-import-all-dialog) &rest fields)
   "Dialog constructor."
   (cl-call-next-method))
 
-(defmethod efc-multi-option-dialog-sort ((this jde-import-all-dialog) list)
+(cl-defmethod efc-multi-option-dialog-sort ((this jde-import-all-dialog) list)
   "Sort the options."
   ;; sort the ones with the most options first...
   (sort list

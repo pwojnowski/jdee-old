@@ -430,7 +430,7 @@ a line where an active breakpoint exists."
   "Indicates the location of breakpoints in a source buffer. This class
 uses overlays as markers in Emacs and extents in XEmacs.")
 
-(defmethod initialize-instance ((this jde-db-breakpoint-marker) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-breakpoint-marker) &rest fields)
   "Create a breakpoint overlay at LINE in FILE."
 
   ;; Call parent initializer.
@@ -450,7 +450,7 @@ uses overlays as markers in Emacs and extents in XEmacs.")
 	   (current-buffer) nil t))))
 
 
-(defmethod jde-db-breakpoint-marker-set-face ((this jde-db-breakpoint-marker) face)
+(cl-defmethod jde-db-breakpoint-marker-set-face ((this jde-db-breakpoint-marker) face)
   "Apply FACE to OVERLAY."
   (let ((marker (oref this marker)))
     (if (featurep 'xemacs)
@@ -472,7 +472,7 @@ uses overlays as markers in Emacs and extents in XEmacs.")
        (eq marker-face 'jde-db-requested-breakpoint-face)
        (eq marker-face 'jde-db-active-breakpoint-face))))
 
-(defmethod jde-db-breakpoint-marker-delete ((this jde-db-breakpoint-marker))
+(cl-defmethod jde-db-breakpoint-marker-delete ((this jde-db-breakpoint-marker))
   "Remove breakpoint overlay at LINE in FILE."
   (if (featurep 'xemacs)
       (delete-extent (oref this marker))
@@ -517,7 +517,7 @@ uses overlays as markers in Emacs and extents in XEmacs.")
   "Class of breakpoints.")
 
 
-(defmethod initialize-instance ((this jde-db-breakpoint) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-breakpoint) &rest fields)
   "Constructor for a breakpoint specification."
 
   ;; Call parent initializer.
@@ -532,7 +532,7 @@ uses overlays as markers in Emacs and extents in XEmacs.")
   (jde-db-breakpoint-marker-set-face
    (oref this marker) 'jde-db-spec-breakpoint-face))
 
-(defmethod jde-db-breakpoint-get-line ((this jde-db-breakpoint))
+(cl-defmethod jde-db-breakpoint-get-line ((this jde-db-breakpoint))
   "Get the number of the line at which this breakpoint is set."
   (with-current-buffer (find-file-noselect (oref this file))
     (if (oref this marker)
@@ -868,7 +868,7 @@ class. Otherwise, it returns nil."
 		"Non-nil if debuggee process is suspended."))
   "Status of debuggee process.")
 
-(defmethod initialize-instance ((this jde-db-debuggee-status) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-debuggee-status) &rest fields)
   "Status of debuggee process."
   (cl-call-next-method))
 
@@ -945,7 +945,7 @@ class. Otherwise, it returns nil."
 		"Stack depth."))
   "Program being debugged.")
 
-(defmethod initialize-instance ((this jde-db-debuggee) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-debuggee) &rest fields)
   "Constructs an instance of a debuggee."
   (cl-call-next-method))
 
@@ -987,23 +987,23 @@ class. Otherwise, it returns nil."
   "Super class of debugger commands.")
 
 
-(defmethod initialize-instance ((this jde-db-cmd) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-cmd) &rest fields)
   "Constructor for debugger commands."
   (cl-call-next-method))
 
-(defmethod jde-db-cmd-init ((this jde-db-cmd))
+(cl-defmethod jde-db-cmd-init ((this jde-db-cmd))
   "The debugger invokes this method before executing the
 command.")
 
-(defmethod jde-db-cmd-make-command-line ((this jde-db-cmd))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-db-cmd))
   "Creates the command line for this command."
   (oref this name))
 
-(defmethod jde-db-cmd-notify-response ((this jde-db-cmd) response)
+(cl-defmethod jde-db-cmd-notify-response ((this jde-db-cmd) response)
   "Invoked when the debugger responds to the command. RESPONSE
 is the response.")
 
-(defmethod jde-db-cmd-response-p ((this jde-db-cmd) output)
+(cl-defmethod jde-db-cmd-response-p ((this jde-db-cmd) output)
   "Returns nonnil if external debugger's output is a
 response to this command."
   t)
@@ -1027,7 +1027,7 @@ response to this command."
 	       "Main class of applications to be debugged."))
    "Launch an application in debug mode.")
 
-(defmethod initialize-instance ((this jde-db-cmd-launch-app) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-cmd-launch-app) &rest fields)
   (cl-call-next-method)
   (oset this name "launch application"))
 
@@ -1038,7 +1038,7 @@ response to this command."
 	 "Path of applet document."))
    "Launch an applet in debug mode.")
 
-(defmethod initialize-instance ((this jde-db-cmd-launch-applet) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-cmd-launch-applet) &rest fields)
   (cl-call-next-method)
   (oset this name "launch applet"))
 
@@ -1117,7 +1117,7 @@ response to this command."
 	       "The debugger"))
   "Listens to the output from the debugger.")
 
-(defmethod jde-db-listener-filter-output ((this jde-db-listener) output)
+(cl-defmethod jde-db-listener-filter-output ((this jde-db-listener) output)
   "Filters the output of the debugger."
   output)
 
@@ -1191,18 +1191,18 @@ response to this command."
 		  "The currently active debugger."))
    "Class of Java debuggers.")
 
-(defmethod initialize-instance ((this jde-db-debugger) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-debugger) &rest fields)
   "Constructor for generic debugger."
   (oset this cmd-set
 	(jde-db-cmd-set :debugger this))
   (oset this last-cmd nil))
 
 
-(defmethod jde-db-create-debuggee-app ((this jde-db-debugger) main-class))
+(cl-defmethod jde-db-create-debuggee-app ((this jde-db-debugger) main-class))
 
-(defmethod jde-db-create-debuggee-applet ((this jde-db-debugger applet-doc)))
+(cl-defmethod jde-db-create-debuggee-applet ((this jde-db-debugger applet-doc)))
 
-(defmethod jde-db-ready-p ((this jde-db-debugger) output)
+(cl-defmethod jde-db-ready-p ((this jde-db-debugger) output)
   "Nonnil if OUTPUT indicates that the debugger is
 ready to accept the next command."
   (and output
@@ -1212,7 +1212,7 @@ ready to accept the next command."
 	(string-match "VM Started:[ ]*$" output))))
 
 
-(defmethod jde-db-process-debugger-output ((this jde-db-debugger) output)
+(cl-defmethod jde-db-process-debugger-output ((this jde-db-debugger) output)
   "Process debugger output."
   (jde-db-log-debugger-output (concat "<<" output ">>"))
   (let ((proc (oref this process))
@@ -1232,21 +1232,21 @@ ready to accept the next command."
     (if (jde-db-ready-p this (car (last (split-string output "\n"))))
 	(jde-db-exec-next-cmd this))))
 
-(defmethod jde-db-add-listener ((this jde-db-debugger) listener)
+(cl-defmethod jde-db-add-listener ((this jde-db-debugger) listener)
   "Adds LISTENER to the list of listeners listening for response
 from the debugger. LISTENER must be an object of type
 `jde-db-listener'."
   (assert (cl-typep listener jde-db-listener))
   (oset this listeners (cons listener (oref this listeners))))
 
-(defmethod jde-db-remove-listener ((this jde-db-debugger) listener)
+(cl-defmethod jde-db-remove-listener ((this jde-db-debugger) listener)
   "Removes LISTENER from the list of listeners listening for a
 response from the debugger.  LISTENER must be an object of type
 `jde-db-listener'."
   (assert (cl-typep listener jde-db-listener))
   (oset this listeners (remove listener (oref this listeners))))
 
-(defmethod jde-db-set-process-filter ((this jde-db-debugger))
+(cl-defmethod jde-db-set-process-filter ((this jde-db-debugger))
   "Set debugger process output filter. The default method sets a
 function that invokes `jde-db-process-debugger-output'."
   (set-process-filter
@@ -1255,7 +1255,7 @@ function that invokes `jde-db-process-debugger-output'."
      (jde-db-process-debugger-output
       (oref 'jde-db-debugger the-debugger) output))))
 
-(defmethod jde-db-notify-process-exit ((this jde-db-debugger) msg)
+(cl-defmethod jde-db-notify-process-exit ((this jde-db-debugger) msg)
   "The default debugger process sentinel invokes this method
 when the debugger process terminates."
   (let ((proc (oref this process)))
@@ -1293,21 +1293,21 @@ when the debugger process terminates."
 	     (set-buffer obuf)))))))
 
 
-(defmethod jde-db-notify-process-status-change ((this jde-db-debugger) msg)
+(cl-defmethod jde-db-notify-process-status-change ((this jde-db-debugger) msg)
   "The debugger process sentinel invokes this method when the status of
 the debugger process changes. The default method invokes
 `jde-db-notify-process-exit'."
   (jde-db-notify-process-exit this msg))
 
 
-(defmethod jde-db-set-process-sentinel ((this jde-db-debugger))
+(cl-defmethod jde-db-set-process-sentinel ((this jde-db-debugger))
   (set-process-sentinel
    (oref this process)
    (lambda (process msg)
        (jde-db-notify-process-status-change
 	(oref 'jde-db-debugger the-debugger) msg))))
 
-(defmethod jde-db-exec-next-cmd ((this jde-db-debugger))
+(cl-defmethod jde-db-exec-next-cmd ((this jde-db-debugger))
   "Executes the next command on the debugger's pending
 command list."
   (let ((curr-cmd (car (oref this next-cmd))))
@@ -1325,17 +1325,17 @@ command list."
 		    (insert cmd-line)
 		    (comint-send-input)))))))))
 
-(defmethod jde-db-exec-cmds ((this jde-db-debugger) cmds)
+(cl-defmethod jde-db-exec-cmds ((this jde-db-debugger) cmds)
   "Executes list of debugger CMDS."
   (oset this next-cmd cmds)
   (jde-db-exec-next-cmd this))
 
-(defmethod jde-db-exec-cmd ((this jde-db-debugger) cmd)
+(cl-defmethod jde-db-exec-cmd ((this jde-db-debugger) cmd)
   "Executes CMD."
   (assert (and cmd (typep cmd 'jde-db-cmd)))
   (jde-db-exec-cmds this (list cmd)))
 
-(defmethod jde-db-classpath-arg ((this jde-db-debugger))
+(cl-defmethod jde-db-classpath-arg ((this jde-db-debugger))
   "Generate the -classpath command line argument for jdb."
 
   ;; Set the classpath option. Use the local
@@ -1355,12 +1355,12 @@ command list."
 	 (jde-build-classpath
 	  classpath symbol)))))
 
-(defmethod jde-db-classic-mode-arg ((this jde-db-debugger))
+(cl-defmethod jde-db-classic-mode-arg ((this jde-db-debugger))
   "Generate the classic mode command-line argument for jdb."
   (if jde-db-classic-mode-vm
       (list "-classic")))
 
-(defmethod jde-db-property-args ((this jde-db-debugger))
+(cl-defmethod jde-db-property-args ((this jde-db-debugger))
   "Generate property arguments."
   (if jde-db-option-properties
       (mapcar
@@ -1369,7 +1369,7 @@ command list."
        jde-db-option-properties)))
 
 
-(defmethod jde-db-verbose-args ((this jde-db-debugger))
+(cl-defmethod jde-db-verbose-args ((this jde-db-debugger))
   "Get the debugger verbosity arguments for jdb."
   (let ((print-classes-loaded
 	 (nth 0 jde-db-option-verbose))
@@ -1390,7 +1390,7 @@ command list."
 
     options))
 
-(defmethod jde-db-heap-size-args ((this jde-db-debugger))
+(cl-defmethod jde-db-heap-size-args ((this jde-db-debugger))
   "Generate heap size options."
   (let* ((memory-unit-abbrevs
 	 (list (cons "bytes" "")
@@ -1414,7 +1414,7 @@ command list."
 	      (append options (list (concat "-Xmx" max-size)))))
     options))
 
-(defmethod jde-db-stack-size-args ((this jde-db-debugger))
+(cl-defmethod jde-db-stack-size-args ((this jde-db-debugger))
   "Generate stack size arguments."
   (let* ((memory-unit-abbrevs
 	 (list (cons "bytes" "")
@@ -1440,7 +1440,7 @@ command list."
 	      (append option (list (concat "-Xoss" java-size)))))
     option))
 
-(defmethod jde-db-garbage-collection-args ((this jde-db-debugger))
+(cl-defmethod jde-db-garbage-collection-args ((this jde-db-debugger))
   "Set garbage collection options."
   (let ((no-gc-asynch (not
 		       (nth 0 jde-db-option-garbage-collection)))
@@ -1456,7 +1456,7 @@ command list."
 
     options))
 
-(defmethod jde-db-garbage-collection-arg ((this jde-db-debugger))
+(cl-defmethod jde-db-garbage-collection-arg ((this jde-db-debugger))
   "Generate Java profile arg."
   (let ((profilep (car jde-db-option-java-profile))
 	(file (cdr jde-db-option-java-profile)))
@@ -1467,7 +1467,7 @@ command list."
 	  (list (concat "-Xprof:" file))))))
 
 
-(defmethod jde-db-heap-profile-arg ((this jde-db-debugger))
+(cl-defmethod jde-db-heap-profile-arg ((this jde-db-debugger))
   "Generate heap profile option."
   (let* ((profilep (car jde-db-option-heap-profile))
 	 (prof-options (cdr jde-db-option-heap-profile))
@@ -1487,7 +1487,7 @@ command list."
 	    "-Xhprof:file=%s,depth=%d,top=%d,sort=%s"
 	    file depth top sort))))))
 
-(defmethod jde-db-verify-arg ((this jde-db-debugger))
+(cl-defmethod jde-db-verify-arg ((this jde-db-debugger))
   ;; Set verify options.
   (let ((verify-all (nth 0 jde-db-option-verify))
 	(verify-remote (nth 1 jde-db-option-verify)))
@@ -1501,7 +1501,7 @@ command list."
 	  (list "-Xnoverify")))))
 
 
-(defmethod jde-db-command-line-args ((this jde-db-debugger))
+(cl-defmethod jde-db-command-line-args ((this jde-db-debugger))
   "Generate command line args."
   (if jde-db-option-vm-args
       (mapcar
@@ -1510,18 +1510,18 @@ command list."
        jde-db-option-vm-args)))
 
 
-(defmethod jde-db-host-arg ((this jde-db-debugger))
+(cl-defmethod jde-db-host-arg ((this jde-db-debugger))
   (if (not (string= jde-db-option-host ""))
       (list "-host" jde-db-option-host)))
 
-(defmethod jde-db-launch-arg ((this jde-db-debugger))
+(cl-defmethod jde-db-launch-arg ((this jde-db-debugger))
   "Argument that tells the debugger to launch the
 debuggee vm immediately instead of waiting for a
 run command. Only the new (JDK 1.3) version of jdb
 provides this option."
   nil)
 
-(defmethod jde-db-get-vm-args ((this jde-db-debugger))
+(cl-defmethod jde-db-get-vm-args ((this jde-db-debugger))
   (append
    (jde-db-classic-mode-arg this)
    (jde-db-launch-arg this)
@@ -1531,23 +1531,23 @@ provides this option."
    (jde-db-heap-size-args this)
    (jde-db-command-line-args this)))
 
-(defmethod jde-db-debugger-get-working-dir ((this jde-db-debugger))
+(cl-defmethod jde-db-debugger-get-working-dir ((this jde-db-debugger))
   (if (string= jde-run-working-directory "")
       default-directory
     (jde-normalize-path 'jde-run-working-directory)))
 
-(defmethod jde-db-debugger-get-prog-args ((this jde-db-debugger))
+(cl-defmethod jde-db-debugger-get-prog-args ((this jde-db-debugger))
   )
 
-(defmethod jde-db-debugger-start ((this jde-db-debugger))
+(cl-defmethod jde-db-debugger-start ((this jde-db-debugger))
   "Start the debugger.")
 
 
-(defmethod jde-db-debugger-launch ((this jde-db-debugger) main-class)
+(cl-defmethod jde-db-debugger-launch ((this jde-db-debugger) main-class)
   "Launch the application whose main class is MAIN-CLASS in debug mode.")
 
 
-(defmethod jde-db-debugger-connect ((this jde-db-debugger) &optional listenp)
+(cl-defmethod jde-db-debugger-connect ((this jde-db-debugger) &optional listenp)
   "Connect the debugger to an existing process.")
 
 

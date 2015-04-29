@@ -932,7 +932,7 @@ in a method; otherwise, nil."
 		"Compare function."))
   "Balanced binary tree.")
 
-(defmethod initialize-instance ((this jde-avl-tree) &rest fields)
+(cl-defmethod initialize-instance ((this jde-avl-tree) &rest fields)
   "Constructor for binary balanced tree."
 
   ;; Call parent initializer
@@ -942,47 +942,47 @@ in a method; otherwise, nil."
 
   (oset this  tree (avl-tree-create (oref this compare-fcn))))
 
-(defmethod jde-avl-tree-add ((this jde-avl-tree) item)
+(cl-defmethod jde-avl-tree-add ((this jde-avl-tree) item)
   "Inserts ITEM in this tree."
   (avl-tree-enter (oref this tree) item))
 
-(defmethod jde-avl-tree-delete ((this jde-avl-tree) item)
+(cl-defmethod jde-avl-tree-delete ((this jde-avl-tree) item)
   "Deletes ITEM from THIS tree."
   (avl-tree-delete (oref this tree) item))
 
-(defmethod jde-avl-tree-is-empty ((this jde-avl-tree))
+(cl-defmethod jde-avl-tree-is-empty ((this jde-avl-tree))
   "Return t if THIS tree is empty, otherwise return nil."
   (avl-tree-empty (oref this tree)))
 
-(defmethod jde-avl-tree-find ((this jde-avl-tree) item)
+(cl-defmethod jde-avl-tree-find ((this jde-avl-tree) item)
   "Return the element in THIS tree that matches item."
   (avl-tree-member (oref this tree) item))
 
-(defmethod jde-avl-tree-map ((this jde-avl-tree) map-function)
+(cl-defmethod jde-avl-tree-map ((this jde-avl-tree) map-function)
   "Applies MAP-FUNCTION to all elements of THIS tree."
   (avl-tree-map map-function (oref this tree)))
 
-(defmethod jde-avl-tree-first ((this jde-avl-tree))
+(cl-defmethod jde-avl-tree-first ((this jde-avl-tree))
   "Return the first item in THIS tree."
   (avl-tree-first (oref this tree)))
 
-(defmethod jde-avl-tree-last ((this jde-avl-tree))
+(cl-defmethod jde-avl-tree-last ((this jde-avl-tree))
   "Return the last item in THIS tree."
   (avl-tree-last (oref this tree)))
 
-(defmethod jde-avl-tree-copy ((this jde-avl-tree))
+(cl-defmethod jde-avl-tree-copy ((this jde-avl-tree))
   "Return a copy of THIS tree."
   (avl-tree-copy (oref this tree)))
 
-(defmethod jde-avl-tree-flatten ((this jde-avl-tree))
+(cl-defmethod jde-avl-tree-flatten ((this jde-avl-tree))
   "Return a sorted list containing all elements of THIS tree."
   (avl-tree-flatten (oref this tree)))
 
-(defmethod jde-avl-tree-size ((this jde-avl-tree))
+(cl-defmethod jde-avl-tree-size ((this jde-avl-tree))
   "Return the number of elements in THIS tree."
   (avl-tree-size (oref this tree)))
 
-(defmethod jde-avl-tree-clear ((this jde-avl-tree))
+(cl-defmethod jde-avl-tree-clear ((this jde-avl-tree))
   "Delete all elements of THIS tree."
   (avl-tree-clear (oref this tree)))
 
@@ -996,7 +996,7 @@ in a method; otherwise, nil."
    (< (car (cdr m1)) (car (cdr m2)))
    (< (cdr (cdr m1)) (car (cdr m2)))))
 
-(defmethod initialize-instance ((this jde-parse-method-map) &rest fields)
+(cl-defmethod initialize-instance ((this jde-parse-method-map) &rest fields)
   "Constructor for method map."
 
   (oset  this compare-fcn 'jde-parse-method-map-compare-fcn)
@@ -1031,7 +1031,7 @@ in a method; otherwise, nil."
       (loop for class in classes do
 	    (add-methods class)))))
 
-(defmethod jde-parse-method-map-get-method-at ((this jde-parse-method-map) &optional pos)
+(cl-defmethod jde-parse-method-map-get-method-at ((this jde-parse-method-map) &optional pos)
   "Get the method at POS, if specified, otherwise, at point."
   (let ((p (if pos pos (point))))
     (jde-avl-tree-find this (cons (cons "" "") (cons p p)))))

@@ -161,7 +161,7 @@ HTML pages."
 	 :protection protected)
    ))
 
-(defmethod jde-url-parse ((this jde-url) &optional field)
+(cl-defmethod jde-url-parse ((this jde-url) &optional field)
   (with-slots (protocol host file) this
     (let ((name (eieio-object-name-string this)))
       (if (null name) (error "No URL given in `jde-url' instance"))
@@ -172,19 +172,19 @@ HTML pages."
 		  file (match-string 3 name))))))
   (if field (slot-value this field)))
 
-(defmethod object-print ((this jde-url) &optional strings)
+(cl-defmethod object-print ((this jde-url) &optional strings)
   (jde-url-parse this)
-  (apply 'call-next-method this
+  (apply 'cl-call-next-method this
 	 (cons (concat " " (mapconcat #'(lambda (slot)
 					  (format "%S=%s" slot (slot-value this slot)))
 				      '(protocol host file)
 				      " "))
 	       strings)))
 
-(defmethod jde-url-name ((this jde-url)) (eieio-object-name-string this))
-(defmethod jde-url-protocol ((this jde-url)) (jde-url-parse this 'protocol))
-(defmethod jde-url-host ((this jde-url)) (jde-url-parse this 'host))
-(defmethod jde-url-file ((this jde-url)) (jde-url-parse this 'file))
+(cl-defmethod jde-url-name ((this jde-url)) (eieio-object-name-string this))
+(cl-defmethod jde-url-protocol ((this jde-url)) (jde-url-parse this 'protocol))
+(cl-defmethod jde-url-host ((this jde-url)) (jde-url-parse this 'host))
+(cl-defmethod jde-url-file ((this jde-url)) (jde-url-parse this 'file))
 
 
 (defclass jde-jddocset ()
@@ -209,8 +209,8 @@ This defaults to false."
 	    )
    ))
 
-(defmethod initialize-instance ((this jde-jddocset) &rest rest)
-  (apply 'call-next-method this rest)
+(cl-defmethod initialize-instance ((this jde-jddocset) &rest rest)
+  (apply 'cl-call-next-method this rest)
   (unless (oref this :description)
     (oset this :description
 	  (if (oref this :jdkp)
@@ -239,19 +239,19 @@ This defaults to false."
 	   )
    ))
 
-(defmethod jde-url-name ((this jde-jdurl))
+(cl-defmethod jde-url-name ((this jde-jdurl))
   (jde-url-member-url-name this))
 
-(defmethod jde-url-file ((this jde-jdurl))
+(cl-defmethod jde-url-file ((this jde-jdurl))
   (let ((file (jde-url-parse this 'file)))
     (concat file
 	    (if (string-equal "/" (substring file -1)) "" "/")
 	    (concat (cl-substitute ?/ ?. (oref this :class)) ".html"))))
 
-(defmethod jde-url-docset-url-name ((this jde-jdurl))
+(cl-defmethod jde-url-docset-url-name ((this jde-jdurl))
   (eieio-object-name-string this))
 
-(defmethod jde-url-append-file-name ((this jde-jdurl) filename)
+(cl-defmethod jde-url-append-file-name ((this jde-jdurl) filename)
   (let ((urlname (jde-url-docset-url-name this)))
     (format "%s%s%s"
 	    urlname
@@ -259,12 +259,12 @@ This defaults to false."
 		"" "/")
 	    filename)))
 
-(defmethod jde-url-class-url-name ((this jde-jdurl))
+(cl-defmethod jde-url-class-url-name ((this jde-jdurl))
   (jde-url-append-file-name
    this
    (concat (cl-substitute ?/ ?. (oref this :class)) ".html")))
 
-(defmethod jde-url-member-url-name ((this jde-jdurl))
+(cl-defmethod jde-url-member-url-name ((this jde-jdurl))
   (if (oref this :member)
       (format "%s#%s"
 	      (jde-url-class-url-name this)
@@ -275,13 +275,13 @@ This defaults to false."
 (defclass jde-jdurl-resolver () ()
   :abstract true)
 
-(defmethod jde-jdurl-resolver-urls ((this jde-jdurl-resolver) class docset)
+(cl-defmethod jde-jdurl-resolver-urls ((this jde-jdurl-resolver) class docset)
   (let ((urlname (jde-url-name (oref docset :url))))
     (list (jde-jdurl urlname
 		     :class class
 		     :docset docset))))
 
-(defmethod jde-jdurl-resolver-exists ((this jde-jdurl-resolver) class docset)
+(cl-defmethod jde-jdurl-resolver-exists ((this jde-jdurl-resolver) class docset)
   (let ((urls (jde-jdurl-resolver-urls this class docset)))
     (car (memq t (mapcar #'(lambda (url)
 			     (jde-jdurl-resolver-url-exists this url))
@@ -290,14 +290,14 @@ This defaults to false."
 
 (defclass jde-jdurl-fs-resolver (jde-jdurl-resolver) ())  
 
-(defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-fs-resolver) url)
+(cl-defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-fs-resolver) url)
   (and (equal "file" (jde-url-protocol url))
        (file-exists-p (jde-url-file url))))
 
 
 (defclass jde-jdurl-w3-resolver (jde-jdurl-resolver) ())  
 
-(defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-w3-resolver) url)
+(cl-defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-w3-resolver) url)
   (if (fboundp 'url-file-exists)
       (url-file-exists url)
     (error "Cannot find url-file-exists function")))
@@ -319,8 +319,8 @@ This defaults to false."
 	    )
    ))
 
-(defmethod initialize-instance ((this jde-jdurl-wget-resolver) &rest rest)
-  (apply 'call-next-method this rest)
+(cl-defmethod initialize-instance ((this jde-jdurl-wget-resolver) &rest rest)
+  (apply 'cl-call-next-method this rest)
   (unless (slot-boundp this :executable)
     (let ((exec (executable-find
 		 (if (eq system-type 'windows-nt) "wget.exe" "wget"))))
@@ -333,7 +333,7 @@ This defaults to false."
     (unless (slot-boundp this (car elt))
       (set-slot-value this (car elt) (symbol-value (cdr elt))))))
 
-(defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-wget-resolver) url)
+(cl-defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-wget-resolver) url)
   (with-slots (tries timeout options) this
     (let ((cmd (concat "wget --spider "
 		       (if tries (concat "--tries=" tries))
@@ -343,7 +343,7 @@ This defaults to false."
 
 (defclass jde-jdurl-beanshell-resolver (jde-jdurl-resolver) ())
 
-(defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-beanshell-resolver) url)
+(cl-defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-beanshell-resolver) url)
   (require 'jde-bsh)
   (let ((cmd (format "\
 java.net.URLConnection conn = null;
@@ -369,7 +369,7 @@ try {
   ((resolvers :initarg :resolvers
 	      :type list)))
 
-(defmethod jde-jdurl-resolver-urls ((this jde-jdurl-stack-resolver)
+(cl-defmethod jde-jdurl-resolver-urls ((this jde-jdurl-stack-resolver)
 				    class docset)
   ;; we inherit from a class we know always gets only one url
   (let* ((url (car (cl-call-next-method this class docset)))
@@ -379,14 +379,14 @@ try {
       (setq urls (nconc urls (jde-jdurl-resolver-urls resolver class docset))))
     urls))
 
-(defmethod jde-jdurl-resolver-matching-resolvers ((this jde-jdurl-stack-resolver) url)
+(cl-defmethod jde-jdurl-resolver-matching-resolvers ((this jde-jdurl-stack-resolver) url)
   (let (resolvers)
     (dolist (resolver (oref this :resolvers))
       (if (jde-jdurl-resolver-url-exists resolver url)
 	  (setq resolvers (nconc resolvers (list resolver)))))
     resolvers))
 
-(defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-stack-resolver) url)
+(cl-defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-stack-resolver) url)
   (> (length (jde-jdurl-resolver-matching-resolvers this url)) 0))
 
 (defclass jde-jdhelper ()
@@ -401,14 +401,14 @@ try {
 	     )
    ))
 
-(defmethod initialize-instance ((this jde-jdhelper) &rest rest)
-  (apply 'call-next-method this rest)
+(cl-defmethod initialize-instance ((this jde-jdhelper) &rest rest)
+  (apply 'cl-call-next-method this rest)
   (unless (oref this :docsets)
     (jde-jdhelper-reload-docsets this))
   (unless (oref this :resolver)
     (jde-jdhelper-reload-resolvers this)))
 
-(defmethod jde-jdhelper-reload-resolvers ((this jde-jdhelper))
+(cl-defmethod jde-jdhelper-reload-resolvers ((this jde-jdhelper))
   (let* ((func (intern (car jde-help-remote-file-exists-function)))
 	 (resolver (case func
 		     (wget 'jde-jdurl-wget-resolver)
@@ -420,7 +420,7 @@ try {
 				    (list (jde-jdurl-fs-resolver nil)
 					  (funcall resolver nil))))))
 
-(defmethod jde-jdhelper-reload-docsets ((this jde-jdhelper))
+(cl-defmethod jde-jdhelper-reload-docsets ((this jde-jdhelper))
   (oset this :docsets
 	(mapcar #'(lambda (elt)
 		    (let* ((version (third elt))
@@ -436,7 +436,7 @@ try {
 				    :jdkp jdkp)))
 		jde-help-docsets)))
 
-(defmethod jde-jdhelper-urls-for-class ((this jde-jdhelper) class)
+(cl-defmethod jde-jdhelper-urls-for-class ((this jde-jdhelper) class)
   (with-slots (docsets resolver) this  
     (cl-mapcan #'(lambda (docset)
 		   (let ((ver (oref docset :version)))
@@ -444,13 +444,13 @@ try {
 			 (jde-jdurl-resolver-urls resolver class docset))))
 	       docsets)))
 
-(defmethod jde-jdhelper-jdk-url ((this jde-jdhelper))
+(cl-defmethod jde-jdhelper-jdk-url ((this jde-jdhelper))
   (with-slots (docsets resolver) this  
     (dolist (docset docsets)
       (if (equal (oref docset :version) (car jde-jdk))
 	  (return (oref docset :url))))))
 
-(defmethod jde-jdhelper-read-url ((this jde-jdhelper) class)
+(cl-defmethod jde-jdhelper-read-url ((this jde-jdhelper) class)
   (let ((urls (jde-jdhelper-urls-for-class this class)))
     (cond ((null urls)
 	   (error "Cannot find documentation for %s" class))
@@ -468,12 +468,12 @@ try {
 			    nil t nil 'jde-help-read-url-history def)
 			   alist)))))))
 
-(defmethod jde-jdhelper-show-class ((this jde-jdhelper) class &optional member)
+(cl-defmethod jde-jdhelper-show-class ((this jde-jdhelper) class &optional member)
   (let ((url (jde-jdhelper-read-url this class)))
     (oset url :member member)
     (jde-jdhelper-show-url this url)))
 
-(defmethod jde-jdhelper-show-url ((this jde-jdhelper) url)
+(cl-defmethod jde-jdhelper-show-url ((this jde-jdhelper) url)
   (let ((doc-url (jde-url-name url)))
     (unless (string= jde-help-browser-function "w3m-browse-url")
       (let* ((temp-directory (jde-temp-directory))
@@ -528,7 +528,7 @@ try {
 	     (oref (oref url :docset) :description))
     (jde-jdhelper-show-document this doc-url)))
 
-(defmethod jde-jdhelper-show-document ((this jde-jdhelper) doc-url &rest args)
+(cl-defmethod jde-jdhelper-show-document ((this jde-jdhelper) doc-url &rest args)
   "Displays DOC-URL in the browser specified by `jde-help-browser-function'."
   (let ((browser-function
 	 (cond
@@ -539,7 +539,7 @@ try {
 	  (t 'browse-url))))
     (apply browser-function doc-url args)))
 
-(defmethod jde-jdhelper-describe-docsets ((this jde-jdhelper))
+(cl-defmethod jde-jdhelper-describe-docsets ((this jde-jdhelper))
   (let* ((cols (mapcar #'(lambda (docset)
 			   (list (oref docset :description)
 				 (jde-url-name (oref docset :url))

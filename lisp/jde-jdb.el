@@ -55,26 +55,26 @@ breakpoint message."
 (defclass jde-jdb-cmd-launch (jde-db-cmd-launch) ()
   "Asks jdb to launch a debuggee process.")
 
-(defmethod jde-db-cmd-launch-buffer-name ((this jde-jdb-cmd-launch))
+(cl-defmethod jde-db-cmd-launch-buffer-name ((this jde-jdb-cmd-launch))
   "Return the name of the buffer for this process. Descendant
 classes should override this method to create a name that is appropriate
 for the process being launched, e.g., an applet or application." nil)
 
-(defmethod jde-db-cmd-launch-cmd-path ((this jde-jdb-cmd-launch))
+(cl-defmethod jde-db-cmd-launch-cmd-path ((this jde-jdb-cmd-launch))
   "Return the path of the command to be used to launch the process. Descendant
 classes should override this method to return a path appropriate to
 the command to be used to launch the debuggee process, e.g., jdb or
 appletviewer." nil)
 
 
-(defmethod jde-db-cmd-launch-startup-cmds ((this jde-jdb-cmd-launch))
+(cl-defmethod jde-db-cmd-launch-startup-cmds ((this jde-jdb-cmd-launch))
   "Add commands to debugger's initial command queue. Derived classes
 should override this method to specify commands that should be
 executed immediately after the debugger starts, e.g., an initial
 step command." nil)
 
 
-(defmethod jde-db-cmd-init ((this jde-jdb-cmd-launch))
+(cl-defmethod jde-db-cmd-init ((this jde-jdb-cmd-launch))
   "The debugger invokes this method before executing the launch
 command. Launch the debuggee process."
   (let ((debugger (oref this debugger)))
@@ -109,7 +109,7 @@ command. Launch the debuggee process."
       (message "An instance of %s is running." (oref this :buffer-name))
       (pop-to-buffer (oref this :buffer-name))))))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-launch))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-launch))
   "Returns nil because jdb launches the debuggee application automatically
 when it is started." nil)
 
@@ -120,22 +120,22 @@ when it is started." nil)
 				  jde-db-cmd-launch-app) ()
   "Asks jdb to launch the debuggee application.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-launch-app) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-launch-app) &rest fields)
   (cl-call-next-method)
   (oset this name "launch application in jdb debug mode"))
 
-(defmethod jde-db-cmd-launch-cmd-path ((this jde-jdb-cmd-launch-app))
+(cl-defmethod jde-db-cmd-launch-cmd-path ((this jde-jdb-cmd-launch-app))
   "Return the path of the jdb command."
   (let* ((debugger (oref this :debugger)))
     (oref debugger :path)))
 
-(defmethod jde-db-cmd-launch-buffer-name ((this jde-jdb-cmd-launch-app))
+(cl-defmethod jde-db-cmd-launch-buffer-name ((this jde-jdb-cmd-launch-app))
   (let* ((debugger (oref this :debugger))
 	 (debuggee (oref debugger :debuggee))
 	 (main-class (oref debuggee :main-class)))
     (concat  "*debug"  main-class "*")))
 
-(defmethod jde-db-cmd-launch-startup-cmds ((this jde-jdb-cmd-launch-app))
+(cl-defmethod jde-db-cmd-launch-startup-cmds ((this jde-jdb-cmd-launch-app))
   "If `jde-db-initial-step-p' is nonnil, add a step command to the
 debugger's startup command queue."
   (if jde-db-initial-step-p
@@ -151,11 +151,11 @@ debugger's startup command queue."
 				     jde-db-cmd-launch-applet) ()
   "Asks jdb to launch the debuggee applet.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-launch-applet) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-launch-applet) &rest fields)
   (cl-call-next-method)
   (oset this name "launch applet in jdb debug mode"))
 
-(defmethod jde-db-cmd-launch-cmd-path ((this jde-jdb-cmd-launch-applet))
+(cl-defmethod jde-db-cmd-launch-cmd-path ((this jde-jdb-cmd-launch-applet))
   "Return the path of the command to be used to launch the process. Descendant
 classes should override this method to return a path appropriate to
 the command to be used to launch the debuggee process, e.g., jdb or
@@ -165,13 +165,13 @@ appletviewer."
 	 (jdb-dir (file-name-directory jdb-path)))
     (expand-file-name "appletviewer" jdb-dir)))
 
-(defmethod jde-db-cmd-launch-buffer-name ((this jde-jdb-cmd-launch-applet))
+(cl-defmethod jde-db-cmd-launch-buffer-name ((this jde-jdb-cmd-launch-applet))
   (let* ((debugger (oref this :debugger))
 	 (debuggee (oref debugger :debuggee))
 	 (doc (oref debuggee :doc)))
     (concat  "*debug"  (file-name-nondirectory doc) "*")))
 
-(defmethod jde-db-cmd-launch-startup-cmds ((this jde-jdb-cmd-launch-applet))
+(cl-defmethod jde-db-cmd-launch-startup-cmds ((this jde-jdb-cmd-launch-applet))
   "If `jde-db-initial-step-p' is nonnil, add a run command followed by a
 step command to the debugger's startup command queue."
   (if jde-db-initial-step-p
@@ -192,11 +192,11 @@ step command to the debugger's startup command queue."
 (defclass jde-jdb-cmd-run (jde-db-cmd) ()
   "Asks jdb to start the debuggee application.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-run) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-run) &rest fields)
   (cl-call-next-method)
   (oset this name "run"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-run))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-run))
   "Creates command line for jdb run command."
   "run")
 
@@ -206,11 +206,11 @@ step command to the debugger's startup command queue."
   "Asks jdb to continue the debuggee application from its current
 stopping point.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-cont) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-cont) &rest fields)
   (cl-call-next-method)
   (oset this name "cont"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-cont))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-cont))
   "Creates command line for jdb cont command."
   "cont")
 
@@ -219,11 +219,11 @@ stopping point.")
 (defclass jde-jdb-cmd-quit (jde-db-cmd) ()
   "Quit debugging the current application.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-quit) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-quit) &rest fields)
   (cl-call-next-method)
   (oset this name "quit"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-quit))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-quit))
   "Creates command line for jdb quit command."
   "quit")
 
@@ -232,11 +232,11 @@ stopping point.")
 (defclass jde-jdb-cmd-step-over (jde-db-cmd) ()
   "Step to the next line in the current frame.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-step-over) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-step-over) &rest fields)
   (cl-call-next-method)
   (oset this name "next"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-step-over))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-step-over))
   "Creates command line for jdb step-over command."
   "next")
 
@@ -245,11 +245,11 @@ stopping point.")
 (defclass jde-jdb-cmd-step-into (jde-db-cmd) ()
   "Step to the next line in the current program.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-step-into) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-step-into) &rest fields)
   (cl-call-next-method)
   (oset this name "step"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-step-into))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-step-into))
   "Creates command line for jdb step-into command."
   "step")
 
@@ -258,11 +258,11 @@ stopping point.")
 (defclass jde-jdb-cmd-step-out (jde-db-cmd) ()
   "Continue to the end of the current method.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-step-out) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-step-out) &rest fields)
   (cl-call-next-method)
   (oset this name "step up"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-step-out))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-step-out))
   "Creates command line for jdb step-out command."
   "step up")
 
@@ -272,15 +272,15 @@ stopping point.")
 (defclass jde-jdb-cmd-up (jde-db-cmd) ()
   "Move up one stack frame.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-up) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-up) &rest fields)
   (cl-call-next-method)
   (oset this name "up"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-up))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-up))
   "Creates command line for jdb up command."
   "up")
 
-(defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-up) response)
+(cl-defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-up) response)
   "Invoked when the debugger responds to the command. RESPONSE
 is the response. This method invokes the jdb where
 command in order to position the debug pointer at the
@@ -296,15 +296,15 @@ current stack location."
 (defclass jde-jdb-cmd-down (jde-db-cmd) ()
   "Move down one stack frame.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-down) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-down) &rest fields)
   (cl-call-next-method)
   (oset this name "down"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-down))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-down))
   "Creates command line for jdb down command."
   "down")
 
-(defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-down) response)
+(cl-defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-down) response)
   "Invoked when the debugger responds to the command. RESPONSE
 is the response. This method invokes the jdb where
 command in order to position the debug pointer at the
@@ -321,15 +321,15 @@ current stack location."
 (defclass jde-jdb-cmd-where (jde-db-cmd) ()
   "Point to current location on the stack.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-where) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-where) &rest fields)
   (cl-call-next-method)
   (oset this name "where"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-where))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-where))
   "Creates command line for jdb where command."
   "where")
 
-(defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-where) output)
+(cl-defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-where) output)
 "Processes the output of the jdb where
  command, which lists the current stack. An example of the output
  is
@@ -375,11 +375,11 @@ current stack location."
   "Asks jdb to set the breakpoint specified by the
 breakpoint field.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-set-breakpoint) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-set-breakpoint) &rest fields)
   (cl-call-next-method)
   (oset this name "stop at"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-set-breakpoint))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-set-breakpoint))
   "Creates command line for jdb set breakpoint command."
   (let* ((bps (oref this breakpoints))
 	 (bp (car bps)))
@@ -387,7 +387,7 @@ breakpoint field.")
 	    (oref bp class)
 	    (jde-db-breakpoint-get-line bp))))
 
-(defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-set-breakpoint) output)
+(cl-defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-set-breakpoint) output)
   "Called when the debugger responds to the last set-breakpoint
   command. Invokes `jde-db-mark-breakpoint-requested' on the breakpoint and
 updates the breakpoint to `requested' status.  Removes the breakpoint
@@ -435,11 +435,11 @@ on the list."
   "Asks jdb to clear the breakpoint specified by the
 breakpoint field.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-clear-breakpoint) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-clear-breakpoint) &rest fields)
   (cl-call-next-method)
   (oset this name "clear"))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-clear-breakpoint))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-clear-breakpoint))
   "Creates command line for jdb clear breakpoint command."
   (let* ((bps (oref this breakpoints))
 	 (bp (car bps)))
@@ -447,7 +447,7 @@ breakpoint field.")
 	    (oref bp class)
 	    (jde-db-breakpoint-get-line bp))))
 
-(defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-clear-breakpoint) output)
+(cl-defmethod jde-db-cmd-notify-response ((this jde-jdb-cmd-clear-breakpoint) output)
   "Called when the debugger responds to the last clear-breakpoint command.
 Removes the breakpoint from the command's breakpoint list. If the list contains
 more breakpoints, this method reissues the clear command on the next breakpoint
@@ -472,18 +472,18 @@ on the list."
 		"Expression passed to jdb"))
   "Asks jdb to print value of expression at point")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-print) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-print) &rest fields)
   (cl-call-next-method)
   (oset this name "print")
   (oset this expr ""))
 
-(defmethod jde-db-cmd-init ((this jde-jdb-cmd-print))
+(cl-defmethod jde-db-cmd-init ((this jde-jdb-cmd-print))
   "The debugger invokes this method before executing the
 command."
   (oset this expr (read-from-minibuffer "expr: " (thing-at-point 'word)
 					nil nil 'jde-jdb-cmd-print-history)))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-print))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-print))
   "Creates a command line for jdb print command."
   (format "%s %s"
 	  (oref this name)
@@ -493,7 +493,7 @@ command."
 (defclass jde-jdb-cmd-dump (jde-jdb-cmd-print) ()
   "Asks jdb to print all object information of the expression at point")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-dump) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-dump) &rest fields)
   (cl-call-next-method)
   (oset this name "dump"))
 
@@ -501,7 +501,7 @@ command."
 (defclass jde-jdb-cmd-eval (jde-jdb-cmd-print) ()
   "Ask jdb to evaluate the expression(Same as the print command)")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-eval) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-eval) &rest fields)
   (cl-call-next-method)
   (oset this name "eval"))
 
@@ -514,11 +514,11 @@ command."
 	  "Value to assign to the variable"))
   "Ask jdb to assign new value to a field/variable/array element")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-set-var) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-set-var) &rest fields)
   (cl-call-next-method)
   (oset this name "set"))
 
-(defmethod jde-db-cmd-init ((this jde-jdb-cmd-set-var))
+(cl-defmethod jde-db-cmd-init ((this jde-jdb-cmd-set-var))
   "The debugger invokes this method before executing the
 command."
   (oset this expr (read-from-minibuffer "variable: " (thing-at-point 'word)
@@ -526,7 +526,7 @@ command."
   (oset this value (read-from-minibuffer "value: " nil
 					nil nil '(null))))
 
-(defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-set-var))
+(cl-defmethod jde-db-cmd-make-command-line ((this jde-jdb-cmd-set-var))
   "Creates a command line for jdb print command."
   (format "%s %s = %s"
 	  (oref this name)
@@ -537,11 +537,11 @@ command."
 (defclass jde-jdb-cmd-locals (jde-jdb-cmd-print) ()
   "Ask jdb to print al local variables in current stack frame")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-locals) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-locals) &rest fields)
   (cl-call-next-method)
   (oset this name "locals"))
 
-(defmethod jde-db-cmd-init ((this jde-jdb-cmd-locals))
+(cl-defmethod jde-db-cmd-init ((this jde-jdb-cmd-locals))
   "The debugger invokes this method before executing the
 command."
   (oset this expr ""))
@@ -573,7 +573,7 @@ expression at poing")
    )
   "Set of debugger commands implemented by jdb.")
 
-(defmethod initialize-instance ((this jde-jdb-cmd-set) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-cmd-set) &rest fields)
   "Construct jdb command set."
   (cl-call-next-method)
   (let ((jdb (oref this debugger)))
@@ -655,7 +655,7 @@ expression at poing")
   "Handles jdb breakpoint events.")
 
 
-(defmethod initialize-instance ((this jde-jdb-breakpoint-listener) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-breakpoint-listener) &rest fields)
   "Construct breakpoint listener."
 
   (cl-call-next-method)
@@ -680,7 +680,7 @@ expression at poing")
 
 
 
-(defmethod jde-jdb-fixup-output ((this jde-jdb-breakpoint-listener))
+(cl-defmethod jde-jdb-fixup-output ((this jde-jdb-breakpoint-listener))
     ;; This is a hack to accommodate reorder of message chunks
     ;; on Solaris at debugger startup.
     (if (string-match "running ...\n" (oref this :marker-acc))
@@ -706,7 +706,7 @@ expression at poing")
     )
 
 
-(defmethod jde-jdb-set-breakpoint-listener ((this jde-jdb-breakpoint-listener) output)
+(cl-defmethod jde-jdb-set-breakpoint-listener ((this jde-jdb-breakpoint-listener) output)
   "Listens for set breakpoint messages."
   (let ((msgs (split-string output "\n")))
     (loop for msg in msgs do
@@ -729,7 +729,7 @@ expression at poing")
 		(oset bp status 'active)
 		(jde-db-mark-breakpoint-active path  line))))))
 
-(defmethod jde-db-listener-filter-output ((this jde-jdb-breakpoint-listener) input)
+(cl-defmethod jde-db-listener-filter-output ((this jde-jdb-breakpoint-listener) input)
   "Filters the output of the debugger."
   (let ((jdb (oref this debugger))
 	(output ""))
@@ -859,7 +859,7 @@ expression at poing")
 ;; The user can move the debugger up and down the stack via the up and
 ;; down commands. The debugger indicates the current location by the
 ;; stack index portion of its prompt.
-(defmethod jde-db-listener-filter-output ((this jde-jdb-stack-listener) output)
+(cl-defmethod jde-db-listener-filter-output ((this jde-jdb-stack-listener) output)
   (let* ((jdb (oref this debugger))
 	 (debuggee (oref jdb debuggee)))
     (if (string-match "^[-a-zA-Z0-9_$ -]+\\[\\([0-9]*,?[0-9]+\\)\\] " output)
@@ -875,7 +875,7 @@ expression at poing")
 (defclass jde-jdb-debuggee-app (jde-db-debuggee-app) ()
   "Application process being debugged with jdb.")
 
-(defmethod initialize-instance ((this jde-jdb-debuggee-app) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-debuggee-app) &rest fields)
   "Constructs an instance of a jdb debuggee."
   (cl-call-next-method)
   (oset this status (jde-db-debuggee-status)))
@@ -888,7 +888,7 @@ expression at poing")
 (defclass jde-jdb-debuggee-applet (jde-db-debuggee-applet) ()
   "Application process being debugged with jdb.")
 
-(defmethod initialize-instance ((this jde-jdb-debuggee-applet) &rest fields)
+(cl-defmethod initialize-instance ((this jde-jdb-debuggee-applet) &rest fields)
   "Constructs an instance of a jdb debuggee."
   (cl-call-next-method)
   (oset this status (jde-db-debuggee-status)))
@@ -916,7 +916,7 @@ expression at poing")
   (:allow-nil-initform t)
 "Class of generic jdb debuggers")
 
-(defmethod initialize-instance ((this jde-db-jdb) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-jdb) &rest fields)
   "Constructor for generic jdb debugger."
   (cl-call-next-method)
   (oset this :name "jdb")
@@ -933,21 +933,21 @@ expression at poing")
    this
    (jde-jdb-stack-listener :debugger this)))
 
-(defmethod jde-db-create-debuggee-app ((this jde-db-jdb) main-class)
+(cl-defmethod jde-db-create-debuggee-app ((this jde-db-jdb) main-class)
   (oset
    this
    :debuggee (jde-jdb-debuggee-app
 	      (concat "Application: " main-class)
 	      :main-class main-class)))
 
-(defmethod jde-db-create-debuggee-applet ((this jde-db-jdb) applet-doc)
+(cl-defmethod jde-db-create-debuggee-applet ((this jde-db-jdb) applet-doc)
   (oset
    this
    :debuggee (jde-jdb-debuggee-applet
 	      (concat "Applet: " applet-doc)
 	      :doc applet-doc)))
 
-(defmethod jde-db-jdb-start ((this jde-db-jdb) prog-args cmdstr)
+(cl-defmethod jde-db-jdb-start ((this jde-db-jdb) prog-args cmdstr)
   "Start the debugger."
   (let ((w32-quote-process-args ?\")
 	(win32-quote-process-args ?\") ;; XEmacs
@@ -991,7 +991,7 @@ expression at poing")
       (oset this running-p t))))
 
 
-(defmethod jde-jdb-connect ((this jde-db-jdb))
+(cl-defmethod jde-jdb-connect ((this jde-db-jdb))
   "Connect the debugger to an existing process."
   (if (or
        (not (slot-boundp this 'buffer))
@@ -1081,7 +1081,7 @@ expression at poing")
       (pop-to-buffer (oref this :buffer-name)))))
 
 
-(defmethod jde-db-notify-process-exit ((this jde-db-jdb) msg)
+(cl-defmethod jde-db-notify-process-exit ((this jde-db-jdb) msg)
   "The default debugger process sentinel invokes this method
 when the jdb process terminates."
   (cl-call-next-method)
@@ -1092,12 +1092,12 @@ when the jdb process terminates."
     (oset debuggee-status stopped-p nil)
     (jde-db-set-all-breakpoints-specified)))
 
-(defmethod jde-db-launch-arg ((this jde-db-jdb))
+(cl-defmethod jde-db-launch-arg ((this jde-db-jdb))
   "Generate the -launch option for jdb."
   (list "-launch"))
 
 
-(defmethod jde-db-debugger-get-prog-args ((this jde-db-jdb))
+(cl-defmethod jde-db-debugger-get-prog-args ((this jde-db-jdb))
   (cond
    ((typep (oref this debuggee) 'jde-db-debuggee-app)
     (append
@@ -1127,7 +1127,7 @@ when the jdb process terminates."
 "Class of jdb shipped with JDK 1.1.x.")
 
 
-(defmethod initialize-instance ((this jde-db-jdb-1-1) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-jdb-1-1) &rest fields)
   "Constructor for jdb-1.1."
   (cl-call-next-method)
   (oset (oref this bp-listener)
@@ -1147,7 +1147,7 @@ when the jdb process terminates."
 "Class of pre-JPDA jdb shipped with post-JPDA versions of the
 JDK.")
 
-(defmethod initialize-instance ((this jde-db-old-jdb) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-old-jdb) &rest fields)
   "Constructor for old jdb."
 
   (cl-call-next-method)
@@ -1170,7 +1170,7 @@ JDK.")
   (:allow-nil-initform t)
   "Class of JPDA-based jdb shipped with J2SDK 1.4")
 
-(defmethod initialize-instance ((this jde-db-jdb-1-4) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-jdb-1-4) &rest fields)
   "Constructor for jdb-1.4."
   (cl-call-next-method)
   ;; Regular expression used to find a jdb breakpoint position marker.
@@ -1191,7 +1191,7 @@ JDK.")
   (:allow-nil-initform t)
   "Class of JPDA-based jdb shipped with J2SDK 1.6")
 
-(defmethod initialize-instance ((this jde-db-jdb-1-6) &rest fields)
+(cl-defmethod initialize-instance ((this jde-db-jdb-1-6) &rest fields)
   "Constructor for jdb-1.6."
   (cl-call-next-method)
   ;; Regular expression used to find a jdb breakpoint position marker.
