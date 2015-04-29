@@ -156,7 +156,8 @@
   <target name="build-lisp" depends="configure-ebuild" unless="lisp.uptodate"
 	  description="compile the JDEE Emacs lisp code">
     <!-- invoke Emacs in batch mode to create autoloads and compile emacs lisp
-         -->
+    -->
+    <echo message="Emacs: ${build.bin.emacs}" />
     <exec dir="${build.lisp.escaped.dir}"
 	  executable="${build.bin.emacs}" failonerror="true">
       <arg value="--no-site-file"/>
