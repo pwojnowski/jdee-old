@@ -88,7 +88,7 @@ TO-PARSE is the string to parse."
 	     (handle
 	      (pos)
 	      (prog1
-		  (apply 'string (subseq to-parse last-cap pos))
+		  (apply 'string (cl-subseq to-parse last-cap pos))
 		(setq last-cap pos))))
 	(do ((pos 0 (incf pos)))
 	    ((> pos (1- (length to-parse))))

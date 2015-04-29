@@ -183,7 +183,7 @@ buffer."
 
 (defmethod initialize-instance ((this bsh-buffer) &rest fields)
   "Constructor for BeanShell buffer instance."
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this buffer (get-buffer-create (oref this buffer-name))))
 
@@ -202,7 +202,7 @@ buffer."
 
 (defmethod initialize-instance ((this bsh-comint-buffer) &rest fields)
   "Constructor for BeanShell buffer instance."
-  (call-next-method)
+  (cl-call-next-method)
   (with-current-buffer (oref this buffer)
     (comint-mode)
     (setq comint-prompt-regexp "bsh % ")))
@@ -456,7 +456,7 @@ The result is inserted as it comes in the compilation buffer."
 (defmethod initialize-instance ((this bsh) &rest fields)
   "Constructor for BeanShell instance."
 
-  (call-next-method)
+  (cl-call-next-method)
 
   (bsh-create-buffer this)
 
@@ -486,7 +486,7 @@ The result is inserted as it comes in the compilation buffer."
 
 (defmethod bsh-create-buffer ((this bsh))
   "Creates the buffer used by this beanshell instance."
-    (oset this buffer (bsh-comint-buffer "bsh main buffer")))
+    (oset this buffer (bsh-comint-buffer)))
 
 
 (defmethod bsh-build-classpath-argument ((this bsh))
@@ -767,7 +767,7 @@ or `bsh-vm' point to a Java vm on your system."
 	 (progn
 
 	   ;; Create a BeanShell wrapper object
-	   (setq beanshell (bsh "BeanShell"))
+	   (setq beanshell (bsh))
 
 	   (oset (oref beanshell buffer) buffer-name "*bsh demo*")
 
@@ -810,7 +810,7 @@ Emacs package.")
 
 (defmethod initialize-instance ((this bsh-standalone-bsh) &rest fields)
   "Constructor for the standard bsh BeanShell instance."
-  (call-next-method)
+  (cl-call-next-method)
 
   (assert
    (file-exists-p (expand-file-name bsh-jar))
@@ -820,17 +820,17 @@ Emacs package.")
     (expand-file-name bsh-jar)
     ". Type C-h bsh-jar for more info."))
 
-   (if bsh-vm
-       (assert
-	(or
-	 (executable-find bsh-vm)
-	 (file-exists-p bsh-vm))
-	nil
-	"The vm specified by bsh-vm does not exist: %s." bsh-vm)
-     (assert
-      (executable-find (if (eq system-type 'windows-nt) "javaw" "java"))
-      nil
-      "Cannot find a Java vm on exec-path."))
+  (if bsh-vm
+      (assert
+       (or
+	(executable-find bsh-vm)
+	(file-exists-p bsh-vm))
+       nil
+       "The vm specified by bsh-vm does not exist: %s." bsh-vm)
+    (assert
+     (executable-find (if (eq system-type 'windows-nt) "javaw" "java"))
+     nil
+     "Cannot find a Java vm on exec-path."))
 
 
   (oset this jar (expand-file-name bsh-jar))
@@ -857,8 +857,8 @@ Emacs package.")
   "*Starts the standalone version of the BeanShell, a Java interpreter developed
 by Pat Niemeyer."
   (interactive)
-  (oset-default 'bsh-standalone-bsh the-bsh (bsh-standalone-bsh "Standalone BeanShell"))
-  (bsh-launch (oref bsh-standalone-bsh the-bsh) t))
+  (oset-default 'bsh-standalone-bsh the-bsh (bsh-standalone-bsh))
+  (bsh-launch (oref 'bsh-standalone-bsh the-bsh) t))
 
 (defun bsh-exit ()
   "Closes the standalone version of the BeanShell."

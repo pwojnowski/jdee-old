@@ -287,7 +287,7 @@ semantic Java parser and requires JDE 2.1.6-beta24 and above."
   (or (and (local-variable-p 'semantic--parse-table (current-buffer))
 	   (symbol-value 'semantic--parse-table))
       (error "Semantic Java parser not found."))
-  (and (interactive-p)
+  (and (called-interactively-p 'interactive)
        (consp current-prefix-arg)
        (setq reverse t))
   (let* ((tags  (semantic-fetch-tags))
@@ -300,8 +300,8 @@ semantic Java parser and requires JDE 2.1.6-beta24 and above."
 	  (when (and start end)
 	    (require 'sort)
 	    (let (sort-fold-case)
-		(sort-lines reverse start end)
-		(goto-char start)))))))
+	      (sort-lines reverse start end)
+	      (goto-char start)))))))
 
 (defun jde-import-find-and-import (class &optional no-errors no-exclude qualifiedp)
   "*Insert an import statement for a class in the current buffer.
@@ -337,7 +337,7 @@ rt.jar. The NO-ERRORS is used to avoid showing erros to the user."
       (if (not (null existing-import))
 	  (message "Skipping: already imported %s" existing-import)
 	(let ((imports (jde-import-get-qualified-names class)))
-	  (setq imports (remove-duplicates imports :test 'equal))
+	  (setq imports (cl-remove-duplicates imports :test 'equal))
 	  (if imports
 	      (jde-import-insert-import imports (not no-exclude))
 	    (if (not no-errors)
@@ -422,19 +422,19 @@ inserts the selected import in the buffer."
 
 (defun jde-import-already-imports-class (class-name existing-imports)
   "Determine if a class is already being imported."
-  (find
+  (cl-find
    class-name
    existing-imports
    :test (lambda (new existing)
-		   (let ((new-package (jde-parse-get-package-from-name new))
-			 (new-class (jde-parse-get-unqualified-name new))
-			 (existing-package (jde-parse-get-package-from-name existing))
-			 (existing-class (jde-parse-get-unqualified-name existing)))
-		     (and
-		      (string= new-package existing-package)
-		      (or
-		       (string= new-class existing-class)
-		       (string= existing-class "*")))))))
+	   (let ((new-package (jde-parse-get-package-from-name new))
+		 (new-class (jde-parse-get-unqualified-name new))
+		 (existing-package (jde-parse-get-package-from-name existing))
+		 (existing-class (jde-parse-get-unqualified-name existing)))
+	     (and
+	      (string= new-package existing-package)
+	      (or
+	       (string= new-class existing-class)
+	       (string= existing-class "*")))))))
 
 (defun jde-import-strip-existing-imports (new-imports existing-imports)
   "Exclude classes that have already been imported."
@@ -442,9 +442,9 @@ inserts the selected import in the buffer."
    nil
    (mapcar
     (lambda (new-import)
-      (unless  (jde-import-already-imports-class new-import existing-imports)
-	new-import)
-      new-imports))))
+      (unless (jde-import-already-imports-class new-import existing-imports)
+	new-import))
+    new-imports)))
 
 (defun jde-import-choose-import (new-imports)
   "Prompts the user to select a class to import from a list of similarly
@@ -471,7 +471,7 @@ The current buffer must be in `jde-mode'."
   (interactive "P")
   (or (eq major-mode 'jde-mode)
       (error "Major mode must be 'jde-mode'"))
-  (and (interactive-p)
+  (and (called-interactively-p 'interactive)
        (consp current-prefix-arg)
        (setq comment t))
   (let* ((tags    (semantic-fetch-tags))
@@ -510,7 +510,7 @@ The current buffer must be in `jde-mode'."
 		   (case-fold-search nil)
 		   (number-of-matches
 		    (count-matches
-				(concat "\\b" classname "\\b"))))
+		     (concat "\\b" classname "\\b"))))
 	      (if (or
 		   ;; If name is already listed in the set
 		   ;; of required imports...
@@ -712,7 +712,7 @@ version of the JDE with the semantic parser."
   (interactive "P")
   (or (eq major-mode 'jde-mode)
       (error "Major mode must be 'jde-mode'"))
-  (and (interactive-p)
+  (and (called-interactively-p 'interactive)
        (consp current-prefix-arg)
        (setq force t))
   (save-excursion
@@ -1045,7 +1045,7 @@ classpath."
 
 (defmethod initialize-instance ((this jde-import-all-dialog) &rest fields)
   "Dialog constructor."
-  (call-next-method))
+  (cl-call-next-method))
 
 (defmethod efc-multi-option-dialog-sort ((this jde-import-all-dialog) list)
   "Sort the options."
@@ -1086,7 +1086,6 @@ unless the prefix argument NO-EXCLUDE is non-nil."
 	 (dialog
 	  (if ambiguous-imports
 	      (jde-import-all-dialog
-	       "Multi Classes Option"
 	       :options ambiguous-imports
 	       :text "Select imports to insert."))))
     (if dialog

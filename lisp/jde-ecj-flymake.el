@@ -362,7 +362,7 @@ process and the output contains the end of output marker `flymake-process-server
 
 (defmethod initialize-instance ((this jde-ecj-bsh-buffer) &rest fields)
   (oset this buffer-name "*ecj bsh*")
-  (call-next-method))
+  (cl-call-next-method))
 
 (defclass jde-ecj-bsh (jde-bsh)
   ((the-ecj-bsh        :type jde-ecj-bsh
@@ -374,7 +374,7 @@ process and the output contains the end of output marker `flymake-process-server
 (defmethod initialize-instance ((this jde-ecj-bsh) &rest fields)
   "Constructor for the ecj BeanShell instance."
   (let ((the-jde-bsh (oref-default 'jde-bsh the-bsh)))
-    (call-next-method)
+    (cl-call-next-method)
     (oset-default 'jde-ecj-bsh the-ecj-bsh this)
     ;; the jde-bsh constructor sets the "the-bsh" static member, which needs
     ;; to be reset so we can keep two separate instances running
@@ -382,10 +382,10 @@ process and the output contains the end of output marker `flymake-process-server
 
 (defmethod bsh-create-buffer ((this jde-ecj-bsh))
   "Creates the ecj's beanshell buffer."
-  (oset this buffer (jde-ecj-bsh-buffer "ecj bsh buffer")))
+  (oset this buffer (jde-ecj-bsh-buffer)))
 
 ;; Create the ecj BeanShell wrapper object.
-(jde-ecj-bsh "ecj BeanShell")
+(jde-ecj-bsh)
 
 (defun jde-ecj-get-bsh ()
   (oref 'jde-ecj-bsh the-ecj-bsh))

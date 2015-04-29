@@ -214,7 +214,7 @@ See also `semantic-after-toplevel-cache-change-hook'."
       (setq jde-parse-buffer-contains-multiple-classes-p
 	    (jde-parse-buffer-contains-multiple-classes-p)
 	    jde-parse-the-method-map
-	    (jde-parse-method-map "Method map"))))
+	    (jde-parse-method-map))))
 
 (defun jde-parse-update-after-partial-parse (tokens)
   "Hook run after Semantic updated the token cache.
@@ -304,16 +304,16 @@ MODIFIERS creteria as an exact match or subset.  This defaults to `subset'."
 	  (cond ((or (null compare-method)
 		     (eq 'subset compare-method))
 		 #'(lambda (modifiers var-modifiers)
-		     (subsetp modifiers var-modifiers :test 'equal)
+		     (cl-subsetp modifiers var-modifiers :test 'equal)
 		     ))
 		((eq 'equal compare-method)
 		 #'(lambda (modifiers var-modifiers)
-		       (let ((m (copy-tree modifiers))
-			     (v (copy-tree var-modifiers)))
-			 (setq m (sort m 'string<)
-			       v (sort v 'string<))
-			 (equal m v)
-			 )))
+		     (let ((m (copy-tree modifiers))
+			   (v (copy-tree var-modifiers)))
+		       (setq m (sort m 'string<)
+			     v (sort v 'string<))
+		       (equal m v)
+		       )))
 		(t (error "compare-method `%S' not supported"
 			  compare-method))))
 
@@ -447,7 +447,7 @@ current buffer resides."
   "Gets the package portion of a qualified class name."
   (substring
    class-name 0
-   (let ((pos  (position ?. class-name :from-end t)))
+   (let ((pos  (cl-position ?. class-name :from-end t)))
      (if pos
 	 pos
        0))))
@@ -759,13 +759,13 @@ could be found."
     (let ((symbol-list-entry-re
 	   (concat jde-parse-java-symbol-re "[ \t\n\r]*,[ \t\n\r]*"))
 	  (orgpt (point))
-	   found pos resname foundpt lastpos)
+	  found pos resname foundpt lastpos)
 
       ;; Search backward in the buffer.
       (while (and (not found)
 		  (search-backward name nil t))
 	(setq pos (point))
-    (setq lastpos (point))
+	(setq lastpos (point))
 
 	;; Position point at the start of the type
 	;; symbol in the declaration, e.g.,
@@ -782,20 +782,20 @@ could be found."
 	;; In this case, back over any entries in
 	;; the list ahead of name.
 	(while (looking-at symbol-list-entry-re)
-      (setq lastpos (point))
+	  (setq lastpos (point))
 	  (backward-word 1))
-    ;;  List<String, List<String>> a;
-    ;;                    ^
-    ;; In this case, back over any entries between < and >
-    (let ((try-count 0)
-	  (max-try-count 20))
-      (while (and
-	      (< try-count max-try-count)
-	      (not
-	       (= (count ?< (buffer-substring (point) lastpos))
-		  (count ?> (buffer-substring (point) lastpos)))))
-	(setq try-count (1+ try-count))
-	(backward-word 1)))
+	;;  List<String, List<String>> a;
+	;;                    ^
+	;; In this case, back over any entries between < and >
+	(let ((try-count 0)
+	      (max-try-count 20))
+	  (while (and
+		  (< try-count max-try-count)
+		  (not
+		   (= (cl-count ?< (buffer-substring (point) lastpos))
+		      (cl-count ?> (buffer-substring (point) lastpos)))))
+	    (setq try-count (1+ try-count))
+	    (backward-word 1)))
 
 
 	(setq resname (jde-parse-valid-declaration-at (point) name))
@@ -814,25 +814,25 @@ could be found."
 	(while (and (not found)
 		    (search-forward name nil t))
 	  (setq pos (point))
-      (setq lastpos (point))
+	  (setq lastpos (point))
 	  (backward-word 2)
 
 	  (while (looking-at symbol-list-entry-re)
-	(setq lastpos (point))
+	    (setq lastpos (point))
 	    (backward-word 1))
 
-    ;;  List<String, List<String>> a;
-    ;;                    ^
-    ;; In this case, back over any entries between < and >
-      (let ((try-count 0)
-	    (max-try-count 20))
-	(while (and
-		(< try-count max-try-count)
-		(not
-		 (= (count ?< (buffer-substring (point) lastpos))
-		    (count ?> (buffer-substring (point) lastpos)))))
-	  (setq try-count (1+ try-count))
-	  (backward-word 1)))
+	  ;;  List<String, List<String>> a;
+	  ;;                    ^
+	  ;; In this case, back over any entries between < and >
+	  (let ((try-count 0)
+		(max-try-count 20))
+	    (while (and
+		    (< try-count max-try-count)
+		    (not
+		     (= (cl-count ?< (buffer-substring (point) lastpos))
+			(cl-count ?> (buffer-substring (point) lastpos)))))
+	      (setq try-count (1+ try-count))
+	      (backward-word 1)))
 
 	  (setq resname (jde-parse-valid-declaration-at (point) name))
 	  (setq foundpt (point))
@@ -936,7 +936,7 @@ in a method; otherwise, nil."
   "Constructor for binary balanced tree."
 
   ;; Call parent initializer
-  (call-next-method)
+  (cl-call-next-method)
 
   (assert (typep  (oref this compare-fcn)  'function))
 
@@ -1002,7 +1002,7 @@ in a method; otherwise, nil."
   (oset  this compare-fcn 'jde-parse-method-map-compare-fcn)
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (flet ((add-methods
 	  (class)
@@ -1731,7 +1731,7 @@ The first two elements of the list are `nil' if CLASSNAME isn't fully qualifed."
 	  (let ((nopkgclass classname)
 		end-pos fq pkg)
 	    (when (> (length classname) 0)
-	      (setq end-pos (position ?. classname :from-end t))
+	      (setq end-pos (cl-position ?. classname :from-end t))
 	      (if end-pos
 		  (setq fq classname
 			pkg (substring fq 0 end-pos)

@@ -142,7 +142,7 @@ the Application Project Creation dialog."
     (oset project :name name)
     (oset project :dir proj-dir)
     (jde-project-create project)
-    (call-next-method)))
+    (cl-call-next-method)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,9 +176,7 @@ the Application Project Creation dialog."
 (defmethod jde-project-show-creation-dialog ((this jde-project-application))
   "Shows the dialog for creating a Java application project."
   (let ((dialog
-	 (jde-project-application-create-dialog
-	  "project create dialog"
-	  :project this)))
+	 (jde-project-application-create-dialog :project this)))
     (efc-dialog-show dialog)))
 
 
@@ -188,7 +186,7 @@ the Application Project Creation dialog."
 (defun jde-project-create-project ()
   "Creates a JDE project."
   (interactive)
-  (let ((project (jde-project-application "Application")))
+  (let ((project (jde-project-application)))
     (jde-project-show-creation-dialog project)))
 
 ;;;###autoload

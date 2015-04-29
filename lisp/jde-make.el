@@ -90,8 +90,8 @@ list of arguments entered in the minibuffer."
 (defun jde-make-find-build-file (dir)
   "Find the next Makefile upwards in the directory tree from DIR.
 Returns nil if it cannot find a project file in DIR or an ascendmake directory."
-  (let ((file (find "Makefile"
-		    (directory-files dir) :test 'string=)))
+  (let ((file (cl-find "Makefile"
+		       (directory-files dir) :test 'string=)))
 
     (if file
 	(setq file (expand-file-name file dir))

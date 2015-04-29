@@ -142,13 +142,13 @@ That is to say the first non-nil value found in the variables given by
 
 (defun jde-package-get-directories-in-classpath ()
   "Return the list of directories found in classpath."
-  (mapcan
+  (cl-mapcan
    (lambda (path)
-       (if (or jde-resolve-relative-paths-p
-	      (not   (string= path "."))) ; "." is ignored in classpath
-	   (let ((path (jde-normalize-path path)))
-	     (if (file-directory-p path)
-		 (list (file-name-as-directory path))))))
+     (if (or jde-resolve-relative-paths-p
+	     (not   (string= path "."))) ; "." is ignored in classpath
+	 (let ((path (jde-normalize-path path)))
+	   (if (file-directory-p path)
+	       (list (file-name-as-directory path))))))
    (jde-package-get-classpath)))
 
 
@@ -157,12 +157,12 @@ That is to say the first non-nil value found in the variables given by
   (let ((dir (jde-normalize-path default-directory))
 	;; case-insensitive for Windows
 	(case-fold-search (eq system-type 'windows-nt)))
-    (mapcan
+    (cl-mapcan
      (lambda (root)
-	 (let ((root (regexp-quote root)))
-	   (message "Seaching %S in %S..." root dir)
-	   (and (string-match root dir)
-		(list (substring dir (match-end 0))))))
+       (let ((root (regexp-quote root)))
+	 (message "Seaching %S in %S..." root dir)
+	 (and (string-match root dir)
+	      (list (substring dir (match-end 0))))))
      (append (jde-package-get-directories-in-classpath)
 	     (mapcar
 	      (lambda (p)

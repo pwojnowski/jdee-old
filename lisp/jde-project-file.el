@@ -88,8 +88,8 @@ being loaded.")
 from DIR. Returns nil if it cannot find a project file in DIR
 or an ascendant directory."
   (let* ((directory-sep-char ?/) ;; Override NT/XEmacs setting
-	 (file (find jde-project-file-name
-		     (directory-files dir) :test 'string=)))
+	 (file (cl-find jde-project-file-name
+			(directory-files dir) :test 'string=)))
     (if file
 	(expand-file-name file dir)
       (if (not (jde-root-dir-p dir))

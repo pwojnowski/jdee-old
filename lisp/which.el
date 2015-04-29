@@ -36,9 +36,9 @@ This command searches the directories in `exec-path'."
   (interactive "sWhich: \nP")
   (let ((executable (which-find-executable exe exec-path)))
     (if (not executable)
-(or silent (message "Can't find %s in search path" exe))
+	(or silent (message "Can't find %s in search path" exe))
       (and insert
-   (insert executable))
+	   (insert executable))
       (or silent (message "%s is %s" exe executable))
       executable)))
 
@@ -47,13 +47,13 @@ This command searches the directories in `exec-path'."
   (catch 'answer
     (mapc
      #'(lambda (dir)
-(mapcar
-#'(lambda (suf)
-    (let ((try (expand-file-name (concat exe suf) dir)))
-      (and (file-executable-p try)
-   (null (file-directory-p try))
-   (throw 'answer try))))
-windows-suffixes))
+	 (mapcar
+	  #'(lambda (suf)
+	      (let ((try (expand-file-name (concat exe suf) dir)))
+		(and (file-executable-p try)
+		     (null (file-directory-p try))
+		     (throw 'answer try))))
+	  windows-suffixes))
      directory-list)
     nil))
 
@@ -62,14 +62,14 @@ windows-suffixes))
   (let ((answers))
     (mapc
      #'(lambda (dir)
-(mapc
-#'(lambda (suf)
-    (let ((try (expand-file-name (concat exe suf) dir)))
-      (and (file-executable-p try)
-   (null (file-directory-p try))
-   (setq answers (cons try answers))
-   )))
-windows-suffixes))
+	 (mapc
+	  #'(lambda (suf)
+	      (let ((try (expand-file-name (concat exe suf) dir)))
+		(and (file-executable-p try)
+		     (null (file-directory-p try))
+		     (setq answers (cons try answers))
+		     )))
+	  windows-suffixes))
      directory-list)
     answers
     ))
@@ -79,6 +79,6 @@ windows-suffixes))
   (interactive "sWhich: ")
   (let ((file (which exe nil t)))
     (and file
-(find-file file))))
+	 (find-file file))))
 
 (provide 'which)

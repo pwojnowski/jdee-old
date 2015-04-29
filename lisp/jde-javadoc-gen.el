@@ -284,7 +284,7 @@ by the jde-javadoc-gen variables."
 	(setq args
 	      (append
 	       args
-	       (mapcan
+	       (cl-mapcan
 		(lambda (link)  (list "-link" link))
 		jde-javadoc-gen-link-URL))))
 
@@ -293,7 +293,7 @@ by the jde-javadoc-gen variables."
 	(setq args
 	      (append
 	       args
-	       (mapcan
+	       (cl-mapcan
 		(lambda (link)
 		  (list "-linkoffline" (car  link) (cdr link)))
 		jde-javadoc-gen-link-offline))))
@@ -303,13 +303,13 @@ by the jde-javadoc-gen variables."
 	(setq args
 	      (append
 	       args
-	       (mapcan
+	       (cl-mapcan
 		(lambda (group)
 		  (list "-group" (car group) (cdr group)))
 		jde-javadoc-gen-group))))
 
 
-     ;; Insert classpath
+    ;; Insert classpath
     (if jde-global-classpath
 	(setq args
 	      (append
@@ -339,9 +339,9 @@ by the jde-javadoc-gen variables."
 	       args
 	       (list
 		"-bootclasspath"
-	       (jde-build-classpath
-		jde-compile-option-bootclasspath
-		'jde-compile-option-bootclasspath)))))
+		(jde-build-classpath
+		 jde-compile-option-bootclasspath
+		 'jde-compile-option-bootclasspath)))))
 
     ;; Insert extdirs
     (if jde-compile-option-extdirs
@@ -350,9 +350,9 @@ by the jde-javadoc-gen variables."
 	       args
 	       (list
 		"-extdirs"
-	       (jde-build-classpath
-		jde-compile-option-extdirs
-		'jde-compile-option-extdirs)))))
+		(jde-build-classpath
+		 jde-compile-option-extdirs
+		 'jde-compile-option-extdirs)))))
 
     ;; Insert windowtitle
     (if (not (equal "" jde-javadoc-gen-window-title))
@@ -405,8 +405,8 @@ by the jde-javadoc-gen variables."
 	      (append
 	       args
 	       (list
-	       "-helpfile"
-	       (jde-normalize-path 'jde-javadoc-gen-helpfile)))))
+		"-helpfile"
+		(jde-normalize-path 'jde-javadoc-gen-helpfile)))))
 
     ;; Insert stylesheet
     (if (not (equal "" jde-javadoc-gen-stylesheetfile))
@@ -442,9 +442,9 @@ by the jde-javadoc-gen variables."
 	       args
 	       (list
 		"-docletpath"
-	       (jde-build-classpath
-		jde-javadoc-gen-docletpath
-		'jde-javadoc-gen-docletpath)))))
+		(jde-build-classpath
+		 jde-javadoc-gen-docletpath
+		 'jde-javadoc-gen-docletpath)))))
 
     ;; Inser -use
     (if jde-javadoc-gen-use
@@ -569,9 +569,7 @@ buffer. If `jde-javadoc-display-doc' is nonnil, this command displays
 the generated documentation in a browser."
   (save-some-buffers)
   (let ((generator
-	 (jde-javadoc-maker
-	  "javadoc generator"
-	  :make-packages-p make-packages-p)))
+	 (jde-javadoc-maker :make-packages-p make-packages-p)))
     (exec generator)))
 
 

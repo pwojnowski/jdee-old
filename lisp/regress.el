@@ -724,17 +724,17 @@ otherwise equal is used."
 
 
     (let*
-      ((ask-name-sym (intern-soft (concat "ask-" (symbol-name name))))
-	(comparer-sym (or comparer 'equal)))
+	((ask-name-sym (intern-soft (concat "ask-" (symbol-name name))))
+	 (comparer-sym (or comparer 'equal)))
 
       `(if
-	 ,ask-name-sym
-	 (,comparer-sym ,comparand ,name)
+	   ,ask-name-sym
+	   (,comparer-sym ,comparand ,name)
 	 t)))
 
 
   (defmacro regress-define-grader-function
-    (function-name decomposition-list answerlist)
+      (function-name decomposition-list answerlist)
     "Build a grader function named FUNCTION-NAME.
 
 Requires the cl package.
@@ -755,40 +755,40 @@ Except for the required parm RESULT, all parms to FUNCTION-NAME are
 optional."
 
     (let*
-      (
-	(result-sym (gensym))
+	(
+	 (result-sym (cl-gensym))
 
-	(parmlist
+	 (parmlist
 	  (mapcar
-	    'regress-answer-parm
-	    answerlist))
+	   'regress-answer-parm
+	   answerlist))
 
-	(body
+	 (body
 	  (mapcar
-	    ( function
-	      ( lambda (x)
-		;;(regress-answer-test (car x) (cadr x))
-		(apply 'regress-answer-test x)
-		))
-	    answerlist))
+	   ( function
+	     ( lambda (x)
+	       ;;(regress-answer-test (car x) (cadr x))
+	       (apply 'regress-answer-test x)
+	       ))
+	   answerlist))
 
 
-	(letlist
+	 (letlist
 	  (loop
-	    for X in decomposition-list
-	    for I from 0
-	    collect `(,X (nth ,I ,result-sym)))));;ch
+	   for X in decomposition-list
+	   for I from 0
+	   collect `(,X (nth ,I ,result-sym)))));;ch
 
       (require 'cl)
 
       `(defun* ,function-name
-	 (,result-sym &optional &key;;ch
-	   ,@parmlist)
+	   (,result-sym &optional &key;;ch
+			,@parmlist)
 
 	 (let*
-	   ,letlist
+	     ,letlist
 	   (and
-	     ,@body))))))
+	    ,@body))))))
 
 
 

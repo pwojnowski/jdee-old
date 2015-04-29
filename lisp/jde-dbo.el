@@ -186,10 +186,9 @@ See also the hook `tree-widget-after-toggle-fucntions'."
 
 (defun jde-dbo-update-locals-buf (process thread frame)
   (let* ((cmd (jde-dbs-get-locals
-	      "get locals"
-	      :process process
-	      :thread-id thread
-	      :stack-frame-index frame))
+	       :process process
+	       :thread-id thread
+	       :stack-frame-index frame))
 	 (locals (jde-dbs-cmd-exec cmd))
 	 var)
 
@@ -200,8 +199,8 @@ See also the hook `tree-widget-after-toggle-fucntions'."
 
       (if jde-xemacsp
 	  (map-extents (lambda (extent ignore)
-		 (delete-extent extent)
-		 nil))
+			 (delete-extent extent)
+			 nil))
 	(let ((all (overlay-lists)))
 	  (mapc 'delete-overlay (car all))
 	  (mapc 'delete-overlay (cdr all))))
@@ -215,7 +214,6 @@ See also the hook `tree-widget-after-toggle-fucntions'."
 
       ;; Insert the this object for this stack frame.
       (let* ((cmd (jde-dbs-get-this
-		   "get this"
 		   :process process
 		   :thread-id thread
 		   :stack-frame-index frame))
@@ -224,12 +222,12 @@ See also the hook `tree-widget-after-toggle-fucntions'."
 	    (progn
 	      (let* ((id (oref this-obj :id))
 		     (open (concat "this" (number-to-string id))))
-	      (widget-create 'jde-widget-java-obj
-			     :tag "this"
-			     :node-name open
-			     :open (jde-dbo-locals-open-p open)
-			     :process process
-			     :object-id (oref this-obj :id))))))
+		(widget-create 'jde-widget-java-obj
+			       :tag "this"
+			       :node-name open
+			       :open (jde-dbo-locals-open-p open)
+			       :process process
+			       :object-id (oref this-obj :id))))))
 
       ;; Insert the local variables for this stack frame.
       (dolist (local-var locals)
@@ -238,9 +236,9 @@ See also the hook `tree-widget-after-toggle-fucntions'."
 				 'jde-dbo-locals-open-p (current-buffer))))))
 
 (defun jde-dbo-update-stack (process thread-id)
-  (let* ((cmd  (jde-dbs-get-thread "get_thread"
-				   :process process
-				   :thread-id thread-id))
+  (let* ((cmd  (jde-dbs-get-thread
+		:process process
+		:thread-id thread-id))
 	 (thread-info (jde-dbs-cmd-exec cmd))
 	 (stack (nth 5 thread-info)))
     (oset process :stack stack)
@@ -371,8 +369,7 @@ used in the last breakpoint hit event, and watch point hit event.")
 
 (defun jde-dbo-make-method (spec)
   (let ((m
-	 (jde-dbo-method "method"
-			 :class   (nth 0 spec)
+	 (jde-dbo-method :class   (nth 0 spec)
 			 :name    (nth 1 spec)
 			 :returns (nth 2 spec)
 			 :args    (nth 3 spec))))
@@ -520,20 +517,18 @@ The remaining elements are arguments to pass to the handler."
     (when clear
       (erase-buffer))
     (let* ((var-tag (format "%s %s [id: %s]" (oref var-value jtype) name
-			   (if (or (typep var-value 'jde-dbs-java-primitive)
+			    (if (or (typep var-value 'jde-dbs-java-primitive)
 				    (typep var-value 'jde-dbs-java-null))
-			     "-"
-			     (oref var-value id))))
-	  (openp (if (functionp open)
-		   (funcall open var-tag)
-		   open)))
+				"-"
+			      (oref var-value id))))
+	   (openp (if (functionp open)
+		      (funcall open var-tag)
+		    open)))
       (cond
-	((typep var-value 'jde-dbs-java-udci)
-	  (if (string= (oref var-value :jtype) "java.lang.String")
-	    (let* ((cmd (jde-dbs-get-string
-			 "get string"
-			 :process process
-			 :object-id (oref var-value id)))
+       ((typep var-value 'jde-dbs-java-udci)
+	(if (string= (oref var-value :jtype) "java.lang.String")
+	    (let* ((cmd (jde-dbs-get-string :process process
+					    :object-id (oref var-value id)))
 		   (str-val (jde-dbs-cmd-exec cmd)))
 	      (widget-create 'tree-widget
 			     :tag var-tag
@@ -541,32 +536,32 @@ The remaining elements are arguments to pass to the handler."
 			     :open openp
 			     :value t
 			     (list 'tree-widget :tag str-val)))
-	    (widget-create 'jde-widget-java-obj
-			   :tag var-tag
-			   :node-name var-tag
-			   :open openp
-			   :process process
-			   :object-id (oref var-value :id))))
-	   ((typep var-value 'jde-dbs-java-array)
-	    (widget-create 'jde-widget-java-array
-			   :tag var-tag
-			   :node-name var-tag
-			   :open openp
-			   :process process
-			   :object var-value))
-	   ((typep var-value 'jde-dbs-java-primitive)
-	    (widget-create 'tree-widget
-			   :tag var-tag
-			   :node-name var-tag
-			   :open openp
-			   :value t
-			   (list 'tree-widget
-				 :tag (format "%s" (oref var-value value)))))
-	   ((typep var-value 'jde-dbs-java-null)
-	    (widget-create 'tree-widget :tag var-tag :value t
-			   (list 'tree-widget :tag "null")))
-	   (t
-	    (error "Unidentified type of variable: %s" var-tag))))
+	  (widget-create 'jde-widget-java-obj
+			 :tag var-tag
+			 :node-name var-tag
+			 :open openp
+			 :process process
+			 :object-id (oref var-value :id))))
+       ((typep var-value 'jde-dbs-java-array)
+	(widget-create 'jde-widget-java-array
+		       :tag var-tag
+		       :node-name var-tag
+		       :open openp
+		       :process process
+		       :object var-value))
+       ((typep var-value 'jde-dbs-java-primitive)
+	(widget-create 'tree-widget
+		       :tag var-tag
+		       :node-name var-tag
+		       :open openp
+		       :value t
+		       (list 'tree-widget
+			     :tag (format "%s" (oref var-value value)))))
+       ((typep var-value 'jde-dbs-java-null)
+	(widget-create 'tree-widget :tag var-tag :value t
+		       (list 'tree-widget :tag "null")))
+       (t
+	(error "Unidentified type of variable: %s" var-tag))))
     (use-local-map widget-keymap)
     (widget-setup)))
 

@@ -172,30 +172,30 @@ FILENAME must be created by `jde-xref-pickle-hash'"
   other packages branch out from."
 
   (labels ((get-prefix (base-path package-path)
-	     ;; if the directory contains just one directory (or two,
-	     ;; one being CVS), then we can recurse down it to build
-	     ;; up a proper prefix before the package tree really
-	     ;; branches out
-	     (let ((files (remove-if-not
-			   (lambda (dir) (and (file-directory-p
-					       (concat base-path "/" package-path "/" dir)))
-					      (not (equal "CVS" dir)))
-			   (directory-files
-			    (concat base-path "/" package-path)
-			    nil "[^.]$"))))
-	       (if (eq (length files) 1)
-		   (get-prefix base-path (concat package-path "/"
-						 (car files)))
-		 (subst-char-in-string ?/ ?. package-path)))))
+		       ;; if the directory contains just one directory (or two,
+		       ;; one being CVS), then we can recurse down it to build
+		       ;; up a proper prefix before the package tree really
+		       ;; branches out
+		       (let ((files (cl-remove-if-not
+				     (lambda (dir) (and (file-directory-p
+						    (concat base-path "/" package-path "/" dir)))
+				       (not (equal "CVS" dir)))
+				     (directory-files
+				      (concat base-path "/" package-path)
+				      nil "[^.]$"))))
+			 (if (eq (length files) 1)
+			     (get-prefix base-path (concat package-path "/"
+							   (car files)))
+			   (subst-char-in-string ?/ ?. package-path)))))
     (when (and (eq major-mode 'jde-mode) jde-sourcepath)
       (let ((first-prefix (car (split-string (jde-parse-get-package-name)
 					     "\\."))) (prefixes))
-	(dolist (path (remove-if-not
-				   (lambda (path)
-					 (file-exists-p path))
-				   (jde-expand-wildcards-and-normalize jde-sourcepath
-													   'jde-sourcepath))
-				  prefixes)
+	(dolist (path (cl-remove-if-not
+		       (lambda (path)
+			 (file-exists-p path))
+		       (jde-expand-wildcards-and-normalize jde-sourcepath
+							   'jde-sourcepath))
+		      prefixes)
 	  (when (member first-prefix (directory-files path nil "[^.]$"))
 	    (message (concat "path = " path))
 	    (add-to-list 'prefixes (get-prefix path first-prefix))))))))
@@ -221,10 +221,10 @@ specified by `jde-xref-db-file'"
 (defun jde-xref-substring-member (str prefixlist)
   "Like `member' but works with strings and will return true if any of
   the prefixes in PREFIXLIST match STR"
-  (member-if (lambda (item) (string=
-			     (substring str 0 (min (length item)
-						   (length str)))
-			     item)) prefixlist))
+  (cl-member-if (lambda (item) (string=
+			   (substring str 0 (min (length item)
+						 (length str)))
+			   item)) prefixlist))
 
 (defun jde-xref-get-package-data ()
   (let ((data (make-hash-table :test 'equal :size 10))
@@ -243,7 +243,7 @@ specified by `jde-xref-db-file'"
 
 (defun jde-xref-update-xref-db (&optional only-classes)
   (let ((package-data (if only-classes
-			(jde-xref-get-package-data)
+			  (jde-xref-get-package-data)
 			(make-hash-table :test 'equal :size 10)))
 	(subclasses (make-hash-table :test 'equal :size 500)))
     ;; Remove all occurances of classes to be updated from the package-data's caller-hashes
@@ -251,10 +251,10 @@ specified by `jde-xref-db-file'"
       (maphash (lambda (package single-package-data)
 		 (maphash (lambda (callee callers)
 			    (puthash callee
-				     (remove-if (lambda (item)
-						  (member (car item)
-							  only-classes))
-						callers)
+				     (cl-remove-if (lambda (item)
+						     (member (car item)
+							     only-classes))
+						   callers)
 				     (nth 0 single-package-data)))
 			  (nth 0 single-package-data)))
 	       package-data))
@@ -635,10 +635,10 @@ and show it"
     (widget-setup)))
 
 (defun jde-xref-get-class-variables (class-token)
-  (mapcan (lambda (token)
-	    (when (eq (semantic-tag-class token) 'variable)
-	      (list token)))
-	  (semantic-tag-children-compatibility class-token)))
+  (cl-mapcan (lambda (token)
+	       (when (eq (semantic-tag-class token) 'variable)
+		 (list token)))
+	     (semantic-tag-children-compatibility class-token)))
 
 ;;;###autoload
 (defun jde-xref-list-uncalled-functions (strict)
@@ -657,51 +657,51 @@ while. If it does, you might want to consider increasing
   (jde-xref-load-subclasses-table-if-necessary)
   (save-excursion
     (flet ((get-unused-string (token)
-	     (goto-char (semantic-tag-start token))
-	     (unless (jde-xref-get-callers
-		      (jde-xref-class-and-token-to-signature
-		       (jde-xref-get-current-class) token) strict)
-	       (list (jde-xref-signature-to-string
-		      (jde-xref-class-and-token-to-signature
-		       (jde-xref-get-current-class) token))))))
-    (let ((uncalled-methods
-	    (mapcan 'get-unused-string
-		    (semantic-brute-find-tag-by-class 'function
-							(current-buffer)
-							t)))
-	  (unreferenced-variables
-	    (mapcan 'get-unused-string
-		    (mapcan 'jde-xref-get-class-variables
-			    (semantic-brute-find-tag-by-type "class"
-							       (current-buffer)
-							       t))))
-	  (outbuf (get-buffer-create "Unreferenced Methods and Members")))
-      (switch-to-buffer outbuf)
-      (erase-buffer)
-      (insert "The following is a list of methods and members that are\n")
-      (insert "uncalled directly by any Java classes that are in the\n")
-      (insert "following locations: \n")
-      (insert (mapconcat (lambda (x) x) jde-built-class-path ", "))
-      (newline)
-      (newline)
-      (if uncalled-methods
-	(progn
-	  (insert "Unreferenced methods:\n")
-	  (insert (mapconcat (lambda (x) x) uncalled-methods "\n")))
-	(insert "There are no uncalled methods\n\n"))
-      (if unreferenced-variables
-	(progn
-	  (insert "\n\nUnreferenced class variables:\n")
-	  (insert (mapconcat (lambda (x) x) unreferenced-variables "\n")))
-	(insert "\n\nThere are no unreferenced variables\n\n"))
-      (toggle-read-only)
-      (not-modified)))))
+			      (goto-char (semantic-tag-start token))
+			      (unless (jde-xref-get-callers
+				       (jde-xref-class-and-token-to-signature
+					(jde-xref-get-current-class) token) strict)
+				(list (jde-xref-signature-to-string
+				       (jde-xref-class-and-token-to-signature
+					(jde-xref-get-current-class) token))))))
+      (let ((uncalled-methods
+	     (cl-mapcan 'get-unused-string
+			(semantic-brute-find-tag-by-class 'function
+							  (current-buffer)
+							  t)))
+	    (unreferenced-variables
+	     (cl-mapcan 'get-unused-string
+			(cl-mapcan 'jde-xref-get-class-variables
+				   (semantic-brute-find-tag-by-type "class"
+								    (current-buffer)
+								    t))))
+	    (outbuf (get-buffer-create "Unreferenced Methods and Members")))
+	(switch-to-buffer outbuf)
+	(erase-buffer)
+	(insert "The following is a list of methods and members that are\n")
+	(insert "uncalled directly by any Java classes that are in the\n")
+	(insert "following locations: \n")
+	(insert (mapconcat (lambda (x) x) jde-built-class-path ", "))
+	(newline)
+	(newline)
+	(if uncalled-methods
+	    (progn
+	      (insert "Unreferenced methods:\n")
+	      (insert (mapconcat (lambda (x) x) uncalled-methods "\n")))
+	  (insert "There are no uncalled methods\n\n"))
+	(if unreferenced-variables
+	    (progn
+	      (insert "\n\nUnreferenced class variables:\n")
+	      (insert (mapconcat (lambda (x) x) unreferenced-variables "\n")))
+	  (insert "\n\nThere are no unreferenced variables\n\n"))
+	(read-only-mode)
+	(set-buffer-modified-p nil)))))
 
 (defun jde-xref-remove-classes-from-subclasses-table (classes)
   (maphash (lambda (key value)
 	     (puthash key
-		      (remove-if (lambda (item)
-				   (member item classes)) value)
+		      (cl-remove-if (lambda (item)
+				      (member item classes)) value)
 		      jde-xref-subclasses))
 	   jde-xref-subclasses))
 

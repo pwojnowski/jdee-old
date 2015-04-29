@@ -91,7 +91,7 @@ If nil then the default efc custom-based dialogs will be used."
 (defmethod initialize-instance ((this efc-dialog) &rest fields)
   "Constructor for dialog."
   ;; Call parent initializer.
-  (call-next-method))
+  (cl-call-next-method))
 
 
 (defmethod efc-dialog-create ((this efc-dialog)))
@@ -175,7 +175,7 @@ dialog uses recursive edit to emulate a modal dialog.")
 
 (defmethod initialize-instance ((this efc-option-dialog) &rest fields)
   "Dialog constructor."
-  (call-next-method))
+  (cl-call-next-method))
 
 (defmethod efc-dialog-create ((this efc-option-dialog))
   (widget-insert (oref this text))
@@ -200,7 +200,7 @@ dialog. This suspends the current command until the user has selected
 an option or canceled the dialog. See `efc-dialog-ok' and
 `efc-dialog-cancel' for more information."
   (save-window-excursion
-    (call-next-method)
+    (cl-call-next-method)
     (recursive-edit)))
 
 (defmethod efc-dialog-ok ((this efc-option-dialog))
@@ -220,7 +220,7 @@ user, kills the dialog buffer, and exits recursive-edit mode."
   "Invoked when the user clicks the dialog's Cancel button.  Invokes
 the default cancel method, sets the :selection field of THIS to nil,
 and then exits recursive edit mode."
-  (call-next-method)
+  (cl-call-next-method)
   (oset this selection nil)
   (exit-recursive-edit))
 
@@ -246,7 +246,7 @@ The dialog sets SELECTION to the options selected by the user.")
 
 (defmethod initialize-instance ((this efc-multi-option-dialog) &rest fields)
    "Dialog constructor."
-   (call-next-method))
+   (cl-call-next-method))
 
 (defmethod efc-dialog-create ((this efc-multi-option-dialog))
   (message "%s..." (oref this build-message))
@@ -479,7 +479,7 @@ type-compatible with a collection if the collection is heterogeneous or
 the item's type is the same as the collection's element type."
   (let ((element-type (oref this elem-type)))
     (or (eq element-type nil)
-	(typep item element-type))))
+	(cl-typep item element-type))))
 
 (defmethod efc-coll-iterator ((this efc-collection))
   "Returns an iterator for this collection."
@@ -544,7 +544,7 @@ is an object of efc-visitor class."
 
 (defmethod initialize-instance ((this efc-list) &rest fields)
   "Iterator constructor."
-  (call-next-method))
+  (cl-call-next-method))
 
 (defmethod efc-coll-add ((this efc-list) item)
   "Adds an item to the list."
@@ -555,7 +555,7 @@ is an object of efc-visitor class."
 
 (defmethod efc-coll-iterator ((this efc-list))
   "Return an iterator for this list."
-  (efc-list-iterator "list iterator" :list-obj this))
+  (efc-list-iterator :list-obj this))
 
 
 (defmethod efc-coll-memberp ((this efc-list) item)
@@ -581,9 +581,9 @@ is an object of efc-visitor class."
 
 (defmethod initialize-instance ((this efc-list-iterator) &rest fields)
   "Iterator constructor."
-  (call-next-method)
+  (cl-call-next-method)
   (assert (oref this list-obj))
-  (assert (typep (oref this list-obj) efc-list))
+  (assert (cl-typep (oref this list-obj) efc-list))
   (oset this list (oref (oref this list-obj) items)))
 
 (defmethod efc-iter-has-next ((this efc-list-iterator))
@@ -613,7 +613,7 @@ is an object of efc-visitor class."
 already contain the item."
   (if (efc-coll-memberp this item)
       (error "This set already contains %s" item)
-    (call-next-method)))
+    (cl-call-next-method)))
 
 
 
@@ -649,7 +649,7 @@ already contain the item."
 already contain the item."
   (if (efc-coll-get this key)
       (error "This set already contains %s" key)
-    (call-next-method)))
+    (cl-call-next-method)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -665,7 +665,7 @@ already contain the item."
 
 (defmethod initialize-instance ((this efc-hash-table) &rest fields)
   "Hash table constructor."
-  (call-next-method)
+  (cl-call-next-method)
   (oset this table (make-hash-table)))
 
 (defmethod efc-coll-put ((this efc-hash-table) key value)
@@ -690,7 +690,6 @@ of efc-visitor class."
 (defmethod efc-coll-iterator ((this efc-hash-table))
   "Return an iterator for this hash table."
   (efc-list-iterator
-   "hash table iterator"
    :list-obj (let (values)
 	       (maphash
 		(lambda (key value)

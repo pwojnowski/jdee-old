@@ -768,7 +768,7 @@ panel to specifying the applet document."
   "Constructor for the class representing the JDK 1.1 vm."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this :version "1.1"))
 
@@ -844,7 +844,7 @@ to a debugger."
   "Constructor for the class representing the JDK 1.2 vm."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this :version "1.2"))
 
@@ -926,7 +926,7 @@ to a debugger."
   "Constructor for the class representing the JDK 1.3 vm."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this :version "1.3"))
 
@@ -1008,7 +1008,7 @@ to a debugger."
   "Constructor for the class representing the JDK 1.4 vm."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this :version "1.4"))
 
@@ -1117,7 +1117,7 @@ to a debugger."
   "Constructor for the class representing the JDK 1.5 vm."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this :version "1.5"))
 
@@ -1128,7 +1128,7 @@ to a debugger."
   "Constructor for the class representing the JDK 1.6 vm."
 
   ;; Call parent initializer.
-  (call-next-method)
+  (cl-call-next-method)
 
   (oset this :version "1.6"))
 
@@ -1136,19 +1136,19 @@ to a debugger."
 
 (defvar jde-run-virtual-machines
   (list
-   (jde-run-vm-1-1 "JDK 1.1 vm")
-   (jde-run-vm-1-2 "JDK 1.2 vm")
-   (jde-run-vm-1-3 "JDK 1.3 vm")
-   (jde-run-vm-1-4 "JDK 1.4 vm")
-   (jde-run-vm-1-5 "JDK 1.5 vm")
-   (jde-run-vm-1-6 "JDK 1.6 vm"))
+   (jde-run-vm-1-1)
+   (jde-run-vm-1-2)
+   (jde-run-vm-1-3)
+   (jde-run-vm-1-4)
+   (jde-run-vm-1-5)
+   (jde-run-vm-1-6))
   "*List of supported virtual machines.")
 
 (defun jde-run-get-vm ()
   "Gets the vm for the current JDK."
   (let* ((jdk-version (jde-java-version))
 	 (vm
-	  (find-if
+	  (cl-find-if
 	   (lambda (vm-x)
 	     (string-match
 	      (oref vm-x :version)
@@ -1420,13 +1420,13 @@ directory."
      ((file-exists-p (setq f (concat basename ".htm"))) ;; for poor winXX souls
       (list f))
      (t
-      (mapcan (lambda (file)
-		(if (or
-		     (string-match "[.]html$" file)
-		     (string-match "[.]htm$" file))
-		    (list file)))
-	      (directory-files
-	       (file-name-directory (buffer-file-name)) t))))))
+      (cl-mapcan (lambda (file)
+		   (if (or
+			(string-match "[.]html$" file)
+			(string-match "[.]htm$" file))
+		       (list file)))
+		 (directory-files
+		  (file-name-directory (buffer-file-name)) t))))))
 
 
 
