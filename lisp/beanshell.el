@@ -700,8 +700,8 @@ must be an instance of `bsh-buffer' class. A typical use for this
 method is to invoke a Java application whose output is compiler-like,
 e.g., javac, ant, or checkstyle. In this case, BUFFER would be
 an instance of a subclass of `bsh-compiler-buffer'."
-  (assert (typep expr 'string))
-  (assert (typep buffer 'bsh-buffer))
+  (assert (cl-typep expr 'string))
+  (assert (cl-typep buffer 'bsh-buffer))
   (unless (bsh-running-p this)
     (bsh-launch this))
   (let* ((comint-buffer (oref this buffer))

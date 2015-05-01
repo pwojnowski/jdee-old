@@ -1003,22 +1003,22 @@ expression at poing")
 	     (working-directory
 	      (jde-db-debugger-get-working-dir this))
 	     (prog-args
-	      (if (typep connector 'jde-db-listen-connector)
-		  (if (typep connector 'jde-db-socket-connector)
+	      (if (cl-typep connector 'jde-db-listen-connector)
+		  (if (cl-typep connector 'jde-db-socket-connector)
 		      (list
 		       "-connect"
 		       (format
 			"com.sun.jdi.SocketListen:port=%s"
 			(oref connector port)))
-		    (if (typep connector 'jde-db-shared-memory-connector)
+		    (if (cl-typep connector 'jde-db-shared-memory-connector)
 			(list
 			 "-connect"
 			 (format
 			  "com.sun.jdi.SharedMemoryListen:name=%s"
 			  (oref connector name)))
 		      (error "Invalid connector type.")))
-		(if (typep connector 'jde-db-attach-connector)
-		    (if (typep connector 'jde-db-socket-connector)
+		(if (cl-typep connector 'jde-db-attach-connector)
+		    (if (cl-typep connector 'jde-db-socket-connector)
 			(let ((host (oref connector host))
 			      (port (oref connector port)))
 			  (if host
@@ -1032,7 +1032,7 @@ expression at poing")
 			   (format
 			    "com.sun.jdi.SocketAttach:port=%s"
 			    port))))
-		    (if (typep connector 'jde-db-shared-memory-connector)
+		    (if (cl-typep connector 'jde-db-shared-memory-connector)
 			(list
 			 "-connect"
 			 (format
@@ -1047,11 +1047,11 @@ expression at poing")
 	(oset
 	 this
 	 :buffer-name
-	 (if (typep connector 'jde-db-shared-memory-connector)
+	 (if (cl-typep connector 'jde-db-shared-memory-connector)
 	     (format "*debug %s* debugee-shmem-name" (oref connector name))
 	   (format
 	    "*debug %s:%s*"
-	    (if (or (typep connector 'jde-db-listen-connector)
+	    (if (or (cl-typep connector 'jde-db-listen-connector)
 		    (not (oref connector port)))
 		"localhost" (oref connector host))
 	    (oref connector port))))
@@ -1099,14 +1099,14 @@ when the jdb process terminates."
 
 (cl-defmethod jde-db-debugger-get-prog-args ((this jde-db-jdb))
   (cond
-   ((typep (oref this debuggee) 'jde-db-debuggee-app)
+   ((cl-typep (oref this debuggee) 'jde-db-debuggee-app)
     (append
      (jde-db-get-vm-args this)
      (jde-db-get-vm-args-from-user)
      (list (oref (oref this debuggee) main-class))
      jde-db-option-application-args
      (jde-db-get-app-args-from-user)))
-   ((typep (oref this debuggee) 'jde-db-debuggee-applet)
+   ((cl-typep (oref this debuggee) 'jde-db-debuggee-applet)
     (list "-debug"
 	  (oref (oref this debuggee) doc)))
    (t

@@ -1332,7 +1332,7 @@ command list."
 
 (cl-defmethod jde-db-exec-cmd ((this jde-db-debugger) cmd)
   "Executes CMD."
-  (assert (and cmd (typep cmd 'jde-db-cmd)))
+  (assert (and cmd (cl-typep cmd 'jde-db-cmd)))
   (jde-db-exec-cmds this (list cmd)))
 
 (cl-defmethod jde-db-classpath-arg ((this jde-db-debugger))

@@ -938,7 +938,7 @@ in a method; otherwise, nil."
   ;; Call parent initializer
   (cl-call-next-method)
 
-  (assert (typep  (oref this compare-fcn)  'function))
+  (assert (cl-typep  (oref this compare-fcn)  'function))
 
   (oset this  tree (avl-tree-create (oref this compare-fcn))))
 

@@ -204,7 +204,7 @@ $CLASSPATH, then in the current directory."
 		      ;; we have found the source file. So let´s open it and
 		      ;; then jump to the thing-of-interest
 		      (progn
-			(if (typep source 'buffer)
+			(if (cl-typep source 'buffer)
 			    (let ((pop-up-frames t))
 			      (set-buffer source)
 			      (display-buffer source)
@@ -491,9 +491,9 @@ If it finds the source file, it opens the file in a buffer."
   (let ((source (jde-find-class-source-file class)))
     (if source
 	(progn
-	  (if (typep source 'buffer)
+	  (if (cl-typep source 'buffer)
 	      (switch-to-buffer source)
-	      ;; (pop-to-buffer source other-window)
+	    ;; (pop-to-buffer source other-window)
 	    (if (not (string-equal (buffer-file-name)  source))
 		(if other-window
 		    (find-file-other-window source)

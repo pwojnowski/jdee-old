@@ -217,7 +217,7 @@ See also the hook `tree-widget-after-toggle-fucntions'."
 		   :thread-id thread
 		   :stack-frame-index frame))
 	     (this-obj (jde-dbs-cmd-exec cmd)))
-	(if (not (typep this-obj 'jde-dbs-java-null))
+	(if (not (cl-typep this-obj 'jde-dbs-java-null))
 	    (progn
 	      (let* ((id (oref this-obj :id))
 		     (open (concat "this" (number-to-string id))))
@@ -516,15 +516,15 @@ The remaining elements are arguments to pass to the handler."
     (when clear
       (erase-buffer))
     (let* ((var-tag (format "%s %s [id: %s]" (oref var-value jtype) name
-			    (if (or (typep var-value 'jde-dbs-java-primitive)
-				    (typep var-value 'jde-dbs-java-null))
+			    (if (or (cl-typep var-value 'jde-dbs-java-primitive)
+				    (cl-typep var-value 'jde-dbs-java-null))
 				"-"
 			      (oref var-value id))))
 	   (openp (if (functionp open)
 		      (funcall open var-tag)
 		    open)))
       (cond
-       ((typep var-value 'jde-dbs-java-udci)
+       ((cl-typep var-value 'jde-dbs-java-udci)
 	(if (string= (oref var-value :jtype) "java.lang.String")
 	    (let* ((cmd (jde-dbs-get-string :process process
 					    :object-id (oref var-value id)))
@@ -541,14 +541,14 @@ The remaining elements are arguments to pass to the handler."
 			 :open openp
 			 :process process
 			 :object-id (oref var-value :id))))
-       ((typep var-value 'jde-dbs-java-array)
+       ((cl-typep var-value 'jde-dbs-java-array)
 	(widget-create 'jde-widget-java-array
 		       :tag var-tag
 		       :node-name var-tag
 		       :open openp
 		       :process process
 		       :object var-value))
-       ((typep var-value 'jde-dbs-java-primitive)
+       ((cl-typep var-value 'jde-dbs-java-primitive)
 	(widget-create 'tree-widget
 		       :tag var-tag
 		       :node-name var-tag
@@ -556,7 +556,7 @@ The remaining elements are arguments to pass to the handler."
 		       :value t
 		       (list 'tree-widget
 			     :tag (format "%s" (oref var-value value)))))
-       ((typep var-value 'jde-dbs-java-null)
+       ((cl-typep var-value 'jde-dbs-java-null)
 	(widget-create 'tree-widget :tag var-tag :value t
 		       (list 'tree-widget :tag "null")))
        (t

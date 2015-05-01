@@ -1204,7 +1204,7 @@ You can use the notation [f1], [f2], etc., to specify function keys."
 	       :tag "Request"
 	       :doc
 	       (concat
-		(if (typep request 'jde-dbs-trace-methods-request)
+		(if (cl-typep request 'jde-dbs-trace-methods-request)
 		    (progn
 		      (concat
 		       (format "Trace method %s." (oref request trace-type))

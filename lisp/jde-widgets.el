@@ -266,7 +266,7 @@ tree."
 	 (var-value (oref var value))
 	 (var-tag (format "%s %s" var-type var-name)))
     (cond
-     ((typep var-value 'jde-dbs-java-udci)
+     ((cl-typep var-value 'jde-dbs-java-udci)
       (setq var-tag (format "%s [id: %d]" var-tag (oref var-value :id)))
       (if (string= (oref var-value :jtype) "java.lang.String")
 	  (let* ((cmd (jde-dbs-get-string
@@ -285,14 +285,14 @@ tree."
 	      :open (jde-dbo-locals-open-p var-tag)
 	      :process process
 	      :object-id (oref var-value :id))))
-     ((typep var-value 'jde-dbs-java-array)
+     ((cl-typep var-value 'jde-dbs-java-array)
       (setq var-tag (format "%s [id: %d]" var-tag (oref var-value :id)))
       (list 'jde-widget-java-array
 	    :tag var-tag
 	    :node-name var-tag
 	    :open (jde-dbo-locals-open-p var-tag)
 	    :process process :object var-value))
-     ((typep var-value 'jde-dbs-java-primitive)
+     ((cl-typep var-value 'jde-dbs-java-primitive)
       (list 'tree-widget
 	    :tag var-tag
 	    :node-name var-tag
@@ -300,7 +300,7 @@ tree."
 	    :value t
 	    (list 'tree-widget
 		  :tag (format "%s" (oref var-value value)))))
-     ((typep var-value 'jde-dbs-java-null)
+     ((cl-typep var-value 'jde-dbs-java-null)
       (list 'tree-widget
 	    :tag var-tag
 	    :node-name var-tag
@@ -350,7 +350,7 @@ the object exists, and  ID is the debugger id for the object."
 
 (defun jde-widget-java-array-element-to-tree (process element index)
   (cond
-   ((typep element 'jde-dbs-java-udci)
+   ((cl-typep element 'jde-dbs-java-udci)
     (if (string= (oref element :jtype) "java.lang.String")
 	(let* ((cmd (jde-dbs-get-string
 		     :process process
@@ -367,16 +367,16 @@ the object exists, and  ID is the debugger id for the object."
 	    :open (jde-dbo-locals-open-p (format "[%d] %s" index (oref element jtype)))
 	    :process process
 	    :object-id (oref element id))))
-   ((typep element 'jde-dbs-java-array)
+   ((cl-typep element 'jde-dbs-java-array)
     (list 'jde-widget-java-array
 	  :tag (format "[%d] %s" index (oref element jtype))
 	  :node-name (format "[%d] %s" index (oref element jtype))
 	  :open (jde-dbo-locals-open-p (format "[%d] %s" index (oref element jtype)))
 	  :process process
 	  :object element))
-   ((typep element 'jde-dbs-java-primitive)
+   ((cl-typep element 'jde-dbs-java-primitive)
     (list 'tree-widget :tag (format "[%d] %s"  index (oref element value))))
-   ((typep element 'jde-dbs-java-null)
+   ((cl-typep element 'jde-dbs-java-null)
     (list 'tree-widget :tag (format "[%d] null" index)))
    (t
     (error "Unidentified type of object: <%s|%s>" (oref element jtype)
