@@ -154,18 +154,18 @@ packages otherwise."
     result))
 
 (defun prf2-get-classinfo (name)
-"Return the class info list for the class NAME (possibly the short
+  "Return the class info list for the class NAME (possibly the short
 java name). This list contains lists of elements, which car is a
 possible completion, and the cdr gives additional informations on the
 car."
   (let ((guessed (prf2-guess-type-of name)) result)
     (if (stringp guessed)
 	(setq result (bsh-eval
-		      (oref 'jde-bsh the-bsh)
+		      (oref-default 'jde-bsh the-bsh)
 		      (concat "jde.util.Completion.getClassInfo(\"" guessed "\");")))
       (if (not (null name))
 	  (setq result (bsh-eval
-			(oref 'jde-bsh the-bsh)
+			(oref-default 'jde-bsh the-bsh)
 			(prf2-get-classinfo-javacode name guessed)))))
     (if (not (null result))
 	(eval (read result))

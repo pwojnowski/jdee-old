@@ -490,13 +490,13 @@ the cursor"
   "Browse class in the beanshell class browser"
   (interactive)
   (let* ((class
-	 (or class-name
-	     (read-from-minibuffer "Class: " (thing-at-point 'symbol))))
+	  (or class-name
+	      (read-from-minibuffer "Class: " (thing-at-point 'symbol))))
 	 (fq-class-name
 	  (jde-parse-select-qualified-class-name class)))
     (if fq-class-name
 	(bsh-eval
-	 (oref 'jde-bsh the-bsh)
+	 (oref-default 'jde-bsh the-bsh)
 	 (format "browseClass(\"%s\");" fq-class-name)))))
 
 (defun jde-wiz-delegate (delegee)

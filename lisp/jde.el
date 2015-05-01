@@ -998,7 +998,7 @@ This command invokes the function defined by `jde-build-function'."
 	(if (and
 	     (not jde-launch-beanshell-on-demand-p)
 	     (not (jde-bsh-running-p)))
-	    (bsh-launch (oref 'jde-bsh the-bsh)))
+	    (bsh-launch (oref-default 'jde-bsh the-bsh)))
 
 	(jde-wiz-set-bsh-project)
 
@@ -2455,7 +2455,7 @@ feature in JDE (see `jde-complete-at-point')."
 	(if (and class-to-open (stringp class-to-open))
 	    (progn
 	      (bsh-eval
-	       (oref 'jde-bsh the-bsh)
+	       (oref-default 'jde-bsh the-bsh)
 	       (concat "exploreClass(\"" class-to-open "\");")))
 	  (error "Can not parse the thing at point!")))
     (message "You need JDE >= 2.2.6 and Senator for using this feature!")))

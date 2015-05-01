@@ -507,7 +507,7 @@ and there are no more errors. "
 	 file-regexp-alist
 	 nomessage-regexp-alist
 	 (parser compilation-parse-errors-function)
-	  outbuf)
+	 outbuf)
 
     (save-excursion				       ;;getting or creating
       (setq outbuf (get-buffer-create "*compilation*"));;the compilation buffer
@@ -516,77 +516,77 @@ and there are no more errors. "
       ;; In case the compilation buffer is current, make sure we get the global
       ;; values of compilation-error-regexp-alist, etc.
       (kill-all-local-variables))
-	(setq error-regexp-alist compilation-error-regexp-alist)
-	(setq enter-regexp-alist
-	      (if (boundp 'compilation-enter-directory-regexp-alist)
-		  compilation-enter-directory-regexp-alist))
-	(setq leave-regexp-alist
-	      (if (boundp 'compilation-leave-directory-regexp-alist)
-		  compilation-leave-directory-regexp-alist))
-	(setq file-regexp-alist
-	      (if (boundp 'compilation-file-regexp-alist)
-		  compilation-file-regexp-alist))
-	(setq nomessage-regexp-alist
-	      (if (boundp 'compilation-nomessage-regexp-alist)
-		  compilation-nomessage-regexp-alist))
+    (setq error-regexp-alist compilation-error-regexp-alist)
+    (setq enter-regexp-alist
+	  (if (boundp 'compilation-enter-directory-regexp-alist)
+	      compilation-enter-directory-regexp-alist))
+    (setq leave-regexp-alist
+	  (if (boundp 'compilation-leave-directory-regexp-alist)
+	      compilation-leave-directory-regexp-alist))
+    (setq file-regexp-alist
+	  (if (boundp 'compilation-file-regexp-alist)
+	      compilation-file-regexp-alist))
+    (setq nomessage-regexp-alist
+	  (if (boundp 'compilation-nomessage-regexp-alist)
+	      compilation-nomessage-regexp-alist))
 
-	(let* (proc (thisdir (jde-ant-get-default-directory)) outwin)
-	  (save-excursion
-	    ;; Clear out the compilation buffer and make it writable.
-	    (if (not (jde-bsh-running-p))
-		(progn
-		  (bsh-launch (oref 'jde-bsh the-bsh))
-		  (bsh-eval (oref 'jde-bsh the-bsh) (jde-create-prj-values-str))))
-	    (setq proc (bsh-get-process (oref 'jde-bsh the-bsh)))
-	    (set-buffer outbuf)
-	    (compilation-mode)
-	    (setq buffer-read-only nil)
-	    (buffer-disable-undo (current-buffer))
-	    (erase-buffer)
-	    (buffer-enable-undo (current-buffer))
-	    (display-buffer outbuf)
-	    (insert "AntServer output:\n")
-	    (insert command "\n")
-	    (set-buffer-modified-p nil)
-	    (setq jde-ant-comint-filter (process-filter proc))
-	    (set-process-filter proc 'jde-ant-filter)
-	    ;;resets the jde-ant-passed-security-exception flag
-	    (setq jde-ant-passed-security-exception nil)
-	    (process-send-string proc (concat "jde.util.AntServer.start(\""
-					      command "\");" "\n")))
-	  (setq outwin (display-buffer outbuf))
-	  (save-excursion
-	    ;; (setq buffer-read-only t)  ;;; Non-ergonomic.
-	    (set (make-local-variable 'compilation-parse-errors-function)
-		 parser)
-	    (if (boundp 'compilation-error-message)
-		(set (make-local-variable 'compilation-error-message)
-		     error-message))
-	    (set (make-local-variable 'compilation-error-regexp-alist)
-		 error-regexp-alist)
+    (let* (proc (thisdir (jde-ant-get-default-directory)) outwin)
+      (save-excursion
+	;; Clear out the compilation buffer and make it writable.
+	(if (not (jde-bsh-running-p))
+	    (progn
+	      (bsh-launch (oref-default 'jde-bsh the-bsh))
+	      (bsh-eval (oref-default 'jde-bsh the-bsh) (jde-create-prj-values-str))))
+	(setq proc (bsh-get-process (oref-default 'jde-bsh the-bsh)))
+	(set-buffer outbuf)
+	(compilation-mode)
+	(setq buffer-read-only nil)
+	(buffer-disable-undo (current-buffer))
+	(erase-buffer)
+	(buffer-enable-undo (current-buffer))
+	(display-buffer outbuf)
+	(insert "AntServer output:\n")
+	(insert command "\n")
+	(set-buffer-modified-p nil)
+	(setq jde-ant-comint-filter (process-filter proc))
+	(set-process-filter proc 'jde-ant-filter)
+	;;resets the jde-ant-passed-security-exception flag
+	(setq jde-ant-passed-security-exception nil)
+	(process-send-string proc (concat "jde.util.AntServer.start(\""
+					  command "\");" "\n")))
+      (setq outwin (display-buffer outbuf))
+      (save-excursion
+	;; (setq buffer-read-only t)  ;;; Non-ergonomic.
+	(set (make-local-variable 'compilation-parse-errors-function)
+	     parser)
+	(if (boundp 'compilation-error-message)
+	    (set (make-local-variable 'compilation-error-message)
+		 error-message))
+	(set (make-local-variable 'compilation-error-regexp-alist)
+	     error-regexp-alist)
 
-	    (when (not (featurep 'xemacs))
-	      (dolist (elt `((compilation-enter-directory-regexp-alist
-			      ,enter-regexp-alist)
-			     (compilation-leave-directory-regexp-alist
-			      ,leave-regexp-alist)
-			     (compilation-file-regexp-alist
-			      ,file-regexp-alist)
-			     (compilation-nomessage-regexp-alist
-			      ,nomessage-regexp-alist)))
-		(if (boundp (car elt))
-		    (set (make-local-variable (car elt)) (second elt)))))
+	(when (not (featurep 'xemacs))
+	  (dolist (elt `((compilation-enter-directory-regexp-alist
+			  ,enter-regexp-alist)
+			 (compilation-leave-directory-regexp-alist
+			  ,leave-regexp-alist)
+			 (compilation-file-regexp-alist
+			  ,file-regexp-alist)
+			 (compilation-nomessage-regexp-alist
+			  ,nomessage-regexp-alist)))
+	    (if (boundp (car elt))
+		(set (make-local-variable (car elt)) (second elt)))))
 
-	    (if (boundp 'compilation-directory-stack)
-		(setq default-directory thisdir
-		      compilation-directory-stack (list default-directory)))
-	    (compilation-set-window-height outwin)
+	(if (boundp 'compilation-directory-stack)
+	    (setq default-directory thisdir
+		  compilation-directory-stack (list default-directory)))
+	(compilation-set-window-height outwin)
 
-	    (if (not jde-xemacsp)
-		(if compilation-process-setup-function
-		    (funcall compilation-process-setup-function)))))
-	;; Make it so the next C-x ` will use this buffer.
-	(setq compilation-last-buffer outbuf)))
+	(if (not jde-xemacsp)
+	    (if compilation-process-setup-function
+		(funcall compilation-process-setup-function)))))
+    ;; Make it so the next C-x ` will use this buffer.
+    (setq compilation-last-buffer outbuf)))
 
 (defun jde-ant-filter (proc string)
   "This filter prints out the result of the process without buffering.
