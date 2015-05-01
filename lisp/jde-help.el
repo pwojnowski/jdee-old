@@ -27,6 +27,7 @@
 (require 'beanshell)
 (require 'jde-widgets)
 (require 'eieio)
+(require 'eieio-base)
 (require 'jde-util)
 
 (defgroup jde-help nil
@@ -147,7 +148,7 @@ HTML pages."
 
 
 
-(defclass jde-url ()
+(defclass jde-url (eieio-named)
   ((protocol :initarg :protocol
 	     :initform nil
 	     :protection protected
@@ -163,7 +164,7 @@ HTML pages."
 
 (cl-defmethod jde-url-parse ((this jde-url) &optional field)
   (with-slots (protocol host file) this
-    (let ((name (eieio-object-name-string this)))
+    (let ((name (oref this object-name)))
       (if (null name) (error "No URL given in `jde-url' instance"))
       (when (null protocol)
 	(if (string-match "^\\(.+\\)://\\(.*?\\)\\(\\/.*\\)?$" name)
@@ -174,14 +175,14 @@ HTML pages."
 
 (cl-defmethod object-print ((this jde-url) &optional strings)
   (jde-url-parse this)
-  (apply 'cl-call-next-method this
+  (apply #'cl-call-next-method this
 	 (cons (concat " " (mapconcat #'(lambda (slot)
 					  (format "%S=%s" slot (slot-value this slot)))
 				      '(protocol host file)
 				      " "))
 	       strings)))
 
-(cl-defmethod jde-url-name ((this jde-url)) (eieio-object-name-string this))
+(cl-defmethod jde-url-name ((this jde-url)) (oref this object-name))
 (cl-defmethod jde-url-protocol ((this jde-url)) (jde-url-parse this 'protocol))
 (cl-defmethod jde-url-host ((this jde-url)) (jde-url-parse this 'host))
 (cl-defmethod jde-url-file ((this jde-url)) (jde-url-parse this 'file))
@@ -210,7 +211,7 @@ This defaults to false."
    ))
 
 (cl-defmethod initialize-instance ((this jde-jddocset) &rest rest)
-  (apply 'cl-call-next-method this rest)
+  (apply #'cl-call-next-method this rest)
   (unless (oref this :description)
     (oset this :description
 	  (if (oref this :jdkp)
@@ -249,7 +250,7 @@ This defaults to false."
 	    (concat (cl-substitute ?/ ?. (oref this :class)) ".html"))))
 
 (cl-defmethod jde-url-docset-url-name ((this jde-jdurl))
-  (eieio-object-name-string this))
+  (oref this object-name))
 
 (cl-defmethod jde-url-append-file-name ((this jde-jdurl) filename)
   (let ((urlname (jde-url-docset-url-name this)))
@@ -320,7 +321,7 @@ This defaults to false."
    ))
 
 (cl-defmethod initialize-instance ((this jde-jdurl-wget-resolver) &rest rest)
-  (apply 'cl-call-next-method this rest)
+  (apply #'cl-call-next-method this rest)
   (unless (slot-boundp this :executable)
     (let ((exec (executable-find
 		 (if (eq system-type 'windows-nt) "wget.exe" "wget"))))
@@ -402,7 +403,7 @@ try {
    ))
 
 (cl-defmethod initialize-instance ((this jde-jdhelper) &rest rest)
-  (apply 'cl-call-next-method this rest)
+  (apply #'cl-call-next-method this rest)
   (unless (oref this :docsets)
     (jde-jdhelper-reload-docsets this))
   (unless (oref this :resolver)
