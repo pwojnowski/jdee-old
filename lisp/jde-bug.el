@@ -2255,7 +2255,7 @@ use JDEbug->Threads->Suspend Thread (`jde-bug-suspend-thread')."
   (interactive)
   (let* ((process (jde-dbs-get-target-process))
 	 (suspend-command
-	  (jde-dbs-suspend-thread "suspend process" :process process)))
+	  (jde-dbs-suspend-thread :process process)))
     (jde-dbs-cmd-exec suspend-command)))
 
 
@@ -2265,7 +2265,7 @@ use JDEbug->Threads->Resume Thread (`jde-bug-resume-thread')."
   (interactive)
   (let* ((process (jde-dbs-get-target-process))
 	 (resume-command
-	  (jde-dbs-resume-thread "resume process" :process process)))
+	  (jde-dbs-resume-thread :process process)))
     (jde-dbs-cmd-exec resume-command)))
 
 
