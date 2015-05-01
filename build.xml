@@ -113,7 +113,7 @@
 
     <exec outputproperty="build.lisp.is-xemacs"
 	  executable="${build.bin.emacs}" failonerror="true">
-      <arg value="--no-site-file"/>
+      <arg value="-Q"/>
       <arg value="--batch"/>
       <arg value="--eval"/>
       <arg value="(message ${msw-dqec}&quot;%S${msw-dqec}&quot; (if (featurep 'xemacs) 'true 'false))"/>
