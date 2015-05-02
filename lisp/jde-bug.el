@@ -1425,12 +1425,10 @@ Execution of the process is suspended only if the expression is true. The expres
 	 (class-exclusion-filters (widget-value (oref this class-inclusion-widget)))
 	 (process (jde-dbs-get-target-process))
 	 (request (jde-dbs-watch-field-request
-		   "watch field request"
 		   :watch-type (oref this watch-type)
 		   :object-class obj-class
 		   :field-name field-name))
 	 (cmd  (jde-dbs-watch-field
-		"watch field command"
 		:process process :watch-request request)))
 
     (if (and expression (not (string= expression "")))
