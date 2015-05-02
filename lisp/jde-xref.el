@@ -171,22 +171,22 @@ FILENAME must be created by `jde-xref-pickle-hash'"
   where toplevel is defined as being a package from which all the
   other packages branch out from."
 
-  (labels ((get-prefix (base-path package-path)
-		       ;; if the directory contains just one directory (or two,
-		       ;; one being CVS), then we can recurse down it to build
-		       ;; up a proper prefix before the package tree really
-		       ;; branches out
-		       (let ((files (cl-remove-if-not
-				     (lambda (dir) (and (file-directory-p
-						    (concat base-path "/" package-path "/" dir)))
-				       (not (equal "CVS" dir)))
-				     (directory-files
-				      (concat base-path "/" package-path)
-				      nil "[^.]$"))))
-			 (if (eq (length files) 1)
-			     (get-prefix base-path (concat package-path "/"
-							   (car files)))
-			   (subst-char-in-string ?/ ?. package-path)))))
+  (cl-labels ((get-prefix (base-path package-path)
+			  ;; if the directory contains just one directory (or two,
+			  ;; one being CVS), then we can recurse down it to build
+			  ;; up a proper prefix before the package tree really
+			  ;; branches out
+			  (let ((files (cl-remove-if-not
+					(lambda (dir) (and (file-directory-p
+						       (concat base-path "/" package-path "/" dir)))
+					  (not (equal "CVS" dir)))
+					(directory-files
+					 (concat base-path "/" package-path)
+					 nil "[^.]$"))))
+			    (if (eq (length files) 1)
+				(get-prefix base-path (concat package-path "/"
+							      (car files)))
+			      (subst-char-in-string ?/ ?. package-path)))))
     (when (and (eq major-mode 'jde-mode) jde-sourcepath)
       (let ((first-prefix (car (split-string (jde-parse-get-package-name)
 					     "\\."))) (prefixes))

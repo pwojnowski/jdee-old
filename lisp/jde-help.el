@@ -332,7 +332,7 @@ This defaults to false."
 		 (:timeout . jde-help-wget-timeout)
 		 (:options . jde-help-wget-command-line-options)))
     (unless (slot-boundp this (car elt))
-      (set-slot-value this (car elt) (symbol-value (cdr elt))))))
+      (setf (slot-value this (car elt)) (symbol-value (cdr elt))))))
 
 (cl-defmethod jde-jdurl-resolver-url-exists ((this jde-jdurl-wget-resolver) url)
   (with-slots (tries timeout options) this
