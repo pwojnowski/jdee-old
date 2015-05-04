@@ -124,13 +124,13 @@
 ;;Moved
 (eval-when-compile
   ;; This code will not appear in the compiled (.elc) file
-  (put 'demo1 'regression-suite t)
-  (put 'demo2 'regression-suite t)
-  (put 'demo3 'regression-suite t)
-  (put 'demo4 'regression-suite t)
-  (put 'demo6 'regression-suite t)
+  (put 'jde-demo1 'regression-suite t)
+  (put 'jde-demo2 'regression-suite t)
+  (put 'jde-demo3 'regression-suite t)
+  (put 'jde-demo4 'regression-suite t)
+  (put 'jde-demo6 'regression-suite t)
 
-  (defvar demo1
+  (defvar jde-demo1
    '("three ways of writing the same test"
      ("Implicit test"
       (/ 30 2)
@@ -164,7 +164,7 @@
   ;; each test is run inside of a "save-excursion", so set-buffer et al
   ;; is allowed.
 
-  (defvar demo2
+  (defvar jde-demo2
    '("test uses a temp buffer; grader looks at the buffer to see how we did"
      ((progn (set-buffer (get-buffer-create "regress-demo"))
 	    (erase-buffer)
@@ -184,7 +184,7 @@
 
   ;;
 
-  (defvar demo3
+  (defvar jde-demo3
    '("tests of setenv/getenv"
      (
       (setenv "regress" "foo")
@@ -203,7 +203,7 @@
       )
      ))
 
-  (defvar demo4
+  (defvar jde-demo4
     '("Demonstrations of error recognition"
 
        ( "Expect an error of some kind, using regress-got-error"
@@ -227,7 +227,7 @@ grader expression itself will not masquerade as a successful test"
        ))
 
 
-  (defvar demo6
+  (defvar jde-demo6
     '("Demonstrations of failure indication."
        ("DELIBERATE FAILURE: demonstrate FAILURE-INDICATION"
 	 t
@@ -853,61 +853,61 @@ optional."
 
 
 (eval-when-compile
-  ;;demo5 can only be made if cl is available
+  ;;jde-demo5 can only be made if cl is available
   (if
-    (featurep 'cl)
-    (progn
+      (featurep 'cl)
+      (progn
 
-      ;;Define a grader function.  This sort of grader function is
-      ;;useful for when you have to grade different parts of a complex
-      ;;result in different tests.
-      (regress-define-grader-function
+	;;Define a grader function.  This sort of grader function is
+	;;useful for when you have to grade different parts of a complex
+	;;result in different tests.
+	(regress-define-grader-function
 
-	;;It will be named regress-demo5-grader
-	regress-demo5-grader
+	 ;;It will be named regress-jde-demo5-grader
+	 regress-jde-demo5-grader
 
-	;;This section says to decompose the result of probe, which
-	;;must be a list, into 2 elements, my-first and my-second,
-	;;which can be referenced in the next section.
-	(my-first my-second)
+	 ;;This section says to decompose the result of probe, which
+	 ;;must be a list, into 2 elements, my-first and my-second,
+	 ;;which can be referenced in the next section.
+	 (my-first my-second)
 
-	;;This says that the element my-first must be equal to the
-	;;parameter the-first IF that parameter is passed otherwise we
-	;;don't care.  Similarly, my-second / the-second.
-	( (the-first my-first)
-	  (the-second my-second)))
+	 ;;This says that the element my-first must be equal to the
+	 ;;parameter the-first IF that parameter is passed otherwise we
+	 ;;don't care.  Similarly, my-second / the-second.
+	 ( (the-first my-first)
+	   (the-second my-second)))
 
-      (defvar demo5
-	'(
-	   "How to use a function defined by regress-define-grader-function."
+	(defvar jde-demo5
+	  '(
+	    "How to use a function defined by regress-define-grader-function."
 
-	   ;;For simplicity, these examples use a literal as the probe.
-	   ( "Test only the first element."
-	     '(5  6)
-	     :test
-	     (regress-demo5-grader RESULT :the-first 5))
+	    ;;For simplicity, these examples use a literal as the probe.
+	    ( "Test only the first element."
+	      '(5  6)
+	      :test
+	      (regress-jde-demo5-grader RESULT :the-first 5))
 
 
-	   ( "Test only the second element."
-	     '(5  6)
-	     :test
-	     (regress-demo5-grader RESULT :the-second 6))
+	    ( "Test only the second element."
+	      '(5  6)
+	      :test
+	      (regress-jde-demo5-grader RESULT :the-second 6))
 
-	   ( "Test both."
-	     '(5  6)
-	     :test
-	     (and
-	       (regress-demo5-grader RESULT :the-second 6)
-	       (regress-demo5-grader RESULT :the-first  5)))
+	    ( "Test both."
+	      '(5  6)
+	      :test
+	      (and
+	       (regress-jde-demo5-grader RESULT :the-second 6)
+	       (regress-jde-demo5-grader RESULT :the-first  5)))
 
-	   ( "Deliberate failure."
-	     '(5  6)
-	     :test
-	     (regress-demo5-grader RESULT :the-first 1000))
+	    ( "Deliberate failure."
+	      '(5  6)
+	      :test
+	      (regress-jde-demo5-grader RESULT :the-first 1000))
 
-	   ))
-      (put 'demo5 'regression-suite t)
-      )))
+	    ))
+	(put 'jde-demo5 'regression-suite t)
+	)))
 
 
 ;;;
