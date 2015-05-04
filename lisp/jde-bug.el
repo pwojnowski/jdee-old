@@ -36,7 +36,7 @@
 
 ;;; Code:
 
-(require 'cl)
+(require 'cl-macs)
 (require 'jde-parse)
 (require 'jde-dbs)
 (require 'jde-dbo)

@@ -779,7 +779,7 @@ optional."
 	   for I from 0
 	   collect `(,X (nth ,I ,result-sym)))));;ch
 
-      (require 'cl)
+      (require 'cl-macs)
 
       `(defun* ,function-name
 	   (,result-sym &optional &key;;ch

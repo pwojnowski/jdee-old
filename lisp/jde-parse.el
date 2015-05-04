@@ -129,7 +129,7 @@ match `jde-auto-parse-max-buffer-size' threshold."
 	(< (buffer-size) jde-auto-parse-max-buffer-size))))
 
 ;;; Compatibility
-(eval-when (compile)
+(cl-eval-when (compile)
   (if (featurep 'xemacs)
       ;; XEmacs
       (defsubst jde-auto-parse-delay ()
