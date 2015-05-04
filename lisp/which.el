@@ -1,4 +1,4 @@
-;;; package --- UNIX command line `which' like library
+;;; which.el --- UNIX command line `which' like library
 
 ;; Author: Paul Kinnucan <paulk@mathworks.com>
 ;; Maintainer: Paul Landes <landes <at> mailc dt net>
