@@ -1,4 +1,4 @@
-Clone of http://sourceforge.net/projects/jdee/trunk (without web dir).
+Cloned and updated http://sourceforge.net/projects/jdee/trunk (without web dir).
 
 # Building #
 1. git clone git@github.com:pwojnowski/jdee.git
