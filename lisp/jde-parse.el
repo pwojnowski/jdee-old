@@ -183,6 +183,9 @@ replaced by that range.  See also `semantic-change-hooks'."
   "non-nil if buffer contains more than one class definition.")
 (make-variable-buffer-local 'jde-parse-buffer-contains-multiple-classes-p)
 
+(defvar jde-parse-the-method-map nil
+  "Map of methods defined in this buffer sorted by location.")
+(make-variable-buffer-local 'jde-parse-the-method-map)
 
 (defun jde-parse-update-after-parse (tokens)
   "Hook run after Semantic changed the token cache.
@@ -1020,11 +1023,6 @@ in a method; otherwise, nil."
   "Get the method at POS, if specified, otherwise, at point."
   (let ((p (if pos pos (point))))
     (jde-avl-tree-find this (cons (cons "" "") (cons p p)))))
-
-(defvar jde-parse-the-method-map nil
-  "Map of methods defined in this buffer sorted by location.")
-(make-variable-buffer-local 'jde-parse-the-method-map)
-
 
 (defun jde-current-buffer-exact-name-match-p (tag)
   (and (tag-exact-match-p tag)
