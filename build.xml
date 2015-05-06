@@ -10,13 +10,9 @@
 
 
     <!-- basic properties, the rest are taken from ${config.dir}/build. -->
-    <property name="build.bin.emacs" value="emacs"/>
     <property name="project.dir" location="./"/>
     <property name="project.version" value="2.4.2"/>
     <property name="config.dir" location="./config"/>
-    <!-- developers will usually have the following config file -->
-    <property name="config.devel.build.file"
-	      location="${user.home}/.jdee-config.properties"/>
 
 
     <!-- everything depends on this initialization target -->
@@ -30,6 +26,10 @@
 	        <os family="win9x" />
 	    </or>
         </condition>
+        <!-- developers will usually have the following config file (i.e. source
+	     installed libs) -->
+        <property name="config.devel.build.file"
+	          location="${user.home}/.jdee-config.properties"/>
         <property file="${config.devel.build.file}"/>
         <property file="${config.dir}/project.properties"/>
         <property file="${config.build.file}"/>
@@ -83,6 +83,10 @@
     <target name="configure" depends="init,prepare-lisp-build"
 	    unless="config.uptodate"
 	    description="create the configuration file the user edits for builds">
+
+        <!-- defaults -->
+        <property name="build.bin.emacs" value="emacs"/>
+        <!-- end defaults -->
 
         <mkdir dir="${build.config.dir}"/>
 
