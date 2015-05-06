@@ -150,9 +150,6 @@ default method kills the dialog buffer."
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; silence the compiler warnings
-(defun efc-option-dialog (&rest a))
-
 (defclass efc-option-dialog (efc-dialog)
   ((options        :initarg :options
 		   :documentation
@@ -168,7 +165,7 @@ default method kills the dialog buffer."
    (selection      :initarg :selection
 		   :documentation
 		   "Option chosen by the user."))
-   "This dialog allows a user to choose one of a set of OPTIONS by clicking
+  "This dialog allows a user to choose one of a set of OPTIONS by clicking
 a radio button next to the option. The dialog sets SELECTION to the option
 chosen by the user when the user selects the OK button on the dialog. This
 dialog uses recursive edit to emulate a modal dialog.")
@@ -567,9 +564,6 @@ is an object of efc-visitor class."
 ;; List Iterator Class                                                        ;;
 ;;                                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; silence the compiler warnings
-(defun efc-list-iterator (&rest a))
 
 (defclass efc-list-iterator (efc-iterator)
   ((list-obj :initarg :list-obj
