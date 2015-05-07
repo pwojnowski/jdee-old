@@ -26,6 +26,7 @@
 (jde-semantic-require 'semantic-ctxt)
 (jde-semantic-require 'semantic-sb)
 
+(require 'avl-tree)
 (require 'thingatpt)
 (require 'eieio)
 (require 'jde-imenu)                    ; All the imenu stuff is here now!
