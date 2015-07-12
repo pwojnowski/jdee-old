@@ -116,7 +116,7 @@
 (cl-defmethod bsh-build-classpath-argument ((this jde-bsh))
   (jde-build-classpath (oref this cp) 'jde-global-classpath t))
 
-(cl-defmethod bsh-launch :BEFORE ((this jde-bsh) &optional display-buffer)
+(cl-defmethod bsh-launch :before ((this jde-bsh) &optional display-buffer)
 	      "Sets the vm and classpath to the vm and classpath for the current project before
 the PRIMARY launch method is invoked."
 	      (let* ((project-ant-home
