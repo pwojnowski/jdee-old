@@ -5,6 +5,11 @@ Cloned and updated http://sourceforge.net/projects/jdee/trunk (without web dir).
 2. cd jdee
 3. ant bindist
 
+# Testing
+```bash
+ant test
+```
+
 # Emacs configuration
 ```emacs-lisp
 (setq jde-dir "/path/to/jdee/dist/jdee-2.4.2/lisp")
