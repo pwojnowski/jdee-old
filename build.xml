@@ -187,9 +187,11 @@
         <echo message="Building using Emacs: ${build.bin.emacs}" />
         <echo message="Lisp dir: ${build.lisp.dir}" />
         <foreach target="run-test-on-file" param="test.file">
+          <path>
             <fileset dir="test" casesensitive="yes">
                 <filename name="**/*-test.el"/>
             </fileset>
+          </path>
         </foreach>
     </target>
 
